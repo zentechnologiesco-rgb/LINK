@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
@@ -17,14 +17,13 @@ import {
     DialogTitle,
     DialogFooter,
 } from '@/components/ui/dialog'
-import { LeaseStatusTimeline } from '@/components/leases/LeaseStatusTimeline'
+import { LeaseStatusBadge, LeaseStatusTimeline } from '@/components/leases/LeaseStatusTimeline'
 import { LeasePreview } from '@/components/leases/LeasePreview'
 import { SignatureCanvas } from '@/components/leases/SignatureCanvas'
 import { approveLease, rejectLease, requestRevision, recordPayment } from '../actions'
 import { toast } from 'sonner'
 import {
     ArrowLeft,
-    Building2,
     User,
     Loader2,
     CheckCircle2,
@@ -148,45 +147,49 @@ export function LandlordLeaseDetailClient({ lease, payments }: LandlordLeaseDeta
         }
     }
 
-    const statusColors: Record<string, string> = {
-        pending: 'bg-yellow-100 text-yellow-700',
-        paid: 'bg-green-100 text-green-700',
-        overdue: 'bg-red-100 text-red-700',
-    }
-
     return (
-        <div className="space-y-6">
+        <div className="px-4 py-6 sm:px-6 lg:px-8">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <Link href="/landlord/leases">
-                        <Button variant="ghost" size="icon">
-                            <ArrowLeft className="h-5 w-5" />
-                        </Button>
-                    </Link>
-                    <div>
-                        <h1 className="text-2xl font-bold">{lease.property?.title}</h1>
-                        <p className="text-muted-foreground">{lease.property?.address}</p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-8">
+                <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-background">
+                        <FileText className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+                    </div>
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight truncate">
+                                {lease.property?.title}
+                            </h1>
+                            <LeaseStatusBadge status={lease.status} />
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate">{lease.property?.address}</p>
                     </div>
                 </div>
+
+                <Link href="/landlord/leases" className="w-full sm:w-auto">
+                    <Button variant="outline" className="w-full sm:w-auto">
+                        <ArrowLeft className="mr-2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                        Back to leases
+                    </Button>
+                </Link>
             </div>
 
             {/* Action Required Alert */}
             {canApprove && (
-                <Alert className="border-yellow-200 bg-yellow-50">
-                    <AlertCircle className="h-4 w-4 text-yellow-600" />
-                    <AlertTitle className="text-yellow-800">Action Required</AlertTitle>
-                    <AlertDescription className="text-yellow-700">
+                <Alert className="bg-muted/40">
+                    <AlertCircle className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                    <AlertTitle>Action Required</AlertTitle>
+                    <AlertDescription className="text-muted-foreground">
                         The tenant has signed this lease and uploaded their documents. Please review and approve or request changes.
                     </AlertDescription>
                 </Alert>
             )}
 
             {isApproved && (
-                <Alert className="border-green-200 bg-green-50">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <AlertTitle className="text-green-800">Lease Active</AlertTitle>
-                    <AlertDescription className="text-green-700">
+                <Alert className="bg-muted/40">
+                    <CheckCircle2 className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                    <AlertTitle>Lease Active</AlertTitle>
+                    <AlertDescription className="text-muted-foreground">
                         This lease is approved and active. The property has been unlisted from search.
                     </AlertDescription>
                 </Alert>
@@ -197,21 +200,21 @@ export function LandlordLeaseDetailClient({ lease, payments }: LandlordLeaseDeta
                 <div className="lg:col-span-2 space-y-6">
                     {/* Tenant Documents (if signed) */}
                     {lease.tenant_documents && lease.tenant_documents.length > 0 && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg">Tenant Documents</CardTitle>
+                        <Card className="gap-0 py-0">
+                            <CardHeader className="border-b px-4 sm:px-6 py-4">
+                                <CardTitle className="text-base font-semibold tracking-tight">Tenant Documents</CardTitle>
                             </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <CardContent className="px-4 sm:px-6 py-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                     {lease.tenant_documents.map((doc: any, index: number) => (
                                         <a
                                             key={index}
                                             href={doc.signedUrl || doc.url}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                                            className="flex items-center gap-3 p-3 border rounded-xl hover:bg-muted/40 transition-colors"
                                         >
-                                            <FileText className="h-5 w-5 text-muted-foreground" />
+                                            <FileText className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-medium text-sm capitalize">
                                                     {doc.type.replace('_', ' ')}
@@ -220,7 +223,7 @@ export function LandlordLeaseDetailClient({ lease, payments }: LandlordLeaseDeta
                                                     {doc.name}
                                                 </p>
                                             </div>
-                                            <Eye className="h-4 w-4" />
+                                            <Eye className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                                         </a>
                                     ))}
                                 </div>
@@ -230,12 +233,12 @@ export function LandlordLeaseDetailClient({ lease, payments }: LandlordLeaseDeta
 
                     {/* Tenant Signature */}
                     {lease.tenant_signature_data && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg">Tenant Signature</CardTitle>
+                        <Card className="gap-0 py-0">
+                            <CardHeader className="border-b px-4 sm:px-6 py-4">
+                                <CardTitle className="text-base font-semibold tracking-tight">Tenant Signature</CardTitle>
                             </CardHeader>
-                            <CardContent>
-                                <div className="border rounded-lg p-4 bg-white">
+                            <CardContent className="px-4 sm:px-6 py-6">
+                                <div className="border rounded-xl p-4 bg-muted/20">
                                     <Image
                                         src={lease.tenant_signature_data}
                                         alt="Tenant signature"
@@ -283,10 +286,10 @@ export function LandlordLeaseDetailClient({ lease, payments }: LandlordLeaseDeta
 
                     {/* Payments (if approved) */}
                     {isApproved && payments.length > 0 && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg flex items-center gap-2">
-                                    <DollarSign className="h-5 w-5" />
+                        <Card className="gap-0 py-0">
+                            <CardHeader className="border-b px-4 sm:px-6 py-4">
+                                <CardTitle className="text-base font-semibold tracking-tight flex items-center gap-2">
+                                    <DollarSign className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                                     Payment History
                                 </CardTitle>
                             </CardHeader>
@@ -295,15 +298,13 @@ export function LandlordLeaseDetailClient({ lease, payments }: LandlordLeaseDeta
                                     {payments.map((payment: any) => (
                                         <div key={payment.id} className="flex items-center justify-between p-4">
                                             <div className="flex items-center gap-4">
-                                                <div className={`h-10 w-10 rounded-full flex items-center justify-center ${payment.status === 'paid' ? 'bg-green-100' :
-                                                    payment.status === 'overdue' ? 'bg-red-100' : 'bg-yellow-100'
-                                                    }`}>
+                                                <div className="h-10 w-10 rounded-full flex items-center justify-center border bg-muted/30">
                                                     {payment.status === 'paid' ? (
-                                                        <Check className="h-5 w-5 text-green-600" />
+                                                        <Check className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
                                                     ) : payment.status === 'overdue' ? (
-                                                        <AlertCircle className="h-5 w-5 text-red-600" />
+                                                        <AlertCircle className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
                                                     ) : (
-                                                        <Clock className="h-5 w-5 text-yellow-600" />
+                                                        <Clock className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
                                                     )}
                                                 </div>
                                                 <div>
@@ -316,9 +317,9 @@ export function LandlordLeaseDetailClient({ lease, payments }: LandlordLeaseDeta
                                             <div className="flex items-center gap-4">
                                                 <div className="text-right">
                                                     <p className="font-semibold">N$ {payment.amount?.toLocaleString()}</p>
-                                                    <span className={`text-xs px-2 py-0.5 rounded ${statusColors[payment.status]}`}>
+                                                    <Badge variant="secondary" className="mt-1 capitalize text-muted-foreground">
                                                         {payment.status}
-                                                    </span>
+                                                    </Badge>
                                                 </div>
                                                 {payment.status === 'pending' && (
                                                     <Button size="sm" onClick={() => handleMarkPaid(payment.id)}>
@@ -337,13 +338,11 @@ export function LandlordLeaseDetailClient({ lease, payments }: LandlordLeaseDeta
                 {/* Sidebar */}
                 <div className="space-y-6">
                     {/* Status Timeline */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Lease Status
-                            </CardTitle>
+                    <Card className="gap-0 py-0">
+                        <CardHeader className="border-b px-4 py-4">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">Lease Status</CardTitle>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="px-4 py-5">
                             <LeaseStatusTimeline
                                 status={lease.status}
                                 createdAt={lease.created_at}
@@ -356,16 +355,16 @@ export function LandlordLeaseDetailClient({ lease, payments }: LandlordLeaseDeta
 
                     {/* Actions */}
                     {canApprove && (
-                        <Card className="border-2 border-yellow-200">
-                            <CardHeader>
-                                <CardTitle className="text-lg">Take Action</CardTitle>
+                        <Card className="gap-0 py-0">
+                            <CardHeader className="border-b px-4 py-4">
+                                <CardTitle className="text-base font-semibold tracking-tight">Take Action</CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-3">
+                            <CardContent className="px-4 py-5 space-y-3">
                                 <Button
-                                    className="w-full bg-green-600 hover:bg-green-700"
+                                    className="w-full"
                                     onClick={() => setApproveDialogOpen(true)}
                                 >
-                                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                                    <CheckCircle2 className="h-4 w-4 mr-2" strokeWidth={1.5} />
                                     Approve Lease
                                 </Button>
                                 <Button
@@ -373,15 +372,15 @@ export function LandlordLeaseDetailClient({ lease, payments }: LandlordLeaseDeta
                                     className="w-full"
                                     onClick={() => setRevisionDialogOpen(true)}
                                 >
-                                    <RefreshCcw className="h-4 w-4 mr-2" />
+                                    <RefreshCcw className="h-4 w-4 mr-2 text-muted-foreground" strokeWidth={1.5} />
                                     Request Revision
                                 </Button>
                                 <Button
                                     variant="outline"
-                                    className="w-full text-red-600 hover:text-red-700"
+                                    className="w-full"
                                     onClick={() => setRejectDialogOpen(true)}
                                 >
-                                    <XCircle className="h-4 w-4 mr-2" />
+                                    <XCircle className="h-4 w-4 mr-2 text-muted-foreground" strokeWidth={1.5} />
                                     Reject
                                 </Button>
                             </CardContent>
@@ -390,7 +389,7 @@ export function LandlordLeaseDetailClient({ lease, payments }: LandlordLeaseDeta
 
                     {/* Tenant Info */}
                     {lease.tenant && (
-                        <Card>
+                        <Card className="gap-0 py-0">
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-sm font-medium text-muted-foreground">
                                     Tenant
@@ -398,7 +397,7 @@ export function LandlordLeaseDetailClient({ lease, payments }: LandlordLeaseDeta
                             </CardHeader>
                             <CardContent>
                                 <div className="flex items-center gap-3">
-                                    <div className="relative h-12 w-12 rounded-full overflow-hidden bg-gray-100">
+                                    <div className="relative h-12 w-12 rounded-full overflow-hidden border bg-muted/30">
                                         {lease.tenant?.avatar_url ? (
                                             <Image
                                                 src={lease.tenant.avatar_url}
@@ -408,7 +407,7 @@ export function LandlordLeaseDetailClient({ lease, payments }: LandlordLeaseDeta
                                             />
                                         ) : (
                                             <div className="h-full w-full flex items-center justify-center">
-                                                <User className="h-6 w-6 text-gray-400" />
+                                                <User className="h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
                                             </div>
                                         )}
                                     </div>
@@ -425,17 +424,17 @@ export function LandlordLeaseDetailClient({ lease, payments }: LandlordLeaseDeta
                     )}
 
                     {/* Quick Stats */}
-                    <Card>
+                    <Card className="gap-0 py-0">
                         <CardContent className="p-4">
                             <div className="grid grid-cols-2 gap-4 text-center">
                                 <div>
-                                    <p className="text-2xl font-bold text-green-600">
+                                    <p className="text-2xl font-semibold tracking-tight">
                                         N$ {lease.monthly_rent?.toLocaleString()}
                                     </p>
                                     <p className="text-xs text-muted-foreground">Monthly Rent</p>
                                 </div>
                                 <div>
-                                    <p className="text-2xl font-bold">
+                                    <p className="text-2xl font-semibold tracking-tight">
                                         N$ {lease.deposit?.toLocaleString()}
                                     </p>
                                     <p className="text-xs text-muted-foreground">Deposit</p>
@@ -446,7 +445,7 @@ export function LandlordLeaseDetailClient({ lease, payments }: LandlordLeaseDeta
 
                     {/* Download PDF */}
                     <Button variant="outline" className="w-full" disabled>
-                        <Download className="h-4 w-4 mr-2" />
+                        <Download className="h-4 w-4 mr-2 text-muted-foreground" strokeWidth={1.5} />
                         Download PDF (Coming Soon)
                     </Button>
                 </div>
@@ -475,9 +474,8 @@ export function LandlordLeaseDetailClient({ lease, payments }: LandlordLeaseDeta
                         <Button
                             onClick={handleApprove}
                             disabled={isSubmitting}
-                            className="bg-green-600 hover:bg-green-700"
                         >
-                            {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                            {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" strokeWidth={1.5} />}
                             Approve Lease
                         </Button>
                     </DialogFooter>
@@ -488,7 +486,7 @@ export function LandlordLeaseDetailClient({ lease, payments }: LandlordLeaseDeta
             <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle className="text-red-600">Reject Lease</DialogTitle>
+                        <DialogTitle>Reject Lease</DialogTitle>
                         <DialogDescription>
                             Please provide a reason for rejecting this lease. The tenant will be notified.
                         </DialogDescription>
@@ -504,11 +502,11 @@ export function LandlordLeaseDetailClient({ lease, payments }: LandlordLeaseDeta
                             Cancel
                         </Button>
                         <Button
-                            variant="destructive"
+                            variant="outline"
                             onClick={handleReject}
                             disabled={isSubmitting || !notes.trim()}
                         >
-                            {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                            {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" strokeWidth={1.5} />}
                             Reject Lease
                         </Button>
                     </DialogFooter>
@@ -538,7 +536,7 @@ export function LandlordLeaseDetailClient({ lease, payments }: LandlordLeaseDeta
                             onClick={handleRequestRevision}
                             disabled={isSubmitting || !notes.trim()}
                         >
-                            {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                            {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" strokeWidth={1.5} />}
                             Request Revision
                         </Button>
                     </DialogFooter>

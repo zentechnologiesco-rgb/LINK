@@ -31,27 +31,25 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
     }
 
     return (
-        <div className="min-h-screen bg-gray-50/50">
-            <main className="flex-1 py-8">
-                <PropertyForm
-                    mode="edit"
-                    propertyId={property.id}
-                    initialData={{
-                        title: property.title,
-                        description: property.description,
-                        property_type: property.property_type,
-                        price_nad: property.price_nad,
-                        address: property.address,
-                        city: property.city,
-                        bedrooms: property.bedrooms,
-                        bathrooms: property.bathrooms,
-                        size_sqm: property.size_sqm,
-                        amenities: property.amenities || [],
-                        images: property.images || [],
-                        coordinates: property.coordinates,
-                    }}
-                />
-            </main>
+        <div className="px-4 py-6 sm:px-6 lg:px-8">
+            <PropertyForm
+                mode="edit"
+                propertyId={property.id}
+                initialData={{
+                    title: property.title,
+                    description: property.description,
+                    property_type: property.property_type,
+                    price_nad: property.price_nad,
+                    address: property.address,
+                    city: property.city,
+                    bedrooms: property.bedrooms,
+                    bathrooms: property.bathrooms,
+                    size_sqm: property.size_sqm,
+                    amenities: property.amenities || [],
+                    images: property.images || [],
+                    coordinates: property.coordinates,
+                }}
+            />
         </div>
     )
 }

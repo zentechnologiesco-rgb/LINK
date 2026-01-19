@@ -152,127 +152,150 @@ export function CreateLeaseClient({ properties, currentUser }: CreateLeaseClient
     }
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center gap-4">
-                <Link href="/landlord/leases">
-                    <Button variant="ghost" size="icon">
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                </Link>
-                <div>
-                    <h1 className="text-2xl font-bold">Create New Lease</h1>
-                    <p className="text-muted-foreground">
-                        Build a professional lease agreement
-                    </p>
+        <div className="px-4 py-6 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-5xl space-y-6">
+                {/* Header */}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="flex items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-background">
+                            <FileText className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+                        </div>
+                        <div className="min-w-0">
+                            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Create New Lease</h1>
+                            <p className="text-sm text-muted-foreground">Build a professional lease agreement</p>
+                        </div>
+                    </div>
+
+                    <Link href="/landlord/leases" className="w-full sm:w-auto">
+                        <Button variant="outline" className="w-full sm:w-auto">
+                            <ArrowLeft className="mr-2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                            Back to leases
+                        </Button>
+                    </Link>
                 </div>
-            </div>
 
-            {/* Step Indicator */}
-            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
-                {steps.map((step, index) => (
-                    <div key={step.key} className="flex items-center">
-                        <button
-                            onClick={() => index <= currentStepIndex && setCurrentStep(step.key)}
-                            disabled={index > currentStepIndex}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${currentStep === step.key
-                                ? 'bg-primary text-primary-foreground'
-                                : index < currentStepIndex
-                                    ? 'text-primary hover:bg-primary/10'
-                                    : 'text-muted-foreground'
-                                }`}
-                        >
-                            <div className={`h-6 w-6 rounded-full flex items-center justify-center text-sm font-medium ${currentStep === step.key
-                                ? 'bg-primary-foreground text-primary'
-                                : index < currentStepIndex
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-muted text-muted-foreground'
-                                }`}>
-                                {index < currentStepIndex ? <Check className="h-3 w-3" /> : index + 1}
-                            </div>
-                            <span className="hidden md:inline text-sm font-medium">{step.label}</span>
-                        </button>
-                        {index < steps.length - 1 && (
-                            <div className={`w-8 md:w-16 h-0.5 mx-2 ${index < currentStepIndex ? 'bg-primary' : 'bg-muted'
-                                }`} />
-                        )}
-                    </div>
-                ))}
-            </div>
+                {/* Step Indicator */}
+                <div className="rounded-xl border bg-muted/30 p-2 sm:p-3">
+                    <div className="flex items-center gap-2 overflow-x-auto">
+                        {steps.map((step, index) => {
+                            const isDone = index < currentStepIndex
+                            const isCurrent = currentStep === step.key
 
-            {/* Step Content */}
-            <div className="min-h-[500px]">
-                {/* Step 1: Select Property */}
-                {currentStep === 'select_property' && (
-                    <div className="space-y-4">
-                        <h2 className="text-lg font-semibold">Select a Property</h2>
-                        {properties.length === 0 ? (
-                            <Card>
-                                <CardContent className="flex flex-col items-center justify-center p-12">
-                                    <Building2 className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                                    <p className="text-muted-foreground">No available properties found.</p>
-                                    <Link href="/landlord/properties/new">
-                                        <Button className="mt-4">Add a Property</Button>
-                                    </Link>
-                                </CardContent>
-                            </Card>
-                        ) : (
-                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {properties.map((property) => (
-                                    <Card
-                                        key={property.id}
-                                        className={`cursor-pointer transition-all hover:shadow-md ${selectedProperty?.id === property.id
-                                            ? 'ring-2 ring-primary'
-                                            : ''
-                                            }`}
-                                        onClick={() => handlePropertySelect(property)}
+                            return (
+                                <div key={step.key} className="flex items-center">
+                                    <button
+                                        onClick={() => index <= currentStepIndex && setCurrentStep(step.key)}
+                                        disabled={index > currentStepIndex}
+                                        className={`flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border transition-colors ${isCurrent
+                                            ? 'bg-foreground text-background border-foreground'
+                                            : isDone
+                                                ? 'bg-background hover:bg-muted/40 text-foreground'
+                                                : 'bg-transparent text-muted-foreground hover:bg-muted/40'
+                                            } ${index > currentStepIndex ? 'opacity-60 cursor-not-allowed' : ''}`}
                                     >
-                                        <div className="relative h-32 bg-gray-100">
-                                            {property.images?.[0] ? (
-                                                <Image
-                                                    src={property.images[0]}
-                                                    alt={property.title}
-                                                    fill
-                                                    className="object-cover"
-                                                />
-                                            ) : (
-                                                <div className="h-full flex items-center justify-center">
-                                                    <Building2 className="h-8 w-8 text-gray-300" />
-                                                </div>
-                                            )}
-                                            {selectedProperty?.id === property.id && (
-                                                <div className="absolute top-2 right-2 h-6 w-6 rounded-full bg-primary flex items-center justify-center">
-                                                    <Check className="h-4 w-4 text-white" />
-                                                </div>
-                                            )}
+                                        <div className={`h-6 w-6 rounded-full flex items-center justify-center text-sm font-medium border ${isCurrent
+                                            ? 'bg-background text-foreground border-background/20'
+                                            : 'bg-muted/30 text-muted-foreground'
+                                            }`}>
+                                            {isDone ? <Check className="h-3 w-3" strokeWidth={1.5} /> : index + 1}
                                         </div>
-                                        <CardContent className="p-4">
-                                            <h3 className="font-semibold truncate">{property.title}</h3>
-                                            <p className="text-sm text-muted-foreground truncate">
-                                                {property.address}, {property.city}
-                                            </p>
-                                            <p className="text-lg font-bold text-green-600 mt-2">
-                                                N$ {property.price_nad?.toLocaleString()}/mo
-                                            </p>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </div>
-                        )}
+                                        <span className="hidden sm:inline text-sm font-medium">{step.label}</span>
+                                    </button>
+
+                                    {index < steps.length - 1 && (
+                                        <div className={`w-6 sm:w-10 h-px mx-2 ${isDone ? 'bg-border' : 'bg-border/60'}`} />
+                                    )}
+                                </div>
+                            )
+                        })}
                     </div>
-                )}
+                </div>
+
+                {/* Step Content */}
+                <div className="min-h-[500px]">
+                    {/* Step 1: Select Property */}
+                    {currentStep === 'select_property' && (
+                        <div className="space-y-4">
+                            <h2 className="text-lg font-semibold tracking-tight">Select a Property</h2>
+                            {properties.length === 0 ? (
+                                <Card className="gap-0 py-0">
+                                    <CardContent className="py-10 text-center">
+                                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border bg-muted/40">
+                                            <Building2 className="h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
+                                        </div>
+                                        <h3 className="mt-5 text-lg font-semibold tracking-tight">No available properties</h3>
+                                        <p className="mt-1 text-sm text-muted-foreground">
+                                            Add a property first, then come back to create a lease.
+                                        </p>
+                                        <Link href="/landlord/properties/new" className="mt-6 inline-flex">
+                                            <Button>
+                                                <Building2 className="mr-2 h-4 w-4" strokeWidth={1.5} />
+                                                Add a Property
+                                            </Button>
+                                        </Link>
+                                    </CardContent>
+                                </Card>
+                            ) : (
+                                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                                    {properties.map((property) => {
+                                        const isSelected = selectedProperty?.id === property.id
+
+                                        return (
+                                            <Card
+                                                key={property.id}
+                                                className={`gap-0 py-0 overflow-hidden cursor-pointer transition-shadow hover:shadow-md ${isSelected ? 'ring-1 ring-foreground/10' : ''}`}
+                                                onClick={() => handlePropertySelect(property)}
+                                            >
+                                                <div className="relative block aspect-[16/10] bg-muted/30">
+                                                    {property.images?.[0] ? (
+                                                        <Image
+                                                            src={property.images[0]}
+                                                            alt={property.title}
+                                                            fill
+                                                            className="object-cover"
+                                                            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                                                        />
+                                                    ) : (
+                                                        <div className="flex h-full w-full items-center justify-center">
+                                                            <Building2 className="h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
+                                                        </div>
+                                                    )}
+
+                                                    {isSelected && (
+                                                        <div className="absolute top-2 right-2 rounded-full border bg-background/80 backdrop-blur p-1.5">
+                                                            <Check className="h-4 w-4 text-foreground" strokeWidth={1.5} />
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <CardContent className="px-4 sm:px-5 py-5">
+                                                    <p className="text-xs font-medium text-muted-foreground">Property</p>
+                                                    <p className="mt-1 font-semibold tracking-tight line-clamp-1">{property.title}</p>
+                                                    <p className="mt-1 text-sm text-muted-foreground line-clamp-1">
+                                                        {property.address}, {property.city}
+                                                    </p>
+                                                    <p className="mt-3 text-sm text-muted-foreground">
+                                                        <span className="font-semibold text-foreground">N$ {property.price_nad?.toLocaleString()}</span>
+                                                        /mo
+                                                    </p>
+                                                </CardContent>
+                                            </Card>
+                                        )
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                 {/* Step 2: Lease Terms */}
                 {currentStep === 'lease_terms' && (
                     <div className="max-w-2xl mx-auto space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Lease Terms</CardTitle>
-                                <CardDescription>
-                                    Set the basic terms for this lease agreement
-                                </CardDescription>
+                        <Card className="gap-0 py-0">
+                            <CardHeader className="border-b px-4 sm:px-6 py-4">
+                                <CardTitle className="text-base font-semibold tracking-tight">Lease Terms</CardTitle>
+                                <CardDescription>Set the basic terms for this lease agreement</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-6">
+                            <CardContent className="px-4 sm:px-6 py-6 space-y-6">
                                 {/* Tenant Email */}
                                 <div className="space-y-2">
                                     <Label htmlFor="tenantEmail">Tenant Email *</Label>
@@ -291,7 +314,7 @@ export function CreateLeaseClient({ properties, currentUser }: CreateLeaseClient
                                 <Separator />
 
                                 {/* Dates */}
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="startDate">Start Date</Label>
                                         <Input
@@ -315,7 +338,7 @@ export function CreateLeaseClient({ properties, currentUser }: CreateLeaseClient
                                 <Separator />
 
                                 {/* Financial */}
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="monthlyRent">Monthly Rent (N$)</Label>
                                         <Input
@@ -355,30 +378,29 @@ export function CreateLeaseClient({ properties, currentUser }: CreateLeaseClient
                 {/* Step 4: Preview & Send */}
                 {currentStep === 'preview' && leaseDocument && (
                     <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-semibold">Preview Lease Document</h2>
-                            <div className="flex gap-2">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <h2 className="text-lg font-semibold tracking-tight">Preview Lease Document</h2>
+                            <div className="flex flex-col sm:flex-row gap-2">
                                 <Button
                                     variant="outline"
                                     onClick={handleSaveDraft}
                                     disabled={isSaving}
                                 >
                                     {isSaving ? (
-                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                        <Loader2 className="h-4 w-4 animate-spin mr-2" strokeWidth={1.5} />
                                     ) : (
-                                        <Save className="h-4 w-4 mr-2" />
+                                        <Save className="h-4 w-4 mr-2 text-muted-foreground" strokeWidth={1.5} />
                                     )}
                                     Save Draft
                                 </Button>
                                 <Button
                                     onClick={handleSendToTenant}
                                     disabled={isSending}
-                                    className="bg-green-600 hover:bg-green-700"
                                 >
                                     {isSending ? (
-                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                        <Loader2 className="h-4 w-4 animate-spin mr-2" strokeWidth={1.5} />
                                     ) : (
-                                        <Send className="h-4 w-4 mr-2" />
+                                        <Send className="h-4 w-4 mr-2" strokeWidth={1.5} />
                                     )}
                                     Send to Tenant
                                 </Button>
@@ -410,13 +432,13 @@ export function CreateLeaseClient({ properties, currentUser }: CreateLeaseClient
             </div>
 
             {/* Navigation */}
-            <div className="flex items-center justify-between pt-4 border-t">
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between pt-4 border-t">
                 <Button
                     variant="outline"
                     onClick={() => setCurrentStep(steps[currentStepIndex - 1]?.key)}
                     disabled={currentStepIndex === 0}
                 >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    <ArrowLeft className="h-4 w-4 mr-2 text-muted-foreground" strokeWidth={1.5} />
                     Back
                 </Button>
 
@@ -426,9 +448,10 @@ export function CreateLeaseClient({ properties, currentUser }: CreateLeaseClient
                         disabled={!canProceed()}
                     >
                         Next
-                        <ArrowRight className="h-4 w-4 ml-2" />
+                        <ArrowRight className="h-4 w-4 ml-2" strokeWidth={1.5} />
                     </Button>
                 )}
+            </div>
             </div>
         </div>
     )

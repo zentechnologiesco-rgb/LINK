@@ -6,17 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table'
-import {
-    Building2, Plus, Eye, Edit, Trash2, ToggleLeft, ToggleRight, MapPin,
-    Bed, Bath, Square, DollarSign, Home, MoreHorizontal, AlertCircle,
-    Clock, CheckCircle2, XCircle, ShieldCheck
+    Building2,
+    Plus,
+    MapPin,
+    Bed,
+    Bath,
+    Square,
+    Home,
+    Clock,
+    CheckCircle2,
+    XCircle,
+    ShieldCheck,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { PropertyActions } from './PropertyActions'
@@ -61,7 +61,7 @@ export default async function LandlordPropertiesPage() {
     }
 
     // Get landlord's properties with active lease info
-    const { data: properties, error } = await supabase
+    const { data: properties } = await supabase
         .from('properties')
         .select('*')
         .eq('landlord_id', user.id)
@@ -102,74 +102,80 @@ export default async function LandlordPropertiesPage() {
     }
 
     return (
-        <div className="p-6">
+        <div className="px-4 py-6 sm:px-6 lg:px-8">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <div>
-                    <div className="flex items-center gap-2 mb-2">
-                        <Building2 className="h-6 w-6 text-purple-600" />
-                        <h1 className="text-3xl font-bold tracking-tight">My Properties</h1>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-8">
+                <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-background">
+                        <Building2 className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
                     </div>
-                    <p className="text-muted-foreground">Manage your property listings</p>
+                    <div className="min-w-0">
+                        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">My Properties</h1>
+                        <p className="text-sm text-muted-foreground">Manage your property listings</p>
+                    </div>
                 </div>
-                <Link href="/landlord/properties/new">
-                    <Button className="bg-black hover:bg-zinc-800">
-                        <Plus className="mr-2 h-4 w-4" />
+
+                <Link href="/landlord/properties/new" className="w-full sm:w-auto">
+                    <Button className="w-full sm:w-auto">
+                        <Plus className="mr-2 h-4 w-4" strokeWidth={1.5} />
                         Add Property
                     </Button>
                 </Link>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <Card>
-                    <CardContent className="p-4">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-lg bg-blue-50">
-                                <Home className="h-5 w-5 text-blue-600" />
-                            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
+                <Card className="gap-0 py-4">
+                    <CardContent className="px-4">
+                        <div className="flex items-start justify-between gap-3">
                             <div>
-                                <p className="text-sm text-muted-foreground">Total</p>
-                                <p className="text-2xl font-bold">{stats.total}</p>
+                                <p className="text-xs font-medium text-muted-foreground">Total</p>
+                                <p className="mt-1 text-2xl font-semibold tracking-tight">{stats.total}</p>
+                            </div>
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted/40">
+                                <Home className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                             </div>
                         </div>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardContent className="p-4">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-lg bg-yellow-50">
-                                <Clock className="h-5 w-5 text-yellow-600" />
-                            </div>
+
+                <Card className="gap-0 py-4">
+                    <CardContent className="px-4">
+                        <div className="flex items-start justify-between gap-3">
                             <div>
-                                <p className="text-sm text-muted-foreground">Pending Approval</p>
-                                <p className="text-2xl font-bold">{stats.pending}</p>
+                                <p className="text-xs font-medium text-muted-foreground">Pending</p>
+                                <p className="mt-1 text-2xl font-semibold tracking-tight">{stats.pending}</p>
+                            </div>
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted/40">
+                                <Clock className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                             </div>
                         </div>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardContent className="p-4">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-lg bg-green-50">
-                                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                            </div>
+
+                <Card className="gap-0 py-4">
+                    <CardContent className="px-4">
+                        <div className="flex items-start justify-between gap-3">
                             <div>
-                                <p className="text-sm text-muted-foreground">Approved</p>
-                                <p className="text-2xl font-bold">{stats.approved}</p>
+                                <p className="text-xs font-medium text-muted-foreground">Approved</p>
+                                <p className="mt-1 text-2xl font-semibold tracking-tight">{stats.approved}</p>
+                            </div>
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted/40">
+                                <CheckCircle2 className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                             </div>
                         </div>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardContent className="p-4">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-lg bg-purple-50">
-                                <ShieldCheck className="h-5 w-5 text-purple-600" />
-                            </div>
+
+                <Card className="gap-0 py-4">
+                    <CardContent className="px-4">
+                        <div className="flex items-start justify-between gap-3">
                             <div>
-                                <p className="text-sm text-muted-foreground">Listed</p>
-                                <p className="text-2xl font-bold">{stats.listed}</p>
+                                <p className="text-xs font-medium text-muted-foreground">Listed</p>
+                                <p className="mt-1 text-2xl font-semibold tracking-tight">{stats.listed}</p>
+                            </div>
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted/40">
+                                <ShieldCheck className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                             </div>
                         </div>
                     </CardContent>
@@ -177,172 +183,168 @@ export default async function LandlordPropertiesPage() {
             </div>
 
             {/* Properties List */}
-            <Card>
-                <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                        <CardTitle>All Properties</CardTitle>
-                        <Badge variant="secondary" className="text-sm font-normal">
+            <Card className="gap-0 py-0">
+                <CardHeader className="border-b px-4 sm:px-6 py-4 pb-4">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <CardTitle className="text-base font-semibold tracking-tight">All Properties</CardTitle>
+                        <Badge variant="secondary" className="text-xs font-medium text-muted-foreground">
                             {propertyList.length} {propertyList.length === 1 ? 'property' : 'properties'}
                         </Badge>
                     </div>
                 </CardHeader>
-                <CardContent>
+
+                <CardContent className="px-4 sm:px-6 py-6">
                     {propertyList.length === 0 ? (
-                        <div className="py-12 text-center">
-                            <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4">
-                                <Building2 className="h-8 w-8 text-muted-foreground" />
+                        <div className="py-10 text-center">
+                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border bg-muted/40">
+                                <Building2 className="h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
                             </div>
-                            <h3 className="text-lg font-medium mb-1">No properties yet</h3>
-                            <p className="text-muted-foreground mb-4">
+                            <h3 className="mt-5 text-lg font-semibold tracking-tight">No properties yet</h3>
+                            <p className="mt-1 text-sm text-muted-foreground">
                                 Start by adding your first property listing.
                             </p>
-                            <Link href="/landlord/properties/new">
+                            <Link href="/landlord/properties/new" className="mt-6 inline-flex">
                                 <Button>
-                                    <Plus className="mr-2 h-4 w-4" />
+                                    <Plus className="mr-2 h-4 w-4" strokeWidth={1.5} />
                                     Add Your First Property
                                 </Button>
                             </Link>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-[300px]">Property</TableHead>
-                                        <TableHead>Type</TableHead>
-                                        <TableHead>Location</TableHead>
-                                        <TableHead>Specs</TableHead>
-                                        <TableHead>Price</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {propertyList.map((property) => (
-                                        <TableRow key={property.id}>
-                                            <TableCell>
-                                                <div className="flex items-center gap-3">
-                                                    <div className="relative h-12 w-16 rounded-md overflow-hidden bg-gray-100 shrink-0">
-                                                        {property.images?.[0] ? (
-                                                            <Image
-                                                                src={property.images[0]}
-                                                                alt={property.title}
-                                                                fill
-                                                                className="object-cover"
-                                                            />
-                                                        ) : (
-                                                            <div className="flex h-full w-full items-center justify-center">
-                                                                <Home className="h-5 w-5 text-gray-400" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <p className="font-medium truncate max-w-[200px]">
-                                                            {property.title}
-                                                        </p>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            Added {format(new Date(property.created_at), 'MMM d, yyyy')}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <span className="capitalize">{property.property_type}</span>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-1 text-sm">
-                                                    <MapPin className="h-3 w-3 text-muted-foreground" />
-                                                    <span className="truncate max-w-[120px]">{property.city}</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                    <span className="flex items-center gap-1">
-                                                        <Bed className="h-3 w-3" /> {property.bedrooms}
-                                                    </span>
-                                                    <span className="flex items-center gap-1">
-                                                        <Bath className="h-3 w-3" /> {property.bathrooms}
-                                                    </span>
-                                                    <span className="flex items-center gap-1">
-                                                        <Square className="h-3 w-3" /> {property.size_sqm}m²
-                                                    </span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <span className="font-medium">
-                                                    N${property.price_nad.toLocaleString()}
+                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                            {propertyList.map((property) => (
+                                <Card key={property.id} className="gap-0 py-0 overflow-hidden">
+                                    <Link
+                                        href={`/properties/${property.id}`}
+                                        className="relative block aspect-[16/10] bg-muted/30"
+                                    >
+                                        {property.images?.[0] ? (
+                                            <Image
+                                                src={property.images[0]}
+                                                alt={property.title}
+                                                fill
+                                                className="object-cover"
+                                                sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                                            />
+                                        ) : (
+                                            <div className="flex h-full w-full items-center justify-center">
+                                                <Home className="h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
+                                            </div>
+                                        )}
+                                    </Link>
+
+                                    <CardContent className="px-4 sm:px-5 py-5">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-medium text-muted-foreground capitalize">
+                                                    {property.property_type}
+                                                </p>
+                                                <Link href={`/properties/${property.id}`} className="block">
+                                                    <p className="mt-1 text-base font-semibold tracking-tight line-clamp-1">
+                                                        {property.title}
+                                                    </p>
+                                                </Link>
+                                            </div>
+
+                                            <PropertyActions
+                                                propertyId={property.id}
+                                                propertyTitle={property.title}
+                                                propertyPrice={property.price_nad}
+                                                isAvailable={property.is_available}
+                                                approvalStatus={property.approval_status}
+                                                adminNotes={property.admin_notes}
+                                                hasActiveLease={!!property.activeLease}
+                                                activeLeaseId={property.activeLease?.leaseId}
+                                            />
+                                        </div>
+
+                                        <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                                            <MapPin className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+                                            <span className="truncate">{property.city}</span>
+                                        </div>
+
+                                        <div className="mt-5 flex items-center justify-between gap-4">
+                                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                                <span className="inline-flex items-center gap-1">
+                                                    <Bed className="h-4 w-4" strokeWidth={1.5} />
+                                                    {property.bedrooms}
                                                 </span>
-                                                <span className="text-xs text-muted-foreground">/mo</span>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-col gap-1">
-                                                    {/* Active Lease Badge - highest priority */}
-                                                    {property.activeLease?.status === 'approved' && (
-                                                        <Link href={`/landlord/leases/${property.activeLease.leaseId}`}>
-                                                            <Badge className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 inline-flex items-center gap-1 cursor-pointer">
-                                                                <Home className="h-3 w-3" />
-                                                                Active Lease
-                                                            </Badge>
-                                                        </Link>
-                                                    )}
-                                                    {/* Pending Lease */}
-                                                    {property.activeLease && property.activeLease.status !== 'approved' && (
-                                                        <Link href={`/landlord/leases/${property.activeLease.leaseId}`}>
-                                                            <Badge className="bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 inline-flex items-center gap-1 cursor-pointer text-[10px]">
-                                                                <Clock className="h-3 w-3" />
-                                                                Lease Pending
-                                                            </Badge>
-                                                        </Link>
-                                                    )}
-                                                    {/* Approval Status */}
-                                                    {property.approval_status === 'pending' && (
-                                                        <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-50 inline-flex items-center gap-1">
-                                                            <Clock className="h-3 w-3" />
-                                                            Pending Approval
-                                                        </Badge>
-                                                    )}
-                                                    {property.approval_status === 'approved' && !property.activeLease && (
-                                                        <Badge className="bg-green-50 text-green-700 border-green-200 hover:bg-green-50 inline-flex items-center gap-1">
-                                                            <CheckCircle2 className="h-3 w-3" />
-                                                            Approved
-                                                        </Badge>
-                                                    )}
-                                                    {property.approval_status === 'rejected' && (
-                                                        <Badge className="bg-red-50 text-red-700 border-red-200 hover:bg-red-50 inline-flex items-center gap-1">
-                                                            <XCircle className="h-3 w-3" />
-                                                            Rejected
-                                                        </Badge>
-                                                    )}
-                                                    {/* Listing Status - only show for approved properties without active lease */}
-                                                    {property.approval_status === 'approved' && !property.activeLease && (
-                                                        property.is_available ? (
-                                                            <Badge className="bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-50 text-[10px]">
-                                                                Listed
-                                                            </Badge>
-                                                        ) : (
-                                                            <Badge variant="secondary" className="bg-gray-100 text-gray-700 text-[10px]">
-                                                                Unlisted
-                                                            </Badge>
-                                                        )
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <PropertyActions
-                                                    propertyId={property.id}
-                                                    propertyTitle={property.title}
-                                                    propertyPrice={property.price_nad}
-                                                    isAvailable={property.is_available}
-                                                    approvalStatus={property.approval_status}
-                                                    adminNotes={property.admin_notes}
-                                                    hasActiveLease={!!property.activeLease}
-                                                    activeLeaseId={property.activeLease?.leaseId}
-                                                />
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                                                <span className="inline-flex items-center gap-1">
+                                                    <Bath className="h-4 w-4" strokeWidth={1.5} />
+                                                    {property.bathrooms}
+                                                </span>
+                                                <span className="inline-flex items-center gap-1">
+                                                    <Square className="h-4 w-4" strokeWidth={1.5} />
+                                                    {property.size_sqm}m²
+                                                </span>
+                                            </div>
+
+                                            <div className="shrink-0 text-right">
+                                                <p className="text-base font-semibold tracking-tight">
+                                                    N${property.price_nad.toLocaleString()}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">per month</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-5 flex flex-wrap gap-2">
+                                            {/* Active Lease Badge - highest priority */}
+                                            {property.activeLease?.status === 'approved' && (
+                                                <Link href={`/landlord/leases/${property.activeLease.leaseId}`}>
+                                                    <Badge variant="secondary" className="cursor-pointer text-muted-foreground">
+                                                        <Home className="h-3 w-3" strokeWidth={1.5} />
+                                                        Active Lease
+                                                    </Badge>
+                                                </Link>
+                                            )}
+                                            {/* Pending Lease */}
+                                            {property.activeLease && property.activeLease.status !== 'approved' && (
+                                                <Link href={`/landlord/leases/${property.activeLease.leaseId}`}>
+                                                    <Badge variant="secondary" className="cursor-pointer text-muted-foreground">
+                                                        <Clock className="h-3 w-3" strokeWidth={1.5} />
+                                                        Lease Pending
+                                                    </Badge>
+                                                </Link>
+                                            )}
+                                            {/* Approval Status */}
+                                            {property.approval_status === 'pending' && (
+                                                <Badge variant="secondary" className="text-muted-foreground">
+                                                    <Clock className="h-3 w-3" strokeWidth={1.5} />
+                                                    Pending Approval
+                                                </Badge>
+                                            )}
+                                            {property.approval_status === 'approved' && !property.activeLease && (
+                                                <Badge variant="secondary" className="text-muted-foreground">
+                                                    <CheckCircle2 className="h-3 w-3" strokeWidth={1.5} />
+                                                    Approved
+                                                </Badge>
+                                            )}
+                                            {property.approval_status === 'rejected' && (
+                                                <Badge variant="secondary" className="text-muted-foreground">
+                                                    <XCircle className="h-3 w-3" strokeWidth={1.5} />
+                                                    Rejected
+                                                </Badge>
+                                            )}
+                                            {/* Listing Status - only show for approved properties without active lease */}
+                                            {property.approval_status === 'approved' && !property.activeLease && (
+                                                property.is_available ? (
+                                                    <Badge variant="secondary" className="text-muted-foreground">
+                                                        Listed
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge variant="secondary" className="text-muted-foreground">
+                                                        Unlisted
+                                                    </Badge>
+                                                )
+                                            )}
+                                        </div>
+
+                                        <p className="mt-5 text-xs text-muted-foreground">
+                                            Added {format(new Date(property.created_at), 'MMM d, yyyy')}
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            ))}
                         </div>
                     )}
                 </CardContent>

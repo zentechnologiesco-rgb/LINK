@@ -147,10 +147,10 @@ export function ImageUpload({
             <div
                 onClick={() => !uploading && fileInputRef.current?.click()}
                 className={cn(
-                    'border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors',
+                    'rounded-xl border border-dashed p-6 text-center cursor-pointer transition-colors',
                     uploading
-                        ? 'border-gray-300 bg-gray-50 cursor-not-allowed'
-                        : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                        ? 'border-border bg-muted/30 cursor-not-allowed'
+                        : 'border-border bg-muted/20 hover:bg-muted/30'
                 )}
             >
                 <input
@@ -164,14 +164,14 @@ export function ImageUpload({
                 />
                 {uploading ? (
                     <div className="flex flex-col items-center gap-2">
-                        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                        <p className="text-sm text-gray-500">Uploading... {uploadProgress}%</p>
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" strokeWidth={1.5} />
+                        <p className="text-sm text-muted-foreground">Uploading... {uploadProgress}%</p>
                     </div>
                 ) : (
                     <div className="flex flex-col items-center gap-2">
-                        <ImagePlus className="h-8 w-8 text-gray-400" />
-                        <p className="text-sm font-medium text-gray-600">Click to upload images</p>
-                        <p className="text-xs text-gray-400">
+                        <ImagePlus className="h-8 w-8 text-muted-foreground" strokeWidth={1.5} />
+                        <p className="text-sm font-medium">Click to upload images</p>
+                        <p className="text-xs text-muted-foreground">
                             PNG, JPG up to 5MB • {images.length}/{maxImages} uploaded
                         </p>
                     </div>
@@ -185,7 +185,7 @@ export function ImageUpload({
                         <div
                             key={url}
                             className={cn(
-                                'relative rounded-lg overflow-hidden bg-gray-100 group',
+                                'relative rounded-xl overflow-hidden bg-muted/30 border group',
                                 index === 0 ? 'col-span-2 row-span-2 aspect-video' : 'aspect-square'
                             )}
                         >
@@ -196,7 +196,7 @@ export function ImageUpload({
                                 className="absolute inset-0 h-full w-full object-cover"
                             />
                             {index === 0 && (
-                                <span className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                                <span className="absolute top-2 left-2 rounded-md bg-background/80 backdrop-blur px-2 py-1 text-xs font-medium text-foreground border">
                                     Main Photo
                                 </span>
                             )}
@@ -206,9 +206,9 @@ export function ImageUpload({
                                     e.stopPropagation()
                                     removeImage(url)
                                 }}
-                                className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                className="absolute top-2 right-2 rounded-full bg-background/80 backdrop-blur border p-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
                             >
-                                <X className="h-4 w-4" />
+                                <X className="h-4 w-4" strokeWidth={1.5} />
                             </button>
                         </div>
                     ))}

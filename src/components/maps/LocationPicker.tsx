@@ -185,11 +185,11 @@ export function LocationPicker({
 
     if (error || !token) {
         return (
-            <div className="w-full h-64 flex items-center justify-center bg-gray-100 rounded-lg border">
+            <div className="w-full h-64 flex items-center justify-center bg-muted/30 rounded-xl border">
                 <div className="text-center p-6">
-                    <MapPin className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                    <p className="text-sm text-gray-600">{error || 'Map not available'}</p>
-                    <p className="text-xs text-gray-400 mt-1">Add NEXT_PUBLIC_MAPBOX_TOKEN to .env.local</p>
+                    <MapPin className="h-8 w-8 mx-auto mb-2 text-muted-foreground" strokeWidth={1.5} />
+                    <p className="text-sm text-muted-foreground">{error || 'Map not available'}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Add NEXT_PUBLIC_MAPBOX_TOKEN to .env.local</p>
                 </div>
             </div>
         )
@@ -201,7 +201,7 @@ export function LocationPicker({
             <div className="relative">
                 <div className="flex gap-2">
                     <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                         <Input
                             placeholder="Search for an address..."
                             value={searchQuery}
@@ -211,22 +211,22 @@ export function LocationPicker({
                         />
                     </div>
                     <Button type="button" variant="outline" onClick={handleSearch} disabled={isSearching}>
-                        {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Search'}
+                        {isSearching ? <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.5} /> : 'Search'}
                     </Button>
                 </div>
 
                 {/* Search Results Dropdown */}
                 {searchResults.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    <div className="absolute z-10 w-full mt-1 bg-popover border rounded-xl shadow-lg max-h-48 overflow-y-auto">
                         {searchResults.map((result, index) => (
                             <button
                                 key={index}
                                 type="button"
                                 onClick={() => selectSearchResult(result)}
-                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 border-b last:border-0"
+                                className="w-full px-4 py-2 text-left text-sm hover:bg-muted/40 border-b last:border-0"
                             >
                                 <div className="flex items-center gap-2">
-                                    <MapPin className="h-4 w-4 text-gray-400 shrink-0" />
+                                    <MapPin className="h-4 w-4 text-muted-foreground shrink-0" strokeWidth={1.5} />
                                     <span className="truncate">{result.place_name}</span>
                                 </div>
                             </button>
@@ -236,18 +236,18 @@ export function LocationPicker({
             </div>
 
             {/* Map */}
-            <div className="relative w-full h-64 rounded-lg overflow-hidden border">
+            <div className="relative w-full h-64 rounded-xl overflow-hidden border">
                 <div ref={mapContainer} className="w-full h-full" />
                 {!mapLoaded && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-muted/30">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" strokeWidth={1.5} />
                     </div>
                 )}
             </div>
 
             {/* Coordinates Display */}
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-                <MapPin className="h-3 w-3" />
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <MapPin className="h-3 w-3" strokeWidth={1.5} />
                 {coordinates ? (
                     <span>
                         Location: {coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}

@@ -110,21 +110,21 @@ export function PropertyActions({
         <>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                        <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} />
                         <span className="sr-only">Open menu</span>
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
                         <Link href={`/properties/${propertyId}`} className="flex items-center cursor-pointer">
-                            <Eye className="mr-2 h-4 w-4" />
+                            <Eye className="mr-2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                             View Listing
                         </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                         <Link href={`/landlord/properties/${propertyId}/edit`} className="flex items-center cursor-pointer">
-                            <Edit className="mr-2 h-4 w-4" />
+                            <Edit className="mr-2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                             Edit Property
                         </Link>
                     </DropdownMenuItem>
@@ -132,8 +132,8 @@ export function PropertyActions({
                     {/* View Active Lease */}
                     {activeLeaseId && (
                         <DropdownMenuItem asChild>
-                            <Link href={`/landlord/leases/${activeLeaseId}`} className="flex items-center cursor-pointer text-blue-600">
-                                <Eye className="mr-2 h-4 w-4" />
+                            <Link href={`/landlord/leases/${activeLeaseId}`} className="flex items-center cursor-pointer">
+                                <Eye className="mr-2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                                 View Lease
                             </Link>
                         </DropdownMenuItem>
@@ -146,9 +146,9 @@ export function PropertyActions({
                         <>
                             <DropdownMenuItem
                                 onClick={() => setAssignTenantDialogOpen(true)}
-                                className="text-green-600 cursor-pointer font-medium"
+                                className="cursor-pointer"
                             >
-                                <UserPlus className="mr-2 h-4 w-4" />
+                                <UserPlus className="mr-2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                                 Assign Tenant
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
@@ -160,9 +160,9 @@ export function PropertyActions({
                         <>
                             <DropdownMenuItem
                                 onClick={() => setRejectionDialogOpen(true)}
-                                className="text-red-600 cursor-pointer"
+                                className="cursor-pointer"
                             >
-                                <AlertCircle className="mr-2 h-4 w-4" />
+                                <AlertCircle className="mr-2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                                 View Rejection Reason
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
@@ -174,12 +174,12 @@ export function PropertyActions({
                         <DropdownMenuItem
                             onClick={handleRequestApproval}
                             disabled={isRequestingApproval}
-                            className="text-blue-600 cursor-pointer"
+                            className="cursor-pointer"
                         >
                             {isRequestingApproval ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin text-muted-foreground" strokeWidth={1.5} />
                             ) : (
-                                <Send className="mr-2 h-4 w-4" />
+                                <Send className="mr-2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                             )}
                             Request Re-approval
                         </DropdownMenuItem>
@@ -192,11 +192,11 @@ export function PropertyActions({
                         className={`cursor-pointer ${!canToggleAvailability ? 'opacity-50' : ''}`}
                     >
                         {isToggling ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin text-muted-foreground" strokeWidth={1.5} />
                         ) : isAvailable ? (
-                            <ToggleLeft className="mr-2 h-4 w-4" />
+                            <ToggleLeft className="mr-2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                         ) : (
-                            <ToggleRight className="mr-2 h-4 w-4" />
+                            <ToggleRight className="mr-2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                         )}
                         {isAvailable ? 'Unlist Property' : 'List Property'}
                         {!canToggleAvailability && approvalStatus === 'pending' && ' (Pending)'}
@@ -206,9 +206,9 @@ export function PropertyActions({
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                         onClick={() => setDeleteDialogOpen(true)}
-                        className="text-red-600 focus:text-red-600 cursor-pointer"
+                        className="cursor-pointer"
                     >
-                        <Trash2 className="mr-2 h-4 w-4" />
+                        <Trash2 className="mr-2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                         Delete Property
                     </DropdownMenuItem>
                 </DropdownMenuContent>

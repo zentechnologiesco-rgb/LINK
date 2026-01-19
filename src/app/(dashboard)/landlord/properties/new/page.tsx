@@ -23,10 +23,8 @@ export default async function CreatePropertyPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50/50">
-            <main className="flex-1 py-8">
-                <PropertyForm mode="create" />
-            </main>
+        <div className="px-4 py-6 sm:px-6 lg:px-8">
+            <PropertyForm mode="create" />
         </div>
     )
 }

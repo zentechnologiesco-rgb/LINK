@@ -23,58 +23,16 @@ interface LeaseStatusTimelineProps {
 
 const statusConfig: Record<string, {
     icon: React.ElementType
-    color: string
-    bgColor: string
     label: string
 }> = {
-    draft: {
-        icon: FileText,
-        color: 'text-gray-600',
-        bgColor: 'bg-gray-100',
-        label: 'Draft'
-    },
-    sent_to_tenant: {
-        icon: Send,
-        color: 'text-blue-600',
-        bgColor: 'bg-blue-100',
-        label: 'Sent to Tenant'
-    },
-    tenant_signed: {
-        icon: PenTool,
-        color: 'text-purple-600',
-        bgColor: 'bg-purple-100',
-        label: 'Tenant Signed'
-    },
-    approved: {
-        icon: CheckCircle2,
-        color: 'text-green-600',
-        bgColor: 'bg-green-100',
-        label: 'Approved'
-    },
-    rejected: {
-        icon: XCircle,
-        color: 'text-red-600',
-        bgColor: 'bg-red-100',
-        label: 'Rejected'
-    },
-    revision_requested: {
-        icon: RefreshCcw,
-        color: 'text-orange-600',
-        bgColor: 'bg-orange-100',
-        label: 'Revision Requested'
-    },
-    expired: {
-        icon: Clock,
-        color: 'text-gray-600',
-        bgColor: 'bg-gray-100',
-        label: 'Expired'
-    },
-    terminated: {
-        icon: AlertTriangle,
-        color: 'text-red-600',
-        bgColor: 'bg-red-100',
-        label: 'Terminated'
-    },
+    draft: { icon: FileText, label: 'Draft' },
+    sent_to_tenant: { icon: Send, label: 'Sent to Tenant' },
+    tenant_signed: { icon: PenTool, label: 'Tenant Signed' },
+    approved: { icon: CheckCircle2, label: 'Approved' },
+    rejected: { icon: XCircle, label: 'Rejected' },
+    revision_requested: { icon: RefreshCcw, label: 'Revision Requested' },
+    expired: { icon: Clock, label: 'Expired' },
+    terminated: { icon: AlertTriangle, label: 'Terminated' },
 }
 
 const statusOrder = ['draft', 'sent_to_tenant', 'tenant_signed', 'approved']
@@ -86,7 +44,7 @@ export function LeaseStatusTimeline({
     signedAt,
     approvedAt
 }: LeaseStatusTimelineProps) {
-    const currentStatusIndex = statusOrder.indexOf(status)
+    const currentStatusIndex = Math.max(statusOrder.indexOf(status), 0)
     const config = statusConfig[status] || statusConfig.draft
 
     const steps = [
@@ -100,8 +58,8 @@ export function LeaseStatusTimeline({
         <div className="space-y-4">
             {/* Current Status Badge */}
             <div className="flex items-center gap-2">
-                <Badge className={`${config.bgColor} ${config.color} border-0`}>
-                    <config.icon className="h-3 w-3 mr-1" />
+                <Badge variant="secondary" className="text-muted-foreground">
+                    <config.icon className="h-3 w-3 mr-1 text-muted-foreground" strokeWidth={1.5} />
                     {config.label}
                 </Badge>
             </div>
@@ -111,45 +69,39 @@ export function LeaseStatusTimeline({
                 {steps.map((step, index) => {
                     const stepIndex = statusOrder.indexOf(step.key)
                     const isCompleted = stepIndex <= currentStatusIndex
-                    const isCurrent = step.key === status
+                    const isCurrent = statusOrder.includes(status) && step.key === status
                     const stepConfig = statusConfig[step.key]
 
                     return (
-                        <div key={step.key} className="flex items-start gap-3 pb-4 last:pb-0">
+                        <div key={step.key} className="relative flex items-start gap-3 pb-4 last:pb-0">
                             {/* Connector Line */}
                             {index < steps.length - 1 && (
                                 <div
-                                    className={`absolute left-[15px] top-8 w-0.5 h-[calc(100%-32px)] ${isCompleted ? 'bg-green-300' : 'bg-gray-200'
-                                        }`}
-                                    style={{
-                                        top: `${32 + index * 56}px`,
-                                        height: '40px'
-                                    }}
+                                    className={`absolute left-4 top-8 h-[calc(100%-2rem)] w-px ${isCompleted ? 'bg-border' : 'bg-border/60'}`}
                                 />
                             )}
 
                             {/* Step Icon */}
-                            <div className={`relative z-10 h-8 w-8 rounded-full flex items-center justify-center ${isCompleted
-                                    ? isCurrent
-                                        ? `${stepConfig.bgColor} ring-2 ring-offset-2 ring-${stepConfig.color.replace('text-', '')}`
-                                        : 'bg-green-100'
-                                    : 'bg-gray-100'
-                                }`}>
+                            <div
+                                className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border ${isCompleted
+                                    ? 'bg-muted/30'
+                                    : 'bg-background'
+                                    }`}
+                            >
                                 {isCompleted ? (
                                     isCurrent ? (
-                                        <stepConfig.icon className={`h-4 w-4 ${stepConfig.color}`} />
+                                        <stepConfig.icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                                     ) : (
-                                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                        <CheckCircle2 className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                                     )
                                 ) : (
-                                    <div className="h-2 w-2 rounded-full bg-gray-300" />
+                                    <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
                                 )}
                             </div>
 
                             {/* Step Content */}
                             <div className="flex-1 min-w-0">
-                                <p className={`text-sm font-medium ${isCompleted ? 'text-foreground' : 'text-muted-foreground'
-                                    }`}>
+                                <p className={`text-sm font-medium ${isCompleted ? 'text-foreground' : 'text-muted-foreground'}`}>
                                     {step.label}
                                 </p>
                                 {step.date && (
@@ -170,8 +122,8 @@ export function LeaseStatusBadge({ status }: { status: string }) {
     const config = statusConfig[status] || statusConfig.draft
 
     return (
-        <Badge className={`${config.bgColor} ${config.color} border-0`}>
-            <config.icon className="h-3 w-3 mr-1" />
+        <Badge variant="secondary" className="text-muted-foreground">
+            <config.icon className="h-3 w-3 mr-1 text-muted-foreground" strokeWidth={1.5} />
             {config.label}
         </Badge>
     )

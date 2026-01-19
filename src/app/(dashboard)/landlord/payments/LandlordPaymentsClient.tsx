@@ -39,15 +39,11 @@ import {
     AlertTriangle,
     CheckCircle2,
     Shield,
-    Calendar,
     Building2,
     User,
-    CreditCard,
-    MoreHorizontal,
     Check,
-    X,
+    Plus,
 } from "lucide-react"
-import { Plus } from "lucide-react"
 import { recordPayment, type PaymentMethod } from "@/lib/payments"
 import { confirmDepositPayment, releaseDeposit, forfeitDeposit } from "@/lib/deposits"
 import { AssignTenantWizard, type PropertyWithLease } from "@/components/properties/AssignTenantWizard"
@@ -74,30 +70,30 @@ const formatCurrency = (amount: number) => {
 const getStatusBadge = (status: string) => {
     switch (status) {
         case 'paid':
-            return <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20">Paid</Badge>
+            return <Badge variant="secondary" className="text-muted-foreground">Paid</Badge>
         case 'pending':
-            return <Badge className="bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20">Pending</Badge>
+            return <Badge variant="secondary" className="text-muted-foreground">Pending</Badge>
         case 'overdue':
-            return <Badge className="bg-red-500/10 text-red-500 hover:bg-red-500/20">Overdue</Badge>
+            return <Badge variant="secondary" className="text-muted-foreground">Overdue</Badge>
         default:
-            return <Badge variant="secondary">{status}</Badge>
+            return <Badge variant="secondary" className="capitalize text-muted-foreground">{status}</Badge>
     }
 }
 
 const getDepositStatusBadge = (status: string) => {
     switch (status) {
         case 'held':
-            return <Badge className="bg-blue-500/10 text-blue-500 hover:bg-blue-500/20">Held in Escrow</Badge>
+            return <Badge variant="secondary" className="text-muted-foreground">Held in Escrow</Badge>
         case 'pending':
-            return <Badge className="bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20">Awaiting Payment</Badge>
+            return <Badge variant="secondary" className="text-muted-foreground">Awaiting Payment</Badge>
         case 'released':
-            return <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20">Released</Badge>
+            return <Badge variant="secondary" className="text-muted-foreground">Released</Badge>
         case 'partial_release':
-            return <Badge className="bg-orange-500/10 text-orange-500 hover:bg-orange-500/20">Partial Release</Badge>
+            return <Badge variant="secondary" className="text-muted-foreground">Partial Release</Badge>
         case 'forfeited':
-            return <Badge className="bg-red-500/10 text-red-500 hover:bg-red-500/20">Forfeited</Badge>
+            return <Badge variant="secondary" className="text-muted-foreground">Forfeited</Badge>
         default:
-            return <Badge variant="secondary">{status}</Badge>
+            return <Badge variant="secondary" className="capitalize text-muted-foreground">{status}</Badge>
     }
 }
 
@@ -184,182 +180,205 @@ export function LandlordPaymentsClient({ payments, stats, deposits, properties }
     const completedDeposits = deposits.filter(d => ['released', 'partial_release', 'forfeited'].includes(d.status))
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Payments</h1>
-                    <p className="text-muted-foreground">Track rent payments and manage deposits</p>
+        <div className="px-4 py-6 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-5xl space-y-6">
+                {/* Header */}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="flex items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-background">
+                            <DollarSign className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+                        </div>
+                        <div className="min-w-0">
+                            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Payments</h1>
+                            <p className="text-sm text-muted-foreground">Track rent payments and manage deposits</p>
+                        </div>
+                    </div>
+
+                    <Button onClick={() => setWizardOpen(true)} className="w-full sm:w-auto">
+                        <Plus className="mr-2 h-4 w-4" strokeWidth={1.5} />
+                        Create Payment Plan
+                    </Button>
                 </div>
-                <Button onClick={() => setWizardOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Payment Plan
-                </Button>
-            </div>
 
-            {/* Stats Cards */}
-            <div className="grid gap-4 md:grid-cols-3">
-                <Card className="border-green-500/20 bg-green-500/5">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Total Collected</CardTitle>
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-green-500">{formatCurrency(stats.totalCollected)}</div>
-                        <p className="text-xs text-muted-foreground">Rent payments received</p>
-                    </CardContent>
-                </Card>
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                    <Card className="gap-0 py-4">
+                        <CardContent className="px-4">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-xs font-medium text-muted-foreground">Total Collected</p>
+                                    <p className="mt-1 text-2xl font-semibold tracking-tight">{formatCurrency(stats.totalCollected)}</p>
+                                    <p className="mt-1 text-xs text-muted-foreground">Rent payments received</p>
+                                </div>
+                                <div className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted/40">
+                                    <CheckCircle2 className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                <Card className="border-yellow-500/20 bg-yellow-500/5">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Pending</CardTitle>
-                        <Clock className="h-4 w-4 text-yellow-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-yellow-500">{formatCurrency(stats.pending)}</div>
-                        <p className="text-xs text-muted-foreground">Awaiting payment</p>
-                    </CardContent>
-                </Card>
+                    <Card className="gap-0 py-4">
+                        <CardContent className="px-4">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-xs font-medium text-muted-foreground">Pending</p>
+                                    <p className="mt-1 text-2xl font-semibold tracking-tight">{formatCurrency(stats.pending)}</p>
+                                    <p className="mt-1 text-xs text-muted-foreground">Awaiting payment</p>
+                                </div>
+                                <div className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted/40">
+                                    <Clock className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                <Card className="border-red-500/20 bg-red-500/5">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Overdue</CardTitle>
-                        <AlertTriangle className="h-4 w-4 text-red-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-red-500">{formatCurrency(stats.overdue)}</div>
-                        <p className="text-xs text-muted-foreground">Past due date</p>
-                    </CardContent>
-                </Card>
-            </div>
+                    <Card className="gap-0 py-4">
+                        <CardContent className="px-4">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-xs font-medium text-muted-foreground">Overdue</p>
+                                    <p className="mt-1 text-2xl font-semibold tracking-tight">{formatCurrency(stats.overdue)}</p>
+                                    <p className="mt-1 text-xs text-muted-foreground">Past due date</p>
+                                </div>
+                                <div className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted/40">
+                                    <AlertTriangle className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
 
-            {/* Tabs for Payments and Deposits */}
-            <Tabs defaultValue="payments" className="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="payments" className="gap-2">
-                        <DollarSign className="h-4 w-4" />
-                        Rent Payments
-                    </TabsTrigger>
-                    <TabsTrigger value="deposits" className="gap-2">
-                        <Shield className="h-4 w-4" />
-                        Deposits (Escrow)
-                    </TabsTrigger>
-                </TabsList>
+                {/* Tabs for Payments and Deposits */}
+                <Tabs defaultValue="payments" className="space-y-4">
+                    <TabsList className="rounded-xl border bg-muted/30 p-1">
+                        <TabsTrigger value="payments" className="gap-2">
+                            <DollarSign className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                            Rent Payments
+                        </TabsTrigger>
+                        <TabsTrigger value="deposits" className="gap-2">
+                            <Shield className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                            Deposits (Escrow)
+                        </TabsTrigger>
+                    </TabsList>
 
                 {/* Payments Tab */}
                 <TabsContent value="payments" className="space-y-4">
                     {/* Pending Payments */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Clock className="h-5 w-5 text-yellow-500" />
+                    <Card className="gap-0 py-0">
+                        <CardHeader className="border-b px-4 sm:px-6 py-4">
+                            <CardTitle className="text-base font-semibold tracking-tight flex items-center gap-2">
+                                <Clock className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                                 Pending Payments
                             </CardTitle>
                             <CardDescription>Payments awaiting confirmation</CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="px-4 sm:px-6 py-6">
                             {pendingPayments.length === 0 ? (
                                 <div className="text-center py-8 text-muted-foreground">
-                                    <CheckCircle2 className="h-12 w-12 mx-auto mb-4 opacity-50 text-green-500" />
+                                    <CheckCircle2 className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" strokeWidth={1.5} />
                                     <p>All payments are up to date!</p>
                                 </div>
                             ) : (
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Tenant</TableHead>
-                                            <TableHead>Property</TableHead>
-                                            <TableHead>Due Date</TableHead>
-                                            <TableHead>Amount</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Action</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {pendingPayments.map((payment) => (
-                                            <TableRow key={payment.id}>
-                                                <TableCell>
-                                                    <div className="flex items-center gap-2">
-                                                        <User className="h-4 w-4 text-muted-foreground" />
-                                                        <div>
-                                                            <div className="font-medium">{payment.lease?.tenant?.full_name || 'Unknown'}</div>
-                                                            <div className="text-sm text-muted-foreground">{payment.lease?.tenant?.email}</div>
-                                                        </div>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="font-medium">{payment.lease?.property?.title}</div>
-                                                    <div className="text-sm text-muted-foreground">{payment.lease?.property?.address}</div>
-                                                </TableCell>
-                                                <TableCell>{format(new Date(payment.due_date), 'MMM d, yyyy')}</TableCell>
-                                                <TableCell className="font-medium">{formatCurrency(payment.amount)}</TableCell>
-                                                <TableCell>{getStatusBadge(payment.status)}</TableCell>
-                                                <TableCell>
-                                                    <Button
-                                                        size="sm"
-                                                        onClick={() => openRecordPayment(payment)}
-                                                        className="gap-2"
-                                                    >
-                                                        <Check className="h-4 w-4" />
-                                                        Record Payment
-                                                    </Button>
-                                                </TableCell>
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Tenant</TableHead>
+                                                <TableHead>Property</TableHead>
+                                                <TableHead>Due Date</TableHead>
+                                                <TableHead>Amount</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead>Action</TableHead>
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {pendingPayments.map((payment) => (
+                                                <TableRow key={payment.id}>
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-2">
+                                                            <User className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                                                            <div>
+                                                                <div className="font-medium">{payment.lease?.tenant?.full_name || 'Unknown'}</div>
+                                                                <div className="text-sm text-muted-foreground">{payment.lease?.tenant?.email}</div>
+                                                            </div>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="font-medium">{payment.lease?.property?.title}</div>
+                                                        <div className="text-sm text-muted-foreground">{payment.lease?.property?.address}</div>
+                                                    </TableCell>
+                                                    <TableCell>{format(new Date(payment.due_date), 'MMM d, yyyy')}</TableCell>
+                                                    <TableCell className="font-medium">{formatCurrency(payment.amount)}</TableCell>
+                                                    <TableCell>{getStatusBadge(payment.status)}</TableCell>
+                                                    <TableCell>
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => openRecordPayment(payment)}
+                                                            className="gap-2"
+                                                        >
+                                                            <Check className="h-4 w-4" strokeWidth={1.5} />
+                                                            Record Payment
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             )}
                         </CardContent>
                     </Card>
 
                     {/* Payment History */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    <Card className="gap-0 py-0">
+                        <CardHeader className="border-b px-4 sm:px-6 py-4">
+                            <CardTitle className="text-base font-semibold tracking-tight flex items-center gap-2">
+                                <CheckCircle2 className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                                 Payment History
                             </CardTitle>
                             <CardDescription>Completed payments</CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="px-4 sm:px-6 py-6">
                             {paidPayments.length === 0 ? (
                                 <div className="text-center py-8 text-muted-foreground">
-                                    <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                    <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" strokeWidth={1.5} />
                                     <p>No completed payments yet</p>
                                 </div>
                             ) : (
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Tenant</TableHead>
-                                            <TableHead>Property</TableHead>
-                                            <TableHead>Due Date</TableHead>
-                                            <TableHead>Amount</TableHead>
-                                            <TableHead>Paid On</TableHead>
-                                            <TableHead>Method</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {paidPayments.map((payment) => (
-                                            <TableRow key={payment.id}>
-                                                <TableCell>
-                                                    <div className="font-medium">{payment.lease?.tenant?.full_name || 'Unknown'}</div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="font-medium">{payment.lease?.property?.title}</div>
-                                                </TableCell>
-                                                <TableCell>{format(new Date(payment.due_date), 'MMM d, yyyy')}</TableCell>
-                                                <TableCell className="font-medium">{formatCurrency(payment.amount)}</TableCell>
-                                                <TableCell>
-                                                    {payment.paid_at ? format(new Date(payment.paid_at), 'MMM d, yyyy') : '-'}
-                                                </TableCell>
-                                                <TableCell className="capitalize">
-                                                    {payment.payment_method?.replace('_', ' ') || '-'}
-                                                </TableCell>
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Tenant</TableHead>
+                                                <TableHead>Property</TableHead>
+                                                <TableHead>Due Date</TableHead>
+                                                <TableHead>Amount</TableHead>
+                                                <TableHead>Paid On</TableHead>
+                                                <TableHead>Method</TableHead>
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {paidPayments.map((payment) => (
+                                                <TableRow key={payment.id}>
+                                                    <TableCell>
+                                                        <div className="font-medium">{payment.lease?.tenant?.full_name || 'Unknown'}</div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="font-medium">{payment.lease?.property?.title}</div>
+                                                    </TableCell>
+                                                    <TableCell>{format(new Date(payment.due_date), 'MMM d, yyyy')}</TableCell>
+                                                    <TableCell className="font-medium">{formatCurrency(payment.amount)}</TableCell>
+                                                    <TableCell>
+                                                        {payment.paid_at ? format(new Date(payment.paid_at), 'MMM d, yyyy') : '-'}
+                                                    </TableCell>
+                                                    <TableCell className="capitalize">
+                                                        {payment.payment_method?.replace('_', ' ') || '-'}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             )}
                         </CardContent>
                     </Card>
@@ -369,25 +388,25 @@ export function LandlordPaymentsClient({ payments, stats, deposits, properties }
                 <TabsContent value="deposits" className="space-y-4">
                     {/* Pending Deposits */}
                     {pendingDeposits.length > 0 && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Clock className="h-5 w-5 text-yellow-500" />
+                        <Card className="gap-0 py-0">
+                            <CardHeader className="border-b px-4 sm:px-6 py-4">
+                                <CardTitle className="text-base font-semibold tracking-tight flex items-center gap-2">
+                                    <Clock className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                                     Awaiting Deposit Payment
                                 </CardTitle>
                                 <CardDescription>Deposits that have not been paid yet</CardDescription>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="px-4 sm:px-6 py-6">
                                 <div className="space-y-4">
                                     {pendingDeposits.map((deposit) => (
-                                        <div key={deposit.id} className="flex items-center justify-between p-4 border rounded-lg">
+                                        <div key={deposit.id} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border rounded-xl">
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2">
-                                                    <User className="h-4 w-4 text-muted-foreground" />
+                                                    <User className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                                                     <span className="font-medium">{deposit.tenant?.full_name}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                                                    <Building2 className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                                                     <span className="text-sm text-muted-foreground">{deposit.lease?.property?.title}</span>
                                                 </div>
                                             </div>
@@ -408,31 +427,31 @@ export function LandlordPaymentsClient({ payments, stats, deposits, properties }
                     )}
 
                     {/* Held Deposits */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Shield className="h-5 w-5 text-blue-500" />
+                    <Card className="gap-0 py-0">
+                        <CardHeader className="border-b px-4 sm:px-6 py-4">
+                            <CardTitle className="text-base font-semibold tracking-tight flex items-center gap-2">
+                                <Shield className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                                 Deposits Held in Escrow
                             </CardTitle>
                             <CardDescription>Security deposits held by ZEN on your behalf</CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="px-4 sm:px-6 py-6">
                             {heldDeposits.length === 0 ? (
                                 <div className="text-center py-8 text-muted-foreground">
-                                    <Shield className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                    <Shield className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" strokeWidth={1.5} />
                                     <p>No deposits currently held</p>
                                 </div>
                             ) : (
                                 <div className="space-y-4">
                                     {heldDeposits.map((deposit) => (
-                                        <div key={deposit.id} className="flex items-center justify-between p-4 border rounded-lg">
+                                        <div key={deposit.id} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border rounded-xl">
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2">
-                                                    <User className="h-4 w-4 text-muted-foreground" />
+                                                    <User className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                                                     <span className="font-medium">{deposit.tenant?.full_name}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                                                    <Building2 className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                                                     <span className="text-sm text-muted-foreground">{deposit.lease?.property?.title}</span>
                                                 </div>
                                                 {deposit.paid_at && (
@@ -456,7 +475,7 @@ export function LandlordPaymentsClient({ payments, stats, deposits, properties }
                                                     </Button>
                                                     <Button
                                                         size="sm"
-                                                        variant="destructive"
+                                                        variant="outline"
                                                         onClick={() => openDepositDialog(deposit, "forfeit")}
                                                     >
                                                         Forfeit
@@ -472,47 +491,49 @@ export function LandlordPaymentsClient({ payments, stats, deposits, properties }
 
                     {/* Completed Deposits */}
                     {completedDeposits.length > 0 && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Deposit History</CardTitle>
+                        <Card className="gap-0 py-0">
+                            <CardHeader className="border-b px-4 sm:px-6 py-4">
+                                <CardTitle className="text-base font-semibold tracking-tight">Deposit History</CardTitle>
                                 <CardDescription>Previously released or forfeited deposits</CardDescription>
                             </CardHeader>
-                            <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Tenant</TableHead>
-                                            <TableHead>Property</TableHead>
-                                            <TableHead>Amount</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Released On</TableHead>
-                                            <TableHead>Notes</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {completedDeposits.map((deposit) => (
-                                            <TableRow key={deposit.id}>
-                                                <TableCell>{deposit.tenant?.full_name}</TableCell>
-                                                <TableCell>{deposit.lease?.property?.title}</TableCell>
-                                                <TableCell className="font-medium">
-                                                    {formatCurrency(deposit.amount)}
-                                                    {deposit.deduction_amount > 0 && (
-                                                        <span className="text-red-500 text-sm block">
-                                                            -{formatCurrency(deposit.deduction_amount)}
-                                                        </span>
-                                                    )}
-                                                </TableCell>
-                                                <TableCell>{getDepositStatusBadge(deposit.status)}</TableCell>
-                                                <TableCell>
-                                                    {deposit.released_at ? format(new Date(deposit.released_at), 'MMM d, yyyy') : '-'}
-                                                </TableCell>
-                                                <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
-                                                    {deposit.deduction_reason || deposit.release_reason || '-'}
-                                                </TableCell>
+                            <CardContent className="px-4 sm:px-6 py-6">
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Tenant</TableHead>
+                                                <TableHead>Property</TableHead>
+                                                <TableHead>Amount</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead>Released On</TableHead>
+                                                <TableHead>Notes</TableHead>
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {completedDeposits.map((deposit) => (
+                                                <TableRow key={deposit.id}>
+                                                    <TableCell>{deposit.tenant?.full_name}</TableCell>
+                                                    <TableCell>{deposit.lease?.property?.title}</TableCell>
+                                                    <TableCell className="font-medium">
+                                                        {formatCurrency(deposit.amount)}
+                                                        {deposit.deduction_amount > 0 && (
+                                                            <span className="text-muted-foreground text-sm block">
+                                                                -{formatCurrency(deposit.deduction_amount)}
+                                                            </span>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell>{getDepositStatusBadge(deposit.status)}</TableCell>
+                                                    <TableCell>
+                                                        {deposit.released_at ? format(new Date(deposit.released_at), 'MMM d, yyyy') : '-'}
+                                                    </TableCell>
+                                                    <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                                                        {deposit.deduction_reason || deposit.release_reason || '-'}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </CardContent>
                         </Card>
                     )}
@@ -530,7 +551,7 @@ export function LandlordPaymentsClient({ payments, stats, deposits, properties }
                     </DialogHeader>
                     {selectedPayment && (
                         <div className="space-y-4">
-                            <div className="p-4 bg-muted rounded-lg">
+                            <div className="p-4 bg-muted/30 border rounded-xl">
                                 <div className="flex justify-between items-center">
                                     <div>
                                         <p className="font-medium">{selectedPayment.lease?.tenant?.full_name}</p>
@@ -597,7 +618,7 @@ export function LandlordPaymentsClient({ payments, stats, deposits, properties }
                     </DialogHeader>
                     {selectedDeposit && (
                         <div className="space-y-4">
-                            <div className="p-4 bg-muted rounded-lg">
+                            <div className="p-4 bg-muted/30 border rounded-xl">
                                 <div className="flex justify-between items-center">
                                     <div>
                                         <p className="font-medium">{selectedDeposit.tenant?.full_name}</p>
@@ -662,8 +683,8 @@ export function LandlordPaymentsClient({ payments, stats, deposits, properties }
                                             />
                                         </div>
                                     )}
-                                    <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                                        <p className="text-sm text-green-600">
+                                    <div className="p-3 bg-muted/30 border rounded-xl">
+                                        <p className="text-sm text-muted-foreground">
                                             Amount to refund: {formatCurrency(selectedDeposit.amount - (parseFloat(deductionAmount) || 0))}
                                         </p>
                                     </div>
@@ -679,7 +700,7 @@ export function LandlordPaymentsClient({ payments, stats, deposits, properties }
                                         placeholder="Describe the reason for forfeiting the deposit..."
                                         required
                                     />
-                                    <p className="text-xs text-red-500">
+                                    <p className="text-xs text-muted-foreground">
                                         This will forfeit the entire deposit of {formatCurrency(selectedDeposit.amount)} to you.
                                     </p>
                                 </div>
@@ -710,6 +731,7 @@ export function LandlordPaymentsClient({ payments, stats, deposits, properties }
                 onOpenChange={setWizardOpen}
                 properties={properties}
             />
+            </div>
         </div>
     )
 }
