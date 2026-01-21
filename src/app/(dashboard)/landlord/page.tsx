@@ -1,30 +1,40 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+'use client'
+
 import Link from 'next/link'
-import { PropertyCard } from '@/components/properties/PropertyCard'
 import { StatsCard } from '@/components/dashboard/StatsCard'
 import { Button } from '@/components/ui/button'
-import { PlusCircle, Building2 } from 'lucide-react'
+import { PlusCircle, Building2, Home } from 'lucide-react'
+import { useQuery } from "convex/react"
+import { api } from "../../../../convex/_generated/api"
+import { Authenticated, Unauthenticated, AuthLoading } from "convex/react"
 
-export default async function LandlordDashboard() {
-    const supabase = await createClient()
+function LandlordDashboardContent() {
+    const properties = useQuery(api.properties.getByLandlord, {})
+    const leases = useQuery(api.leases.getForLandlord, {})
+    const inquiries = useQuery(api.inquiries.getForLandlord, {})
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    const isLoading = properties === undefined
 
-    if (!user) {
-        redirect('/sign-in')
+    if (isLoading) {
+        return (
+            <div className="p-4 lg:p-6">
+                <div className="animate-pulse space-y-4">
+                    <div className="h-8 w-48 bg-gray-200 rounded" />
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        {[1, 2, 3, 4].map((i) => (
+                            <div key={i} className="h-32 bg-gray-100 rounded-xl" />
+                        ))}
+                    </div>
+                    <div className="h-64 bg-gray-100 rounded-xl" />
+                </div>
+            </div>
+        )
     }
 
-    // Fetch landlord's properties
-    const { data: properties } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('landlord_id', user.id)
-        .order('created_at', { ascending: false })
-
     const propertyCount = properties?.length || 0
+    const activeLeases = leases?.filter((l: any) => l.status === 'approved').length || 0
+    const occupiedProperties = activeLeases
+    const occupancyRate = propertyCount > 0 ? Math.round((occupiedProperties / propertyCount) * 100) : 0
 
     return (
         <div className="p-4 lg:p-6">
@@ -35,17 +45,17 @@ export default async function LandlordDashboard() {
                     <p className="text-sm text-gray-500">Manage your listings and tenant requests.</p>
                 </div>
                 <div className="flex gap-2">
-                    <Link href="/dashboard/landlord/inquiries">
+                    <Link href="/landlord/inquiries">
                         <Button variant="outline" size="sm">
                             Inquiries
                         </Button>
                     </Link>
-                    <Link href="/dashboard/landlord/leases">
+                    <Link href="/landlord/leases">
                         <Button variant="outline" size="sm">
                             Leases
                         </Button>
                     </Link>
-                    <Link href="/dashboard/landlord/properties/new">
+                    <Link href="/landlord/properties/new">
                         <Button size="sm" className="bg-gray-900 hover:bg-gray-800 text-white gap-2">
                             <PlusCircle className="h-4 w-4" />
                             List Property
@@ -68,13 +78,13 @@ export default async function LandlordDashboard() {
                 />
                 <StatsCard
                     title="Active Tenants"
-                    value="0"
+                    value={activeLeases.toString()}
                     trend={{
-                        value: '-20%',
-                        direction: 'down',
-                        label: 'Down 20% this period'
+                        value: activeLeases > 0 ? '+' + activeLeases : '0%',
+                        direction: activeLeases > 0 ? 'up' : 'down',
+                        label: activeLeases > 0 ? 'Active leases' : 'No active leases'
                     }}
-                    subtitle="Tenant acquisition needs attention"
+                    subtitle="Currently renting your properties"
                 />
                 <StatsCard
                     title="Total Properties"
@@ -88,13 +98,13 @@ export default async function LandlordDashboard() {
                 />
                 <StatsCard
                     title="Occupancy Rate"
-                    value="0%"
+                    value={`${occupancyRate}%`}
                     trend={{
-                        value: '+4.5%',
-                        direction: 'up',
-                        label: 'Steady performance increase'
+                        value: occupancyRate > 50 ? '+4.5%' : '-5%',
+                        direction: occupancyRate > 50 ? 'up' : 'down',
+                        label: occupancyRate > 50 ? 'Steady performance' : 'Needs attention'
                     }}
-                    subtitle="Meets growth projections"
+                    subtitle="Current occupancy status"
                 />
             </div>
 
@@ -109,22 +119,67 @@ export default async function LandlordDashboard() {
                         <Building2 className="h-10 w-10 text-gray-400 mb-4" />
                         <h3 className="text-lg font-medium text-gray-900">No properties listed yet</h3>
                         <p className="text-sm text-gray-500 mb-4">Start by adding your first property to the platform.</p>
-                        <Link href="/dashboard/landlord/properties/new">
+                        <Link href="/landlord/properties/new">
                             <Button variant="outline">Add Property</Button>
                         </Link>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {properties.map((property: any) => (
-                            <PropertyCard key={property.id} property={{
-                                ...property,
-                                images: property.images || [],
-                                image: property.images?.[0] || 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=2070&auto=format&fit=crop'
-                            }} />
+                            <div key={property._id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+                                <div className="relative h-40 bg-gray-200 flex items-center justify-center">
+                                    <Home className="h-10 w-10 text-gray-400" />
+                                    {!property.isAvailable && (
+                                        <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
+                                            Occupied
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="p-4">
+                                    <h4 className="font-semibold text-gray-900 truncate">{property.title}</h4>
+                                    <p className="text-sm text-gray-500 truncate">{property.address}</p>
+                                    <div className="flex items-center justify-between mt-3">
+                                        <span className="font-bold text-gray-900">N$ {property.priceNad?.toLocaleString()}</span>
+                                        <Link href={`/landlord/properties/${property._id}/edit`}>
+                                            <Button variant="outline" size="sm">Edit</Button>
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
                         ))}
                     </div>
                 )}
             </div>
         </div>
+    )
+}
+
+export default function LandlordDashboard() {
+    return (
+        <>
+            <AuthLoading>
+                <div className="p-4 lg:p-6">
+                    <div className="animate-pulse space-y-4">
+                        <div className="h-8 w-48 bg-gray-200 rounded" />
+                        <div className="h-64 bg-gray-100 rounded-xl" />
+                    </div>
+                </div>
+            </AuthLoading>
+
+            <Unauthenticated>
+                <div className="p-4 lg:p-6">
+                    <div className="text-center py-16">
+                        <p className="text-gray-500">Please sign in to view your dashboard</p>
+                        <Link href="/sign-in">
+                            <Button className="mt-4 bg-gray-900 hover:bg-gray-800">Sign In</Button>
+                        </Link>
+                    </div>
+                </div>
+            </Unauthenticated>
+
+            <Authenticated>
+                <LandlordDashboardContent />
+            </Authenticated>
+        </>
     )
 }

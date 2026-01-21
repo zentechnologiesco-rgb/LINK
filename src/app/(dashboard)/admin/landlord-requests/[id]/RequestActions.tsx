@@ -15,8 +15,10 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { approveVerification, rejectVerification } from '@/lib/verification'
 import { Check, X, Loader2 } from 'lucide-react'
+import { useMutation } from "convex/react"
+import { api } from "../../../../../../convex/_generated/api"
+import { Id } from "../../../../../../convex/_generated/dataModel"
 
 interface RequestActionsProps {
     requestId: string
@@ -29,17 +31,19 @@ export function RequestActions({ requestId }: RequestActionsProps) {
     const [dialogOpen, setDialogOpen] = useState(false)
     const router = useRouter()
 
+    const approveVerification = useMutation(api.verification.approve)
+    const rejectVerification = useMutation(api.verification.reject)
+
     const handleApprove = async () => {
         setIsApproving(true)
-        const result = await approveVerification(requestId)
-
-        if (result.error) {
-            toast.error(result.error)
-            setIsApproving(false)
-        } else {
+        try {
+            await approveVerification({ requestId: requestId as Id<"landlordRequests"> })
             toast.success('Application approved successfully')
             router.refresh()
             router.push('/admin/landlord-requests')
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to approve application')
+            setIsApproving(false)
         }
     }
 
@@ -50,16 +54,18 @@ export function RequestActions({ requestId }: RequestActionsProps) {
         }
 
         setIsRejecting(true)
-        const result = await rejectVerification(requestId, rejectReason)
-
-        if (result.error) {
-            toast.error(result.error)
-            setIsRejecting(false)
-        } else {
+        try {
+            await rejectVerification({
+                requestId: requestId as Id<"landlordRequests">,
+                reason: rejectReason
+            })
             toast.success('Application rejected')
             setDialogOpen(false)
             router.refresh()
             router.push('/admin/landlord-requests')
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to reject application')
+            setIsRejecting(false)
         }
     }
 

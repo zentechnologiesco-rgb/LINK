@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { LeaseBuilder, LeaseDocumentData } from '@/components/leases/LeaseBuilder'
 import { LeasePreview } from '@/components/leases/LeasePreview'
-import { createDraftLease, sendLeaseToTenant } from '../actions'
 import { toast } from 'sonner'
 import {
     ArrowLeft,
@@ -24,16 +23,15 @@ import {
     FileText,
     Save
 } from 'lucide-react'
-
-interface CreateLeaseClientProps {
-    properties: any[]
-    currentUser: any
-}
+import { useMutation, useQuery, useConvex } from "convex/react"
+import { api } from "../../../../../../convex/_generated/api"
+import { Id } from "../../../../../../convex/_generated/dataModel"
 
 type Step = 'select_property' | 'lease_terms' | 'build_document' | 'preview'
 
-export function CreateLeaseClient({ properties, currentUser }: CreateLeaseClientProps) {
+export function CreateLeaseClient() {
     const router = useRouter()
+    const convex = useConvex()
     const [currentStep, setCurrentStep] = useState<Step>('select_property')
     const [selectedProperty, setSelectedProperty] = useState<any>(null)
     const [tenantEmail, setTenantEmail] = useState('')
@@ -46,7 +44,13 @@ export function CreateLeaseClient({ properties, currentUser }: CreateLeaseClient
     const [leaseDocument, setLeaseDocument] = useState<LeaseDocumentData | null>(null)
     const [isSaving, setIsSaving] = useState(false)
     const [isSending, setIsSending] = useState(false)
-    const [savedLeaseId, setSavedLeaseId] = useState<string | null>(null)
+    const [savedLeaseId, setSavedLeaseId] = useState<Id<"leases"> | null>(null)
+
+    const currentUser = useQuery(api.users.currentUser)
+    const properties = useQuery(api.properties.getByLandlord, {})
+
+    const createLease = useMutation(api.leases.create)
+    const sendToTenant = useMutation(api.leases.sendToTenant)
 
     const steps: { key: Step; label: string; icon: React.ElementType }[] = [
         { key: 'select_property', label: 'Select Property', icon: Building2 },
@@ -74,8 +78,8 @@ export function CreateLeaseClient({ properties, currentUser }: CreateLeaseClient
 
     const handlePropertySelect = (property: any) => {
         setSelectedProperty(property)
-        setMonthlyRent(property.price_nad || 0)
-        setDeposit(property.price_nad || 0)
+        setMonthlyRent(property.priceNad || 0)
+        setDeposit(property.priceNad || 0)
     }
 
     const handleSaveDraft = async () => {
@@ -83,24 +87,29 @@ export function CreateLeaseClient({ properties, currentUser }: CreateLeaseClient
 
         setIsSaving(true)
         try {
-            const result = await createDraftLease({
-                property_id: selectedProperty.id,
-                tenant_email: tenantEmail,
-                start_date: startDate,
-                end_date: endDate,
-                monthly_rent: monthlyRent,
-                deposit: deposit,
-                lease_document: leaseDocument,
+            // Find tenant by email
+            const tenant = await convex.query(api.users.getByEmail, { email: tenantEmail })
+            if (!tenant) {
+                toast.error('Tenant not found. They must have an account first.')
+                setIsSaving(false)
+                return
+            }
+
+            const leaseId = await createLease({
+                propertyId: selectedProperty._id,
+                tenantId: tenant._id,
+                startDate,
+                endDate,
+                monthlyRent,
+                deposit,
+                leaseDocument: leaseDocument as any,
             })
 
-            if (result.error) {
-                toast.error(result.error)
-            } else {
-                setSavedLeaseId(result.leaseId!)
-                toast.success('Lease draft saved!')
-            }
-        } catch (error) {
-            toast.error('Failed to save draft.')
+            setSavedLeaseId(leaseId)
+            toast.success('Lease draft saved!')
+        } catch (error: any) {
+            console.error(error)
+            toast.error(error.message || 'Failed to save draft.')
         } finally {
             setIsSaving(false)
         }
@@ -117,39 +126,46 @@ export function CreateLeaseClient({ properties, currentUser }: CreateLeaseClient
             // Save draft first if not saved
             let leaseId = savedLeaseId
             if (!leaseId) {
-                const saveResult = await createDraftLease({
-                    property_id: selectedProperty.id,
-                    tenant_email: tenantEmail,
-                    start_date: startDate,
-                    end_date: endDate,
-                    monthly_rent: monthlyRent,
-                    deposit: deposit,
-                    lease_document: leaseDocument,
-                })
-
-                if (saveResult.error) {
-                    toast.error(saveResult.error)
+                const tenant = await convex.query(api.users.getByEmail, { email: tenantEmail })
+                if (!tenant) {
+                    toast.error('Tenant not found. They must have an account first.')
                     setIsSending(false)
                     return
                 }
-                leaseId = saveResult.leaseId!
+
+                leaseId = await createLease({
+                    propertyId: selectedProperty._id,
+                    tenantId: tenant._id,
+                    startDate,
+                    endDate,
+                    monthlyRent,
+                    deposit,
+                    leaseDocument: leaseDocument as any,
+                })
             }
 
             // Send to tenant
-            const result = await sendLeaseToTenant(leaseId!, tenantEmail)
-
-            if (result.error) {
-                toast.error(result.error)
-            } else {
-                toast.success(`Lease sent to ${result.tenantName || tenantEmail}!`)
-                router.push('/landlord/leases')
-            }
-        } catch (error) {
-            toast.error('Failed to send lease.')
+            await sendToTenant({ leaseId })
+            toast.success(`Lease sent to ${tenantEmail}!`)
+            router.push('/landlord/leases')
+        } catch (error: any) {
+            console.error(error)
+            toast.error(error.message || 'Failed to send lease.')
         } finally {
             setIsSending(false)
         }
     }
+
+    if (currentUser === undefined || properties === undefined) {
+        return (
+            <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        )
+    }
+
+    // Filter to only available properties for leasing
+    const availableProperties = properties.filter(p => p.isAvailable || p.approvalStatus === 'approved')
 
     return (
         <div className="px-4 py-6 sm:px-6 lg:px-8">
@@ -217,7 +233,7 @@ export function CreateLeaseClient({ properties, currentUser }: CreateLeaseClient
                     {currentStep === 'select_property' && (
                         <div className="space-y-4">
                             <h2 className="text-lg font-semibold tracking-tight">Select a Property</h2>
-                            {properties.length === 0 ? (
+                            {availableProperties.length === 0 ? (
                                 <Card className="gap-0 py-0">
                                     <CardContent className="py-10 text-center">
                                         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border bg-muted/40">
@@ -237,12 +253,12 @@ export function CreateLeaseClient({ properties, currentUser }: CreateLeaseClient
                                 </Card>
                             ) : (
                                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                                    {properties.map((property) => {
-                                        const isSelected = selectedProperty?.id === property.id
+                                    {availableProperties.map((property) => {
+                                        const isSelected = selectedProperty?._id === property._id
 
                                         return (
                                             <Card
-                                                key={property.id}
+                                                key={property._id}
                                                 className={`gap-0 py-0 overflow-hidden cursor-pointer transition-shadow hover:shadow-md ${isSelected ? 'ring-1 ring-foreground/10' : ''}`}
                                                 onClick={() => handlePropertySelect(property)}
                                             >
@@ -275,7 +291,7 @@ export function CreateLeaseClient({ properties, currentUser }: CreateLeaseClient
                                                         {property.address}, {property.city}
                                                     </p>
                                                     <p className="mt-3 text-sm text-muted-foreground">
-                                                        <span className="font-semibold text-foreground">N$ {property.price_nad?.toLocaleString()}</span>
+                                                        <span className="font-semibold text-foreground">N$ {property.priceNad?.toLocaleString()}</span>
                                                         /mo
                                                     </p>
                                                 </CardContent>
@@ -287,171 +303,171 @@ export function CreateLeaseClient({ properties, currentUser }: CreateLeaseClient
                         </div>
                     )}
 
-                {/* Step 2: Lease Terms */}
-                {currentStep === 'lease_terms' && (
-                    <div className="max-w-2xl mx-auto space-y-6">
-                        <Card className="gap-0 py-0">
-                            <CardHeader className="border-b px-4 sm:px-6 py-4">
-                                <CardTitle className="text-base font-semibold tracking-tight">Lease Terms</CardTitle>
-                                <CardDescription>Set the basic terms for this lease agreement</CardDescription>
-                            </CardHeader>
-                            <CardContent className="px-4 sm:px-6 py-6 space-y-6">
-                                {/* Tenant Email */}
-                                <div className="space-y-2">
-                                    <Label htmlFor="tenantEmail">Tenant Email *</Label>
-                                    <Input
-                                        id="tenantEmail"
-                                        type="email"
-                                        placeholder="tenant@example.com"
-                                        value={tenantEmail}
-                                        onChange={(e) => setTenantEmail(e.target.value)}
-                                    />
-                                    <p className="text-xs text-muted-foreground">
-                                        The tenant must have an account on the platform
-                                    </p>
-                                </div>
-
-                                <Separator />
-
-                                {/* Dates */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Step 2: Lease Terms */}
+                    {currentStep === 'lease_terms' && (
+                        <div className="max-w-2xl mx-auto space-y-6">
+                            <Card className="gap-0 py-0">
+                                <CardHeader className="border-b px-4 sm:px-6 py-4">
+                                    <CardTitle className="text-base font-semibold tracking-tight">Lease Terms</CardTitle>
+                                    <CardDescription>Set the basic terms for this lease agreement</CardDescription>
+                                </CardHeader>
+                                <CardContent className="px-4 sm:px-6 py-6 space-y-6">
+                                    {/* Tenant Email */}
                                     <div className="space-y-2">
-                                        <Label htmlFor="startDate">Start Date</Label>
+                                        <Label htmlFor="tenantEmail">Tenant Email *</Label>
                                         <Input
-                                            id="startDate"
-                                            type="date"
-                                            value={startDate}
-                                            onChange={(e) => setStartDate(e.target.value)}
+                                            id="tenantEmail"
+                                            type="email"
+                                            placeholder="tenant@example.com"
+                                            value={tenantEmail}
+                                            onChange={(e) => setTenantEmail(e.target.value)}
                                         />
+                                        <p className="text-xs text-muted-foreground">
+                                            The tenant must have an account on the platform
+                                        </p>
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="endDate">End Date</Label>
-                                        <Input
-                                            id="endDate"
-                                            type="date"
-                                            value={endDate}
-                                            onChange={(e) => setEndDate(e.target.value)}
-                                        />
+
+                                    <Separator />
+
+                                    {/* Dates */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="startDate">Start Date</Label>
+                                            <Input
+                                                id="startDate"
+                                                type="date"
+                                                value={startDate}
+                                                onChange={(e) => setStartDate(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="endDate">End Date</Label>
+                                            <Input
+                                                id="endDate"
+                                                type="date"
+                                                value={endDate}
+                                                onChange={(e) => setEndDate(e.target.value)}
+                                            />
+                                        </div>
                                     </div>
-                                </div>
 
-                                <Separator />
+                                    <Separator />
 
-                                {/* Financial */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="monthlyRent">Monthly Rent (N$)</Label>
-                                        <Input
-                                            id="monthlyRent"
-                                            type="number"
-                                            min={0}
-                                            value={monthlyRent}
-                                            onChange={(e) => setMonthlyRent(Number(e.target.value))}
-                                        />
+                                    {/* Financial */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="monthlyRent">Monthly Rent (N$)</Label>
+                                            <Input
+                                                id="monthlyRent"
+                                                type="number"
+                                                min={0}
+                                                value={monthlyRent}
+                                                onChange={(e) => setMonthlyRent(Number(e.target.value))}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="deposit">Security Deposit (N$)</Label>
+                                            <Input
+                                                id="deposit"
+                                                type="number"
+                                                min={0}
+                                                value={deposit}
+                                                onChange={(e) => setDeposit(Number(e.target.value))}
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="deposit">Security Deposit (N$)</Label>
-                                        <Input
-                                            id="deposit"
-                                            type="number"
-                                            min={0}
-                                            value={deposit}
-                                            onChange={(e) => setDeposit(Number(e.target.value))}
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                )}
-
-                {/* Step 3: Build Document */}
-                {currentStep === 'build_document' && (
-                    <div className="max-w-3xl mx-auto">
-                        <LeaseBuilder
-                            initialData={leaseDocument || undefined}
-                            onDataChange={setLeaseDocument}
-                        />
-                    </div>
-                )}
-
-                {/* Step 4: Preview & Send */}
-                {currentStep === 'preview' && leaseDocument && (
-                    <div className="space-y-6">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <h2 className="text-lg font-semibold tracking-tight">Preview Lease Document</h2>
-                            <div className="flex flex-col sm:flex-row gap-2">
-                                <Button
-                                    variant="outline"
-                                    onClick={handleSaveDraft}
-                                    disabled={isSaving}
-                                >
-                                    {isSaving ? (
-                                        <Loader2 className="h-4 w-4 animate-spin mr-2" strokeWidth={1.5} />
-                                    ) : (
-                                        <Save className="h-4 w-4 mr-2 text-muted-foreground" strokeWidth={1.5} />
-                                    )}
-                                    Save Draft
-                                </Button>
-                                <Button
-                                    onClick={handleSendToTenant}
-                                    disabled={isSending}
-                                >
-                                    {isSending ? (
-                                        <Loader2 className="h-4 w-4 animate-spin mr-2" strokeWidth={1.5} />
-                                    ) : (
-                                        <Send className="h-4 w-4 mr-2" strokeWidth={1.5} />
-                                    )}
-                                    Send to Tenant
-                                </Button>
-                            </div>
+                                </CardContent>
+                            </Card>
                         </div>
+                    )}
 
-                        <LeasePreview
-                            leaseDocument={leaseDocument}
-                            property={{
-                                title: selectedProperty?.title || '',
-                                address: selectedProperty?.address || '',
-                                city: selectedProperty?.city || '',
-                                images: selectedProperty?.images,
-                            }}
-                            landlord={{
-                                full_name: currentUser?.full_name || '',
-                                email: currentUser?.email || '',
-                                phone: currentUser?.phone,
-                            }}
-                            leaseTerms={{
-                                startDate,
-                                endDate,
-                                monthlyRent,
-                                deposit,
-                            }}
-                        />
-                    </div>
-                )}
-            </div>
+                    {/* Step 3: Build Document */}
+                    {currentStep === 'build_document' && (
+                        <div className="max-w-3xl mx-auto">
+                            <LeaseBuilder
+                                initialData={leaseDocument || undefined}
+                                onDataChange={setLeaseDocument}
+                            />
+                        </div>
+                    )}
 
-            {/* Navigation */}
-            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between pt-4 border-t">
-                <Button
-                    variant="outline"
-                    onClick={() => setCurrentStep(steps[currentStepIndex - 1]?.key)}
-                    disabled={currentStepIndex === 0}
-                >
-                    <ArrowLeft className="h-4 w-4 mr-2 text-muted-foreground" strokeWidth={1.5} />
-                    Back
-                </Button>
+                    {/* Step 4: Preview & Send */}
+                    {currentStep === 'preview' && leaseDocument && (
+                        <div className="space-y-6">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <h2 className="text-lg font-semibold tracking-tight">Preview Lease Document</h2>
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleSaveDraft}
+                                        disabled={isSaving}
+                                    >
+                                        {isSaving ? (
+                                            <Loader2 className="h-4 w-4 animate-spin mr-2" strokeWidth={1.5} />
+                                        ) : (
+                                            <Save className="h-4 w-4 mr-2 text-muted-foreground" strokeWidth={1.5} />
+                                        )}
+                                        Save Draft
+                                    </Button>
+                                    <Button
+                                        onClick={handleSendToTenant}
+                                        disabled={isSending}
+                                    >
+                                        {isSending ? (
+                                            <Loader2 className="h-4 w-4 animate-spin mr-2" strokeWidth={1.5} />
+                                        ) : (
+                                            <Send className="h-4 w-4 mr-2" strokeWidth={1.5} />
+                                        )}
+                                        Send to Tenant
+                                    </Button>
+                                </div>
+                            </div>
 
-                {currentStep !== 'preview' && (
+                            <LeasePreview
+                                leaseDocument={leaseDocument}
+                                property={{
+                                    title: selectedProperty?.title || '',
+                                    address: selectedProperty?.address || '',
+                                    city: selectedProperty?.city || '',
+                                    images: selectedProperty?.images,
+                                }}
+                                landlord={{
+                                    fullName: currentUser?.fullName || '',
+                                    email: currentUser?.email || '',
+                                    phone: currentUser?.phone,
+                                }}
+                                leaseTerms={{
+                                    startDate,
+                                    endDate,
+                                    monthlyRent,
+                                    deposit,
+                                }}
+                            />
+                        </div>
+                    )}
+                </div>
+
+                {/* Navigation */}
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between pt-4 border-t">
                     <Button
-                        onClick={() => setCurrentStep(steps[currentStepIndex + 1]?.key)}
-                        disabled={!canProceed()}
+                        variant="outline"
+                        onClick={() => setCurrentStep(steps[currentStepIndex - 1]?.key)}
+                        disabled={currentStepIndex === 0}
                     >
-                        Next
-                        <ArrowRight className="h-4 w-4 ml-2" strokeWidth={1.5} />
+                        <ArrowLeft className="h-4 w-4 mr-2 text-muted-foreground" strokeWidth={1.5} />
+                        Back
                     </Button>
-                )}
-            </div>
+
+                    {currentStep !== 'preview' && (
+                        <Button
+                            onClick={() => setCurrentStep(steps[currentStepIndex + 1]?.key)}
+                            disabled={!canProceed()}
+                        >
+                            Next
+                            <ArrowRight className="h-4 w-4 ml-2" strokeWidth={1.5} />
+                        </Button>
+                    )}
+                </div>
             </div>
         </div>
     )

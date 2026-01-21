@@ -1,15 +1,97 @@
+'use client'
+
 import Link from 'next/link'
-import Image from 'next/image'
-import { getTenantLeases } from './actions'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LeaseStatusBadge } from '@/components/leases/LeaseStatusTimeline'
 import { FileText, Building2, DollarSign, Calendar, ArrowRight, Eye, PenTool } from 'lucide-react'
 import { format } from 'date-fns'
-import { getDisplayName } from '@/lib/user-name'
+import { useQuery } from "convex/react"
+import { api } from "../../../../../convex/_generated/api"
+import { Authenticated, Unauthenticated, AuthLoading } from "convex/react"
 
-export default async function TenantLeasesPage() {
-    const leases = await getTenantLeases()
+function LeaseCard({
+    lease,
+    actionLabel,
+    actionIcon: ActionIcon
+}: {
+    lease: any
+    actionLabel: string
+    actionIcon: React.ElementType
+}) {
+    return (
+        <Link href={`/tenant/leases/${lease._id}`}>
+            <Card className="hover:shadow-md transition-all cursor-pointer group">
+                <CardContent className="p-0">
+                    <div className="flex flex-col md:flex-row">
+                        {/* Property Image Placeholder */}
+                        <div className="relative w-full md:w-48 h-40 md:h-auto bg-gray-100 flex-shrink-0">
+                            <div className="h-full w-full flex items-center justify-center">
+                                <Building2 className="h-12 w-12 text-gray-300" />
+                            </div>
+                        </div>
+
+                        {/* Lease Info */}
+                        <div className="flex-1 p-4 md:p-6">
+                            <div className="flex items-start justify-between gap-4 mb-3">
+                                <div>
+                                    <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
+                                        {lease.property?.title || 'Untitled Property'}
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        {lease.property?.address}
+                                    </p>
+                                </div>
+                                <LeaseStatusBadge status={lease.status} />
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-4 text-sm mb-4">
+                                <div className="flex items-center gap-1.5 text-muted-foreground">
+                                    <DollarSign className="h-4 w-4" />
+                                    <span className="font-medium text-foreground">
+                                        N$ {lease.monthlyRent?.toLocaleString()}
+                                    </span>
+                                    <span>/month</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-muted-foreground">
+                                    <Calendar className="h-4 w-4" />
+                                    <span>
+                                        {format(new Date(lease.startDate), 'MMM d, yyyy')} - {format(new Date(lease.endDate), 'MMM d, yyyy')}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <p className="text-sm text-muted-foreground">
+                                    Landlord: <span className="text-foreground">{lease.landlord?.fullName || 'Unknown'}</span>
+                                </p>
+                                <Button size="sm" variant="ghost" className="gap-1 group-hover:bg-primary group-hover:text-white transition-colors">
+                                    {actionLabel}
+                                    <ActionIcon className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </Link>
+    )
+}
+
+function TenantLeasesContent() {
+    const leases = useQuery(api.leases.getForTenant, {})
+
+    if (leases === undefined) {
+        return (
+            <div className="p-6 lg:p-8">
+                <div className="animate-pulse space-y-4">
+                    <div className="h-8 w-48 bg-gray-200 rounded" />
+                    <div className="h-40 bg-gray-100 rounded-xl" />
+                    <div className="h-40 bg-gray-100 rounded-xl" />
+                </div>
+            </div>
+        )
+    }
 
     // Group leases by status
     const pendingLeases = leases.filter((l: any) =>
@@ -22,7 +104,7 @@ export default async function TenantLeasesPage() {
     )
 
     return (
-        <div className="space-y-8">
+        <div className="p-6 lg:p-8 space-y-8">
             {/* Header */}
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">My Leases</h1>
@@ -56,7 +138,7 @@ export default async function TenantLeasesPage() {
                     </div>
                     <div className="grid gap-4">
                         {pendingLeases.map((lease: any) => (
-                            <LeaseCard key={lease.id} lease={lease} actionLabel="Review & Sign" actionIcon={PenTool} />
+                            <LeaseCard key={lease._id} lease={lease} actionLabel="Review & Sign" actionIcon={PenTool} />
                         ))}
                     </div>
                 </section>
@@ -71,7 +153,7 @@ export default async function TenantLeasesPage() {
                     </div>
                     <div className="grid gap-4">
                         {signedLeases.map((lease: any) => (
-                            <LeaseCard key={lease.id} lease={lease} actionLabel="View" actionIcon={Eye} />
+                            <LeaseCard key={lease._id} lease={lease} actionLabel="View" actionIcon={Eye} />
                         ))}
                     </div>
                 </section>
@@ -86,7 +168,7 @@ export default async function TenantLeasesPage() {
                     </div>
                     <div className="grid gap-4">
                         {activeLeases.map((lease: any) => (
-                            <LeaseCard key={lease.id} lease={lease} actionLabel="View Details" actionIcon={ArrowRight} />
+                            <LeaseCard key={lease._id} lease={lease} actionLabel="View Details" actionIcon={ArrowRight} />
                         ))}
                     </div>
                 </section>
@@ -98,7 +180,7 @@ export default async function TenantLeasesPage() {
                     <h2 className="text-lg font-semibold mb-4 text-muted-foreground">Past Leases</h2>
                     <div className="grid gap-4 opacity-75">
                         {otherLeases.map((lease: any) => (
-                            <LeaseCard key={lease.id} lease={lease} actionLabel="View" actionIcon={Eye} />
+                            <LeaseCard key={lease._id} lease={lease} actionLabel="View" actionIcon={Eye} />
                         ))}
                     </div>
                 </section>
@@ -107,79 +189,32 @@ export default async function TenantLeasesPage() {
     )
 }
 
-function LeaseCard({
-    lease,
-    actionLabel,
-    actionIcon: ActionIcon
-}: {
-    lease: any
-    actionLabel: string
-    actionIcon: React.ElementType
-}) {
+export default function TenantLeasesPage() {
     return (
-        <Link href={`/tenant/leases/${lease.id}`}>
-            <Card className="hover:shadow-md transition-all cursor-pointer group">
-                <CardContent className="p-0">
-                    <div className="flex flex-col md:flex-row">
-                        {/* Property Image */}
-                        <div className="relative w-full md:w-48 h-40 md:h-auto bg-gray-100 flex-shrink-0">
-                            {lease.property?.images?.[0] ? (
-                                <Image
-                                    src={lease.property.images[0]}
-                                    alt={lease.property?.title || 'Property'}
-                                    fill
-                                    className="object-cover"
-                                />
-                            ) : (
-                                <div className="h-full w-full flex items-center justify-center">
-                                    <Building2 className="h-12 w-12 text-gray-300" />
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Lease Info */}
-                        <div className="flex-1 p-4 md:p-6">
-                            <div className="flex items-start justify-between gap-4 mb-3">
-                                <div>
-                                    <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
-                                        {lease.property?.title || 'Untitled Property'}
-                                    </h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        {lease.property?.address}, {lease.property?.city}
-                                    </p>
-                                </div>
-                                <LeaseStatusBadge status={lease.status} />
-                            </div>
-
-                            <div className="flex flex-wrap items-center gap-4 text-sm mb-4">
-                                <div className="flex items-center gap-1.5 text-muted-foreground">
-                                    <DollarSign className="h-4 w-4" />
-                                    <span className="font-medium text-foreground">
-                                        N$ {lease.monthly_rent?.toLocaleString()}
-                                    </span>
-                                    <span>/month</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 text-muted-foreground">
-                                    <Calendar className="h-4 w-4" />
-                                    <span>
-                                        {format(new Date(lease.start_date), 'MMM d, yyyy')} - {format(new Date(lease.end_date), 'MMM d, yyyy')}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm text-muted-foreground">
-                                    Landlord: <span className="text-foreground">{getDisplayName(lease.landlord, 'Unknown')}</span>
-                                </p>
-                                <Button size="sm" variant="ghost" className="gap-1 group-hover:bg-primary group-hover:text-white transition-colors">
-                                    {actionLabel}
-                                    <ActionIcon className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
+        <>
+            <AuthLoading>
+                <div className="p-6 lg:p-8">
+                    <div className="animate-pulse space-y-4">
+                        <div className="h-8 w-48 bg-gray-200 rounded" />
+                        <div className="h-40 bg-gray-100 rounded-xl" />
                     </div>
-                </CardContent>
-            </Card>
-        </Link>
+                </div>
+            </AuthLoading>
+
+            <Unauthenticated>
+                <div className="p-6 lg:p-8">
+                    <div className="text-center py-16">
+                        <p className="text-gray-500">Please sign in to view your leases</p>
+                        <Link href="/sign-in">
+                            <Button className="mt-4 bg-gray-900 hover:bg-gray-800">Sign In</Button>
+                        </Link>
+                    </div>
+                </div>
+            </Unauthenticated>
+
+            <Authenticated>
+                <TenantLeasesContent />
+            </Authenticated>
+        </>
     )
 }

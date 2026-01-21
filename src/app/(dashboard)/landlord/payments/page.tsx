@@ -1,40 +1,70 @@
-import { getLandlordPayments, getLandlordPaymentStats } from "@/lib/payments"
-import { getLandlordDeposits } from "@/lib/deposits"
-import { LandlordPaymentsClient } from "./LandlordPaymentsClient"
-import { createClient } from "@/lib/supabase/server"
+'use client'
 
-export default async function LandlordPaymentsPage() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+import { PaymentsClient } from "./PaymentsClient"
+import { useQuery } from "convex/react"
+import { api } from "../../../../../convex/_generated/api"
+import { Authenticated, Unauthenticated, AuthLoading } from "convex/react"
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
-    if (!user) return null
+function LandlordPaymentsContent() {
+    const payments = useQuery(api.payments.getForLandlord)
+    const stats = useQuery(api.payments.getLandlordStats)
+    const deposits = useQuery(api.deposits.getForLandlord)
+    const properties = useQuery(api.properties.getByLandlordWithLeases)
 
-    // Fetch basic data
-    const [paymentsResult, stats, depositsResult] = await Promise.all([
-        getLandlordPayments(),
-        getLandlordPaymentStats(),
-        getLandlordDeposits(),
-    ])
+    if (payments === undefined || stats === undefined || deposits === undefined || properties === undefined) {
+        return (
+            <div className="p-6 lg:p-8">
+                <div className="animate-pulse space-y-4">
+                    <div className="h-8 w-48 bg-gray-200 rounded" />
+                    <div className="grid grid-cols-3 gap-4">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="h-24 bg-gray-100 rounded-xl" />
+                        ))}
+                    </div>
+                    <div className="h-96 bg-gray-100 rounded-xl" />
+                </div>
+            </div>
+        )
+    }
 
-    // Get vacant properties (approved & no active lease)
-    // We check all approved properties, even if unlisted (is_available=false),
-    // because a landlord might unlist a property to assign a specific tenant.
-    const { data: allProperties } = await supabase
-        .from('properties')
-        .select(`
-            id, title, address, city, price_nad,
-            leases ( status, end_date, start_date, deposit, monthly_rent, tenant:profiles!leases_tenant_id_fkey(email, full_name) )
-        `)
-        .eq('landlord_id', user.id)
-        .eq('approval_status', 'approved')
-
-    // We pass all properties to the client wizard
     return (
-        <LandlordPaymentsClient
-            payments={paymentsResult.data || []}
+        <PaymentsClient
+            payments={payments || []}
             stats={stats}
-            deposits={depositsResult.data || []}
-            properties={(allProperties || []) as any}
+            deposits={deposits || []}
+            properties={properties || []}
         />
+    )
+}
+
+export default function LandlordPaymentsPage() {
+    return (
+        <>
+            <AuthLoading>
+                <div className="p-6 lg:p-8">
+                    <div className="animate-pulse space-y-4">
+                        <div className="h-8 w-48 bg-gray-200 rounded" />
+                        <div className="h-96 bg-gray-100 rounded-xl" />
+                    </div>
+                </div>
+            </AuthLoading>
+
+            <Unauthenticated>
+                <div className="p-6 lg:p-8">
+                    <div className="text-center py-16">
+                        <p className="text-gray-500">Please sign in to view payments</p>
+                        <Link href="/sign-in">
+                            <Button className="mt-4 bg-gray-900 hover:bg-gray-800">Sign In</Button>
+                        </Link>
+                    </div>
+                </div>
+            </Unauthenticated>
+
+            <Authenticated>
+                <LandlordPaymentsContent />
+            </Authenticated>
+        </>
     )
 }

@@ -14,9 +14,9 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { createClient } from '@/lib/supabase/client'
+import { useAuthActions } from "@convex-dev/auth/react"
 import { toast } from 'sonner'
-import { getDisplayNameFromMetadata, getInitials } from '@/lib/user-name'
+import { getDisplayName, getInitials } from '@/lib/user-name'
 import {
     LayoutDashboard,
     BarChart3,
@@ -41,7 +41,7 @@ import {
     Users,
 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
-import { signout } from '@/app/(auth)/actions'
+// Note: signout is now handled via Convex useAuthActions hook
 
 interface SidebarProps {
     collapsed: boolean
@@ -95,7 +95,7 @@ const adminNavItems: NavItem[] = [
 export function Sidebar({ collapsed, onToggle, userRole, user, isLoading }: SidebarProps) {
     const pathname = usePathname()
     const router = useRouter()
-    const supabase = createClient()
+    const { signOut } = useAuthActions()
 
     const isActive = (href: string) => {
         if (href === '/') {
@@ -106,7 +106,7 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading }: Side
 
     const handleSignOut = async () => {
         try {
-            await signout()
+            await signOut()
             router.push('/')
             router.refresh()
             toast.success('Signed out successfully')
@@ -282,14 +282,14 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading }: Side
                                 )}
                             >
                                 <Avatar className="h-8 w-8 border border-gray-200 shadow-sm">
-                                    <AvatarImage src={user.user_metadata?.avatar_url} alt={user.email || ''} />
+                                    <AvatarImage src={user.avatarUrl} alt={user.email || ''} />
                                     <AvatarFallback className="bg-gradient-to-br from-gray-100 to-gray-200 text-gray-700 text-xs font-medium">
-                                        {getInitials(user.user_metadata) || user.email?.charAt(0).toUpperCase()}
+                                        {getInitials(user) || user.email?.charAt(0).toUpperCase()}
                                     </AvatarFallback>
                                 </Avatar>
                                 {!collapsed && (
                                     <div className="flex-1 text-left truncate">
-                                        <p className="text-sm font-semibold text-gray-900 truncate">{getDisplayNameFromMetadata(user.user_metadata) || user.email}</p>
+                                        <p className="text-sm font-semibold text-gray-900 truncate">{getDisplayName(user) || user.email}</p>
                                         <p className="text-[10px] text-gray-500 truncate">View Profile</p>
                                     </div>
                                 )}
@@ -306,14 +306,14 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading }: Side
                         >
                             <div className="flex items-center gap-4 p-3 bg-gray-50/80 rounded-xl mb-2 border border-gray-100/50">
                                 <Avatar className="h-12 w-12 border-2 border-white shadow-sm ring-1 ring-gray-100">
-                                    <AvatarImage src={user.user_metadata?.avatar_url} alt={user.email || ''} />
+                                    <AvatarImage src={user.avatarUrl} alt={user.email || ''} />
                                     <AvatarFallback className="bg-white text-gray-900 font-bold">
-                                        {getInitials(user.user_metadata) || user.email?.charAt(0).toUpperCase()}
+                                        {getInitials(user) || user.email?.charAt(0).toUpperCase()}
                                     </AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 overflow-hidden">
                                     <p className="text-sm font-bold text-gray-900 truncate">
-                                        {getDisplayNameFromMetadata(user.user_metadata)}
+                                        {getDisplayName(user)}
                                     </p>
                                     <p className="text-xs text-gray-500 truncate font-medium">
                                         {user.email}

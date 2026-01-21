@@ -30,7 +30,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
             <Card className="group overflow-hidden rounded-xl border-border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md cursor-pointer h-full flex flex-col">
                 <div className="relative aspect-[4/3] overflow-hidden">
                     <Image
-                        src={property.images[0]}
+                        src={property.images[0] || '/window.svg'}
                         alt={property.title}
                         fill
                         className="object-cover transition-transform duration-300 group-hover:scale-105"

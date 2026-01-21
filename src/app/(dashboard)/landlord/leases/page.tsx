@@ -1,14 +1,78 @@
+'use client'
+
 import Link from 'next/link'
-import Image from 'next/image'
-import { getLandlordLeases } from './actions'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { LeaseStatusBadge } from '@/components/leases/LeaseStatusTimeline'
 import { Building2, CheckCircle2, Clock, FileText, Plus, Users, DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
+import { useQuery } from "convex/react"
+import { api } from "../../../../../convex/_generated/api"
+import { Authenticated, Unauthenticated, AuthLoading } from "convex/react"
 
-export default async function LandlordLeasesPage() {
-    const leases = await getLandlordLeases()
+function LeaseCard({ lease, highlight }: { lease: any; highlight?: boolean }) {
+    return (
+        <Link href={`/landlord/leases/${lease._id}`} className="block">
+            <Card className={`gap-0 py-0 overflow-hidden transition-shadow hover:shadow-md ${highlight ? 'ring-1 ring-foreground/10' : ''}`}>
+                <div className="relative block aspect-[16/10] bg-muted/30">
+                    <div className="flex h-full w-full items-center justify-center">
+                        <Building2 className="h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
+                    </div>
+                </div>
+
+                <CardContent className="px-4 sm:px-5 py-5">
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                            <p className="text-xs font-medium text-muted-foreground">Lease</p>
+                            <p className="mt-1 text-base font-semibold tracking-tight line-clamp-1">
+                                {lease.property?.title}
+                            </p>
+                            <p className="mt-1 text-sm text-muted-foreground line-clamp-1">
+                                {lease.property?.address}
+                            </p>
+                        </div>
+                        <LeaseStatusBadge status={lease.status} />
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Users className="h-4 w-4" strokeWidth={1.5} />
+                            <span className="truncate max-w-[14rem]">{lease.tenant?.fullName || 'No tenant assigned'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <DollarSign className="h-4 w-4" strokeWidth={1.5} />
+                            <span>N$ {lease.monthlyRent?.toLocaleString()}/mo</span>
+                        </div>
+                    </div>
+
+                    <p className="mt-4 text-xs text-muted-foreground">
+                        {format(new Date(lease.startDate), 'MMM d, yyyy')} - {format(new Date(lease.endDate), 'MMM d, yyyy')}
+                    </p>
+                </CardContent>
+            </Card>
+        </Link>
+    )
+}
+
+function LandlordLeasesContent() {
+    const leases = useQuery(api.leases.getForLandlord, {})
+
+    if (leases === undefined) {
+        return (
+            <div className="p-6 lg:p-8">
+                <div className="animate-pulse space-y-4">
+                    <div className="h-8 w-48 bg-gray-200 rounded" />
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        {[1, 2, 3, 4].map((i) => (
+                            <div key={i} className="h-24 bg-gray-100 rounded-xl" />
+                        ))}
+                    </div>
+                    <div className="h-64 bg-gray-100 rounded-xl" />
+                </div>
+            </div>
+        )
+    }
 
     // Group leases by status
     const actionRequired = leases.filter((l: any) => l.status === 'tenant_signed')
@@ -21,7 +85,7 @@ export default async function LandlordLeasesPage() {
     )
 
     return (
-        <div className="px-4 py-6 sm:px-6 lg:px-8">
+        <div className="p-6 lg:p-8">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-8">
                 <div className="flex items-start gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-background">
@@ -125,14 +189,14 @@ export default async function LandlordLeasesPage() {
 
             {/* Action Required */}
             {actionRequired.length > 0 && (
-                <section>
+                <section className="mb-8">
                     <div className="flex items-center gap-2 mb-4">
                         <div className="h-2 w-2 rounded-full bg-muted-foreground/50 animate-pulse" />
                         <h2 className="text-lg font-semibold">Action Required ({actionRequired.length})</h2>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                         {actionRequired.map((lease: any) => (
-                            <LeaseCard key={lease.id} lease={lease} highlight />
+                            <LeaseCard key={lease._id} lease={lease} highlight />
                         ))}
                     </div>
                 </section>
@@ -140,11 +204,11 @@ export default async function LandlordLeasesPage() {
 
             {/* In Progress */}
             {pendingLeases.length > 0 && (
-                <section>
+                <section className="mb-8">
                     <h2 className="text-lg font-semibold mb-4">In Progress ({pendingLeases.length})</h2>
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                         {pendingLeases.map((lease: any) => (
-                            <LeaseCard key={lease.id} lease={lease} />
+                            <LeaseCard key={lease._id} lease={lease} />
                         ))}
                     </div>
                 </section>
@@ -152,11 +216,11 @@ export default async function LandlordLeasesPage() {
 
             {/* Active Leases */}
             {activeLeases.length > 0 && (
-                <section>
+                <section className="mb-8">
                     <h2 className="text-lg font-semibold mb-4">Active Leases ({activeLeases.length})</h2>
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                         {activeLeases.map((lease: any) => (
-                            <LeaseCard key={lease.id} lease={lease} />
+                            <LeaseCard key={lease._id} lease={lease} />
                         ))}
                     </div>
                 </section>
@@ -168,7 +232,7 @@ export default async function LandlordLeasesPage() {
                     <h2 className="text-lg font-semibold mb-4 text-muted-foreground">Past Leases</h2>
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 opacity-80">
                         {pastLeases.map((lease: any) => (
-                            <LeaseCard key={lease.id} lease={lease} />
+                            <LeaseCard key={lease._id} lease={lease} />
                         ))}
                     </div>
                 </section>
@@ -177,56 +241,32 @@ export default async function LandlordLeasesPage() {
     )
 }
 
-function LeaseCard({ lease, highlight }: { lease: any; highlight?: boolean }) {
+export default function LandlordLeasesPage() {
     return (
-        <Link href={`/landlord/leases/${lease.id}`} className="block">
-            <Card className={`gap-0 py-0 overflow-hidden transition-shadow hover:shadow-md ${highlight ? 'ring-1 ring-foreground/10' : ''}`}>
-                <div className="relative block aspect-[16/10] bg-muted/30">
-                    {lease.property?.images?.[0] ? (
-                        <Image
-                            src={lease.property.images[0]}
-                            alt={lease.property?.title || 'Property'}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                        />
-                    ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                            <Building2 className="h-6 w-6 text-muted-foreground" strokeWidth={1.5} />
-                        </div>
-                    )}
+        <>
+            <AuthLoading>
+                <div className="p-6 lg:p-8">
+                    <div className="animate-pulse space-y-4">
+                        <div className="h-8 w-48 bg-gray-200 rounded" />
+                        <div className="h-64 bg-gray-100 rounded-xl" />
+                    </div>
                 </div>
+            </AuthLoading>
 
-                <CardContent className="px-4 sm:px-5 py-5">
-                    <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                            <p className="text-xs font-medium text-muted-foreground">Lease</p>
-                            <p className="mt-1 text-base font-semibold tracking-tight line-clamp-1">
-                                {lease.property?.title}
-                            </p>
-                            <p className="mt-1 text-sm text-muted-foreground line-clamp-1">
-                                {lease.property?.address}
-                            </p>
-                        </div>
-                        <LeaseStatusBadge status={lease.status} />
+            <Unauthenticated>
+                <div className="p-6 lg:p-8">
+                    <div className="text-center py-16">
+                        <p className="text-gray-500">Please sign in to view your leases</p>
+                        <Link href="/sign-in">
+                            <Button className="mt-4 bg-gray-900 hover:bg-gray-800">Sign In</Button>
+                        </Link>
                     </div>
+                </div>
+            </Unauthenticated>
 
-                    <div className="mt-4 flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Users className="h-4 w-4" strokeWidth={1.5} />
-                            <span className="truncate max-w-[14rem]">{lease.tenant?.full_name || 'No tenant assigned'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <DollarSign className="h-4 w-4" strokeWidth={1.5} />
-                            <span>N$ {lease.monthly_rent?.toLocaleString()}/mo</span>
-                        </div>
-                    </div>
-
-                    <p className="mt-4 text-xs text-muted-foreground">
-                        {format(new Date(lease.start_date), 'MMM d, yyyy')} - {format(new Date(lease.end_date), 'MMM d, yyyy')}
-                    </p>
-                </CardContent>
-            </Card>
-        </Link>
+            <Authenticated>
+                <LandlordLeasesContent />
+            </Authenticated>
+        </>
     )
 }

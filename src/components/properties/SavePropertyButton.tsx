@@ -12,8 +12,10 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
-import { togglePropertySave } from '@/actions/saved-properties'
 import { toast } from 'sonner'
+import { useMutation } from "convex/react"
+import { api } from "../../../convex/_generated/api"
+import { Id } from "../../../convex/_generated/dataModel"
 
 interface SavePropertyButtonProps {
     propertyId: string
@@ -32,6 +34,8 @@ export function SavePropertyButton({
     const [isLoading, setIsLoading] = useState(false)
     const [showLoginDialog, setShowLoginDialog] = useState(false)
 
+    const toggleSave = useMutation(api.savedProperties.toggle)
+
     const handleToggle = async (e: React.MouseEvent) => {
         e.preventDefault() // Prevent link navigation if inside a card link
         e.stopPropagation()
@@ -44,26 +48,18 @@ export function SavePropertyButton({
         setIsLoading(true)
 
         try {
-            const result = await togglePropertySave(propertyId)
-
-            if (result.error) {
-                // Revert if error
-                setIsSaved(!newState)
-
-                // If user needs to log in, show login dialog
-                if (result.error.includes('logged in')) {
-                    setShowLoginDialog(true)
-                } else {
-                    toast.error(result.error)
-                }
-            } else if (result.saved !== undefined) {
-                // Confirm state from server
-                setIsSaved(result.saved)
-                toast.success(result.saved ? 'Property saved' : 'Property removed from saved')
-            }
+            const result = await toggleSave({ propertyId: propertyId as Id<"properties"> })
+            setIsSaved(result)
+            toast.success(result ? 'Property saved' : 'Property removed from saved')
         } catch (error) {
+            // Revert if error
             setIsSaved(!newState)
-            toast.error('Something went wrong')
+
+            if (error instanceof Error && error.message.includes('Authentication')) {
+                setShowLoginDialog(true)
+            } else {
+                toast.error('Something went wrong')
+            }
         } finally {
             setIsLoading(false)
         }

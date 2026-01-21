@@ -2,23 +2,47 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { signup } from '../actions'
 import { toast } from 'sonner'
-import { Building2, Eye, EyeOff, ArrowRight, Home, Shield, Users } from 'lucide-react'
+import { Eye, EyeOff, ArrowRight, Home, Shield, Users } from 'lucide-react'
+import { useAuthActions } from "@convex-dev/auth/react"
 
 export default function SignUpPage() {
     const [isLoading, setIsLoading] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
+    const router = useRouter()
+    const { signIn } = useAuthActions()
 
-    async function handleSubmit(formData: FormData) {
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault()
         setIsLoading(true)
-        const result = await signup(formData)
 
-        if (result?.error) {
-            toast.error(result.error)
+        const formData = new FormData(e.currentTarget)
+        const email = formData.get('email') as string
+        const password = formData.get('password') as string
+        const firstName = formData.get('firstName') as string
+        const surname = formData.get('surname') as string
+
+        if (!firstName || !surname) {
+            toast.error('First name and surname are required')
+            setIsLoading(false)
+            return
+        }
+
+        try {
+            await signIn("password", {
+                email,
+                password,
+                name: `${firstName} ${surname}`,
+                role: "tenant",
+                flow: "signUp"
+            })
+            router.push('/dashboard/tenant')
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Sign up failed')
             setIsLoading(false)
         }
     }
@@ -109,7 +133,7 @@ export default function SignUpPage() {
                     </div>
 
                     {/* Form */}
-                    <form action={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-4">
                             {/* Name Fields */}
                             <div className="grid grid-cols-2 gap-4">

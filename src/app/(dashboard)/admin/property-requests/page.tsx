@@ -1,12 +1,10 @@
-import { redirect } from 'next/navigation'
+'use client'
+
 import Link from 'next/link'
 import Image from 'next/image'
-import { Suspense } from 'react'
-import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { getPropertyApprovalRequests, getPropertyApprovalStats } from './actions'
 import { RequestFilters } from './RequestFilters'
 import { StatsCards } from './StatsCards'
 import {
@@ -19,6 +17,11 @@ import {
 } from '@/components/ui/table'
 import { Eye, Building2, CheckCircle2, XCircle, Clock, AlertCircle, MapPin, Bed, Bath, Home } from 'lucide-react'
 import { format } from 'date-fns'
+import { useQuery } from "convex/react"
+import { api } from "../../../../../convex/_generated/api"
+import { Authenticated, Unauthenticated, AuthLoading } from "convex/react"
+import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 
 // Status badge variants
 const statusConfig = {
@@ -39,38 +42,53 @@ const statusConfig = {
     },
 }
 
-interface PageProps {
-    searchParams: Promise<{ status?: string; search?: string }>
-}
+function PropertyRequestsContent() {
+    const searchParams = useSearchParams()
+    const statusFilter = (searchParams.get('status') as 'pending' | 'approved' | 'rejected') || undefined
+    const searchQuery = searchParams.get('search') || ''
 
-export default async function PropertyRequestsPage({ searchParams }: PageProps) {
-    const supabase = await createClient()
-    const resolvedParams = await searchParams
+    const currentUser = useQuery(api.users.currentUser)
+    const properties = useQuery(api.admin.getPropertyRequests, { status: statusFilter })
+    const stats = useQuery(api.admin.getPropertyStats)
 
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-        redirect('/sign-in')
+    if (currentUser === undefined || properties === undefined || stats === undefined) {
+        return (
+            <div className="p-6">
+                <div className="animate-pulse space-y-4">
+                    <div className="h-12 w-64 bg-gray-200 rounded" />
+                    <div className="grid grid-cols-4 gap-4">
+                        {[1, 2, 3, 4].map((i) => (
+                            <div key={i} className="h-24 bg-gray-100 rounded-xl" />
+                        ))}
+                    </div>
+                    <div className="h-96 bg-gray-100 rounded-xl" />
+                </div>
+            </div>
+        )
     }
 
-    // Check if user is admin
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-    if (profile?.role !== 'admin') {
-        redirect('/')
+    // Check admin role
+    if (!currentUser || currentUser.role !== 'admin') {
+        return (
+            <div className="p-6">
+                <div className="text-center py-16">
+                    <p className="text-gray-500">Access denied. Admin privileges required.</p>
+                </div>
+            </div>
+        )
     }
 
-    const statusFilter = (resolvedParams.status as 'all' | 'pending' | 'approved' | 'rejected') || 'all'
-    const searchQuery = resolvedParams.search || ''
-
-    const [properties, stats] = await Promise.all([
-        getPropertyApprovalRequests(statusFilter, searchQuery),
-        getPropertyApprovalStats()
-    ])
+    // Filter by search query (client-side)
+    const filteredProperties = properties.filter((property: any) => {
+        if (!searchQuery) return true
+        const searchLower = searchQuery.toLowerCase()
+        return (
+            property.title?.toLowerCase().includes(searchLower) ||
+            property.city?.toLowerCase().includes(searchLower) ||
+            property.landlord?.fullName?.toLowerCase().includes(searchLower) ||
+            property.landlord?.email?.toLowerCase().includes(searchLower)
+        )
+    })
 
     return (
         <div className="p-6">
@@ -89,7 +107,7 @@ export default async function PropertyRequestsPage({ searchParams }: PageProps) 
             {/* Filters */}
             <Suspense fallback={<div className="h-10 bg-muted animate-pulse rounded-md mb-6" />}>
                 <RequestFilters
-                    currentStatus={statusFilter}
+                    currentStatus={statusFilter || 'all'}
                     currentSearch={searchQuery}
                 />
             </Suspense>
@@ -99,17 +117,17 @@ export default async function PropertyRequestsPage({ searchParams }: PageProps) 
                 <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                         <CardTitle>
-                            {statusFilter === 'all' ? 'All Properties' : (
+                            {!statusFilter ? 'All Properties' : (
                                 `${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)} Properties`
                             )}
                         </CardTitle>
                         <Badge variant="secondary" className="text-sm font-normal">
-                            {properties.length} {properties.length === 1 ? 'result' : 'results'}
+                            {filteredProperties.length} {filteredProperties.length === 1 ? 'result' : 'results'}
                         </Badge>
                     </div>
                 </CardHeader>
                 <CardContent>
-                    {properties.length === 0 ? (
+                    {filteredProperties.length === 0 ? (
                         <div className="py-12 text-center">
                             <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4">
                                 <AlertCircle className="h-8 w-8 text-muted-foreground" />
@@ -118,7 +136,7 @@ export default async function PropertyRequestsPage({ searchParams }: PageProps) 
                             <p className="text-muted-foreground">
                                 {searchQuery
                                     ? `No results matching "${searchQuery}"`
-                                    : statusFilter !== 'all'
+                                    : statusFilter
                                         ? `No ${statusFilter} property requests at the moment.`
                                         : 'No property requests have been submitted yet.'}
                             </p>
@@ -138,12 +156,12 @@ export default async function PropertyRequestsPage({ searchParams }: PageProps) 
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {properties.map((property) => {
-                                        const status = property.approval_status as keyof typeof statusConfig
+                                    {filteredProperties.map((property: any) => {
+                                        const status = property.approvalStatus as keyof typeof statusConfig
                                         const StatusIcon = statusConfig[status]?.icon || Clock
 
                                         return (
-                                            <TableRow key={property.id}>
+                                            <TableRow key={property._id}>
                                                 <TableCell>
                                                     <div className="flex items-center gap-3">
                                                         <div className="relative h-12 w-16 rounded-md overflow-hidden bg-gray-100 shrink-0">
@@ -165,7 +183,7 @@ export default async function PropertyRequestsPage({ searchParams }: PageProps) 
                                                                 {property.title}
                                                             </p>
                                                             <p className="text-xs text-muted-foreground capitalize">
-                                                                {property.property_type}
+                                                                {property.propertyType}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -173,7 +191,7 @@ export default async function PropertyRequestsPage({ searchParams }: PageProps) 
                                                 <TableCell>
                                                     <div className="flex flex-col">
                                                         <span className="font-medium text-sm">
-                                                            {property.landlord?.full_name || 'Unknown'}
+                                                            {property.landlord?.fullName || 'Unknown'}
                                                         </span>
                                                         <span className="text-xs text-muted-foreground">
                                                             {property.landlord?.email}
@@ -189,24 +207,24 @@ export default async function PropertyRequestsPage({ searchParams }: PageProps) 
                                                 <TableCell>
                                                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                         <span className="flex items-center gap-1">
-                                                            <Bed className="h-3 w-3" /> {property.bedrooms}
+                                                            <Bed className="h-3 w-3" /> {property.bedrooms || 0}
                                                         </span>
                                                         <span className="flex items-center gap-1">
-                                                            <Bath className="h-3 w-3" /> {property.bathrooms}
+                                                            <Bath className="h-3 w-3" /> {property.bathrooms || 0}
                                                         </span>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex flex-col">
                                                         <span className="text-sm">
-                                                            {property.approval_requested_at
-                                                                ? format(new Date(property.approval_requested_at), 'MMM d, yyyy')
-                                                                : format(new Date(property.created_at), 'MMM d, yyyy')}
+                                                            {property.approvalRequestedAt
+                                                                ? format(new Date(property.approvalRequestedAt), 'MMM d, yyyy')
+                                                                : format(new Date(property._creationTime), 'MMM d, yyyy')}
                                                         </span>
                                                         <span className="text-xs text-muted-foreground">
-                                                            {property.approval_requested_at
-                                                                ? format(new Date(property.approval_requested_at), 'h:mm a')
-                                                                : format(new Date(property.created_at), 'h:mm a')}
+                                                            {property.approvalRequestedAt
+                                                                ? format(new Date(property.approvalRequestedAt), 'h:mm a')
+                                                                : format(new Date(property._creationTime), 'h:mm a')}
                                                         </span>
                                                     </div>
                                                 </TableCell>
@@ -220,10 +238,10 @@ export default async function PropertyRequestsPage({ searchParams }: PageProps) 
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-right">
-                                                    <Link href={`/admin/property-requests/${property.id}`}>
+                                                    <Link href={`/admin/property-requests/${property._id}`}>
                                                         <Button size="sm" variant="outline">
                                                             <Eye className="mr-2 h-4 w-4" />
-                                                            {property.approval_status === 'pending' ? 'Review' : 'View'}
+                                                            {property.approvalStatus === 'pending' ? 'Review' : 'View'}
                                                         </Button>
                                                     </Link>
                                                 </TableCell>
@@ -237,5 +255,44 @@ export default async function PropertyRequestsPage({ searchParams }: PageProps) 
                 </CardContent>
             </Card>
         </div>
+    )
+}
+
+export default function PropertyRequestsPage() {
+    return (
+        <>
+            <AuthLoading>
+                <div className="p-6">
+                    <div className="animate-pulse space-y-4">
+                        <div className="h-12 w-64 bg-gray-200 rounded" />
+                        <div className="h-96 bg-gray-100 rounded-xl" />
+                    </div>
+                </div>
+            </AuthLoading>
+
+            <Unauthenticated>
+                <div className="p-6">
+                    <div className="text-center py-16">
+                        <p className="text-gray-500">Please sign in to access admin panel</p>
+                        <Link href="/sign-in">
+                            <Button className="mt-4 bg-gray-900 hover:bg-gray-800">Sign In</Button>
+                        </Link>
+                    </div>
+                </div>
+            </Unauthenticated>
+
+            <Authenticated>
+                <Suspense fallback={
+                    <div className="p-6">
+                        <div className="animate-pulse space-y-4">
+                            <div className="h-12 w-64 bg-gray-200 rounded" />
+                            <div className="h-96 bg-gray-100 rounded-xl" />
+                        </div>
+                    </div>
+                }>
+                    <PropertyRequestsContent />
+                </Suspense>
+            </Authenticated>
+        </>
     )
 }

@@ -14,11 +14,11 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Menu, PanelLeft } from 'lucide-react'
-import { getDisplayNameFromMetadata } from '@/lib/user-name'
+import { getDisplayName } from '@/lib/user-name'
+import { useAuthActions } from "@convex-dev/auth/react"
 
 interface DashboardLayoutProps {
     children: React.ReactNode
@@ -30,10 +30,10 @@ export function DashboardLayout({ children, title = 'Dashboard', user }: Dashboa
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const router = useRouter()
-    const supabase = createClient()
+    const { signOut } = useAuthActions()
 
     const handleSignOut = async () => {
-        await supabase.auth.signOut()
+        await signOut()
         router.push('/')
         router.refresh()
         toast.success('Signed out successfully')
@@ -95,7 +95,7 @@ export function DashboardLayout({ children, title = 'Dashboard', user }: Dashboa
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                                             <Avatar className="h-8 w-8">
-                                                <AvatarImage src={user.user_metadata?.avatar_url} alt={user.email || ''} />
+                                                <AvatarImage src={user.avatarUrl} alt={user.email || ''} />
                                                 <AvatarFallback className="bg-gray-200 text-gray-600 text-sm">
                                                     {user.email?.charAt(0).toUpperCase()}
                                                 </AvatarFallback>
@@ -106,7 +106,7 @@ export function DashboardLayout({ children, title = 'Dashboard', user }: Dashboa
                                         <DropdownMenuLabel className="font-normal">
                                             <div className="flex flex-col space-y-1">
                                                 <p className="text-sm font-medium leading-none">
-                                                    {getDisplayNameFromMetadata(user.user_metadata)}
+                                                    {getDisplayName(user)}
                                                 </p>
                                                 <p className="text-xs leading-none text-muted-foreground">
                                                     {user.email}

@@ -1,18 +1,74 @@
+'use client'
+
 import { notFound } from 'next/navigation'
-import { getTenantLeaseById } from '../actions'
-import { TenantLeaseDetailClient } from './TenantLeaseDetailClient'
+import { LeaseDetailClient } from './LeaseDetailClient'
+import { useQuery } from "convex/react"
+import { api } from "../../../../../../convex/_generated/api"
+import { Id } from "../../../../../../convex/_generated/dataModel"
+import { Authenticated, Unauthenticated, AuthLoading } from "convex/react"
+import { use } from 'react'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
-export default async function TenantLeaseDetailPage({
-    params
-}: {
+interface Props {
     params: Promise<{ id: string }>
-}) {
-    const { id } = await params
-    const lease = await getTenantLeaseById(id)
+}
 
-    if (!lease) {
+function TenantLeaseDetailContent({ id }: { id: string }) {
+    const lease = useQuery(api.leases.getById, { leaseId: id as Id<"leases"> })
+    const currentUser = useQuery(api.users.currentUser)
+
+    if (lease === undefined || currentUser === undefined) {
+        return (
+            <div className="p-6 lg:p-8">
+                <div className="animate-pulse space-y-4">
+                    <div className="h-8 w-48 bg-gray-200 rounded" />
+                    <div className="h-96 bg-gray-100 rounded-xl" />
+                </div>
+            </div>
+        )
+    }
+
+    if (!lease || !currentUser) {
         notFound()
     }
 
-    return <TenantLeaseDetailClient lease={lease} />
+    // Authorization check
+    if (lease.tenantId !== currentUser._id) {
+        notFound()
+    }
+
+    return <LeaseDetailClient lease={lease} />
+}
+
+export default function TenantLeaseDetailPage({ params }: Props) {
+    const { id } = use(params)
+
+    return (
+        <>
+            <AuthLoading>
+                <div className="p-6 lg:p-8">
+                    <div className="animate-pulse space-y-4">
+                        <div className="h-8 w-48 bg-gray-200 rounded" />
+                        <div className="h-96 bg-gray-100 rounded-xl" />
+                    </div>
+                </div>
+            </AuthLoading>
+
+            <Unauthenticated>
+                <div className="p-6 lg:p-8">
+                    <div className="text-center py-16">
+                        <p className="text-gray-500">Please sign in to view lease details</p>
+                        <Link href="/sign-in">
+                            <Button className="mt-4 bg-gray-900 hover:bg-gray-800">Sign In</Button>
+                        </Link>
+                    </div>
+                </div>
+            </Unauthenticated>
+
+            <Authenticated>
+                <TenantLeaseDetailContent id={id} />
+            </Authenticated>
+        </>
+    )
 }

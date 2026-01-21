@@ -3,7 +3,6 @@
 import React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
     DropdownMenu,
@@ -18,31 +17,18 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Menu, Search, User } from 'lucide-react'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
-import { getDisplayNameFromMetadata, getInitials } from '@/lib/user-name'
+import { getDisplayName, getInitials } from '@/lib/user-name'
+import { useQuery } from "convex/react"
+import { useAuthActions } from "@convex-dev/auth/react"
+import { api } from "../../../convex/_generated/api"
 
 export function Header() {
-    const [user, setUser] = React.useState<any>(null)
+    const user = useQuery(api.users.currentUser)
     const router = useRouter()
-    const supabase = createClient()
-
-    React.useEffect(() => {
-        const getUser = async () => {
-            const {
-                data: { user },
-            } = await supabase.auth.getUser()
-            setUser(user)
-        }
-        getUser()
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ?? null)
-        })
-
-        return () => subscription.unsubscribe()
-    }, [])
+    const { signOut } = useAuthActions()
 
     const handleSignOut = async () => {
-        await supabase.auth.signOut()
+        await signOut()
         router.push('/')
         router.refresh()
         toast.success('Signed out successfully')
@@ -97,27 +83,30 @@ export function Header() {
                         </SheetContent>
                     </Sheet>
 
-                    {user ? (
+                    {user === undefined ? (
+                        // Auth Loading State
+                        <div className="h-9 w-9 bg-gray-100 rounded-full animate-pulse" />
+                    ) : user ? (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                                     <Avatar className="h-9 w-9">
-                                        <AvatarImage src={user.user_metadata?.avatar_url} alt={user.email || ''} />
-                                        <AvatarFallback>{getInitials(user.user_metadata) || user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                                        <AvatarImage src={user.avatarUrl} alt={user.email || ''} />
+                                        <AvatarFallback>{getInitials(user) || user.email?.charAt(0).toUpperCase()}</AvatarFallback>
                                     </Avatar>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="w-56" align="end" forceMount>
                                 <DropdownMenuLabel className="font-normal">
                                     <div className="flex flex-col space-y-1">
-                                        <p className="text-sm font-medium leading-none">{getDisplayNameFromMetadata(user.user_metadata)}</p>
+                                        <p className="text-sm font-medium leading-none">{getDisplayName(user)}</p>
                                         <p className="text-xs leading-none text-muted-foreground">
                                             {user.email}
                                         </p>
                                     </div>
                                 </DropdownMenuLabel>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => router.push(`/dashboard/${user.user_metadata?.role || 'tenant'}`)}>
+                                <DropdownMenuItem onClick={() => router.push(`/dashboard/${user.role || 'tenant'}`)}>
                                     Dashboard
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => router.push('/profile')}>

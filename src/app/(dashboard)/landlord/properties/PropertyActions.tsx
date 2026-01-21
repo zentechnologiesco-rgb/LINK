@@ -21,9 +21,11 @@ import {
 } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from 'sonner'
-import { togglePropertyAvailability, deleteProperty, requestPropertyApproval } from '../actions'
 import { AssignTenantDialog } from '@/components/properties/AssignTenantDialog'
 import { MoreHorizontal, Eye, Edit, Trash2, ToggleLeft, ToggleRight, Loader2, Send, AlertCircle, UserPlus } from 'lucide-react'
+import { useMutation } from "convex/react"
+import { api } from "../../../../../convex/_generated/api"
+import { Id } from "../../../../../convex/_generated/dataModel"
 
 interface PropertyActionsProps {
     propertyId: string
@@ -57,6 +59,10 @@ export function PropertyActions({
     const canToggleAvailability = approvalStatus === 'approved' && !hasActiveLease
     const canAssignTenant = approvalStatus === 'approved' && !hasActiveLease
 
+    const updateProperty = useMutation(api.properties.update)
+    const deleteProperty = useMutation(api.properties.remove)
+    const requestApproval = useMutation(api.properties.requestApproval)
+
     const handleToggleAvailability = async () => {
         if (!canToggleAvailability) {
             if (hasActiveLease) {
@@ -68,41 +74,43 @@ export function PropertyActions({
         }
 
         setIsToggling(true)
-        const result = await togglePropertyAvailability(propertyId, !isAvailable)
-
-        if (result?.error) {
-            toast.error(result.error)
-        } else {
+        try {
+            await updateProperty({
+                propertyId: propertyId as Id<"properties">,
+                isAvailable: !isAvailable
+            })
             toast.success(isAvailable ? 'Property unlisted' : 'Property listed')
-            router.refresh()
+            // router.refresh() // Convex updates automatically
+        } catch (error) {
+            toast.error('Failed to update property status')
+        } finally {
+            setIsToggling(false)
         }
-        setIsToggling(false)
     }
 
     const handleRequestApproval = async () => {
         setIsRequestingApproval(true)
-        const result = await requestPropertyApproval(propertyId)
-
-        if (result?.error) {
-            toast.error(result.error)
-        } else {
+        try {
+            await requestApproval({ propertyId: propertyId as Id<"properties"> })
             toast.success('Approval request submitted successfully')
-            router.refresh()
+            // router.refresh()
+        } catch (error) {
+            toast.error('Failed to request approval')
+        } finally {
+            setIsRequestingApproval(false)
         }
-        setIsRequestingApproval(false)
     }
 
     const handleDelete = async () => {
         setIsDeleting(true)
-        const result = await deleteProperty(propertyId)
-
-        if (result?.error) {
-            toast.error(result.error)
-            setIsDeleting(false)
-        } else {
+        try {
+            await deleteProperty({ propertyId: propertyId as Id<"properties"> })
             toast.success('Property deleted successfully')
             setDeleteDialogOpen(false)
-            router.refresh()
+            router.refresh() // Might need to redirect if verifying list
+        } catch (error) {
+            toast.error('Failed to delete property')
+            setIsDeleting(false)
         }
     }
 

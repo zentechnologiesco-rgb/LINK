@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState } from 'react'
@@ -5,34 +6,69 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import { useMutation } from "convex/react"
+import { api } from "../../../convex/_generated/api"
+import { Id } from "../../../convex/_generated/dataModel"
 
-interface VerificationFormProps {
-    submitAction: (formData: FormData) => Promise<{ error?: string; success?: boolean }>
-}
-
-export function VerificationForm({ submitAction }: VerificationFormProps) {
+export function VerificationForm() {
     const [isLoading, setIsLoading] = useState(false)
+    const generateUploadUrl = useMutation(api.files.generateUploadUrl)
+    const submitVerification = useMutation(api.verification.submit)
 
-    async function handleSubmit(formData: FormData) {
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault()
         setIsLoading(true)
-        const result = await submitAction(formData)
 
-        if (result?.error) {
-            toast.error(result.error)
-        } else if (result?.success) {
+        const formData = new FormData(e.currentTarget)
+        const idFrontFile = formData.get('id_front') as File
+        const idBackFile = formData.get('id_back') as File
+
+        try {
+            // 1. Upload ID Front
+            const postUrl1 = await generateUploadUrl()
+            const result1 = await fetch(postUrl1, {
+                method: "POST",
+                headers: { "Content-Type": idFrontFile.type },
+                body: idFrontFile,
+            })
+            if (!result1.ok) throw new Error("Failed to upload ID front")
+            const { storageId: idFrontStorageId } = await result1.json()
+
+            // 2. Upload ID Back
+            const postUrl2 = await generateUploadUrl()
+            const result2 = await fetch(postUrl2, {
+                method: "POST",
+                headers: { "Content-Type": idBackFile.type },
+                body: idBackFile,
+            })
+            if (!result2.ok) throw new Error("Failed to upload ID back")
+            const { storageId: idBackStorageId } = await result2.json()
+
+            // 3. Submit Verification
+            await submitVerification({
+                idType: formData.get('id_type') as any,
+                idNumber: formData.get('id_number') as string,
+                businessName: formData.get('business_name') as string || undefined,
+                businessRegistration: formData.get('business_registration') as string || undefined,
+                idFrontStorageId: idFrontStorageId as Id<"_storage">,
+                idBackStorageId: idBackStorageId as Id<"_storage">,
+            })
+
             toast.success('Verification request submitted!')
-            // Page will revalidate and show status
+        } catch (error) {
+            console.error(error)
+            toast.error(error instanceof Error ? error.message : "Failed to submit verification")
+        } finally {
+            setIsLoading(false)
         }
-        setIsLoading(false)
     }
 
     return (
         <div className="space-y-6">
             {/* Form Fields */}
-            <form action={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">

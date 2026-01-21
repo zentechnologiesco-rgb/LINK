@@ -1,19 +1,34 @@
-import { type NextRequest } from 'next/server'
-import { updateSession } from '@/lib/supabase/middleware'
+import { convexAuthNextjsMiddleware, createRouteMatcher, nextjsMiddlewareRedirect } from "@convex-dev/auth/nextjs/server";
 
-export async function proxy(request: NextRequest) {
-    return await updateSession(request)
-}
+const isPublicRoute = createRouteMatcher([
+    "/",
+    "/sign-in",
+    "/sign-up",
+    "/search(.*)",
+    "/properties(.*)",
+    "/api(.*)",
+]);
+
+// Next.js 16 uses "proxy" instead of "middleware" 
+export const proxy = convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
+    const { pathname } = request.nextUrl;
+    const isAuthenticated = await convexAuth.isAuthenticated();
+
+    // If not authenticated and trying to access protected route
+    if (!isPublicRoute(request) && !isAuthenticated) {
+        return nextjsMiddlewareRedirect(request, "/sign-in");
+    }
+
+    // If authenticated and trying to access auth pages
+    if (isAuthenticated && (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up"))) {
+        return nextjsMiddlewareRedirect(request, "/dashboard/tenant");
+    }
+
+    // Role-based protection is handled at page level
+});
 
 export const config = {
     matcher: [
-        /*
-         * Match all request paths except for the ones starting with:
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         * Feel free to modify this pattern to include more paths.
-         */
         '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
     ],
 }

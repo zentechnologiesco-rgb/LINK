@@ -157,7 +157,7 @@ export function SearchPageClient({ initialProperties }: SearchPageClientProps) {
                                         <div className="w-20 h-16 rounded-lg bg-gray-100 overflow-hidden shrink-0">
                                             {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img
-                                                src={property.images[0]}
+                                                src={property.images[0] || '/window.svg'}
                                                 alt={property.title}
                                                 className="w-full h-full object-cover"
                                             />
@@ -215,7 +215,7 @@ export function SearchPageClient({ initialProperties }: SearchPageClientProps) {
                                         <div className="aspect-[4/3] bg-gray-100 overflow-hidden">
                                             {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img
-                                                src={property.images[0]}
+                                                src={property.images[0] || '/window.svg'}
                                                 alt={property.title}
                                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                             />

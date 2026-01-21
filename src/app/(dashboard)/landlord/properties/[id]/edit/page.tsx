@@ -1,55 +1,104 @@
+'use client'
+
 import { redirect, notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 import { PropertyForm } from '@/components/properties/PropertyForm'
-import { getPropertyById } from '@/app/(dashboard)/landlord/actions'
+import { useQuery } from "convex/react"
+import { api } from "../../../../../../../convex/_generated/api"
+import { Id } from "../../../../../../../convex/_generated/dataModel"
+import { Authenticated, Unauthenticated, AuthLoading } from "convex/react"
+import { use } from 'react'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
-export default async function EditPropertyPage({ params }: { params: Promise<{ id: string }> }) {
-    const supabase = await createClient()
-    const resolvedParams = await params
+interface Props {
+    params: Promise<{ id: string }>
+}
 
-    const { data: { user } } = await supabase.auth.getUser()
+function EditPropertyContent({ id }: { id: string }) {
+    const currentUser = useQuery(api.users.currentUser)
+    const property = useQuery(api.properties.getById, { propertyId: id as Id<"properties"> })
 
-    if (!user) {
+    if (currentUser === undefined || property === undefined) {
+        return (
+            <div className="p-6 lg:p-8">
+                <div className="animate-pulse space-y-4">
+                    <div className="h-8 w-48 bg-gray-200 rounded" />
+                    <div className="h-96 bg-gray-100 rounded-xl" />
+                </div>
+            </div>
+        )
+    }
+
+    if (!currentUser) {
         redirect('/sign-in')
     }
 
-    // Check if user is landlord
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-    if (profile?.role !== 'landlord' && profile?.role !== 'admin') {
+    // Check if user is landlord or admin
+    if (currentUser.role !== 'landlord' && currentUser.role !== 'admin') {
         redirect('/')
     }
 
-    const property = await getPropertyById(resolvedParams.id)
-
     if (!property) {
         notFound()
+    }
+
+    // Authorization: Only the landlord who owns this property can edit
+    if (property.landlordId !== currentUser._id && currentUser.role !== 'admin') {
+        redirect('/')
     }
 
     return (
         <div className="px-4 py-6 sm:px-6 lg:px-8">
             <PropertyForm
                 mode="edit"
-                propertyId={property.id}
+                propertyId={property._id}
                 initialData={{
                     title: property.title,
-                    description: property.description,
-                    property_type: property.property_type,
-                    price_nad: property.price_nad,
+                    description: property.description || '',
+                    propertyType: property.propertyType,
+                    priceNad: property.priceNad,
                     address: property.address,
                     city: property.city,
-                    bedrooms: property.bedrooms,
-                    bathrooms: property.bathrooms,
-                    size_sqm: property.size_sqm,
+                    bedrooms: property.bedrooms || 0,
+                    bathrooms: property.bathrooms || 0,
+                    sizeSqm: property.sizeSqm || 0,
                     amenities: property.amenities || [],
                     images: property.images || [],
                     coordinates: property.coordinates,
                 }}
             />
         </div>
+    )
+}
+
+export default function EditPropertyPage({ params }: Props) {
+    const { id } = use(params)
+
+    return (
+        <>
+            <AuthLoading>
+                <div className="p-6 lg:p-8">
+                    <div className="animate-pulse space-y-4">
+                        <div className="h-8 w-48 bg-gray-200 rounded" />
+                        <div className="h-96 bg-gray-100 rounded-xl" />
+                    </div>
+                </div>
+            </AuthLoading>
+
+            <Unauthenticated>
+                <div className="p-6 lg:p-8">
+                    <div className="text-center py-16">
+                        <p className="text-gray-500">Please sign in to edit properties</p>
+                        <Link href="/sign-in">
+                            <Button className="mt-4 bg-gray-900 hover:bg-gray-800">Sign In</Button>
+                        </Link>
+                    </div>
+                </div>
+            </Unauthenticated>
+
+            <Authenticated>
+                <EditPropertyContent id={id} />
+            </Authenticated>
+        </>
     )
 }

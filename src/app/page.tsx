@@ -1,67 +1,53 @@
-import { createClient } from '@/lib/supabase/server'
-import { MOCK_PROPERTIES } from '@/lib/mock-data'
-import { PropertyFeed } from '@/components/properties/PropertyFeed'
 
-// Normalize property data from different sources
-interface NormalizedProperty {
-  id: string
-  title: string
-  description: string
-  price: number
-  address: string
-  city: string
-  bedrooms: number
-  bathrooms: number
-  size: number
-  type: string
-  images: string[]
-  amenities: string[]
-  isFromDatabase?: boolean
+"use client"
+
+import { SearchPageClient } from './search/SearchPageClient'
+import { useQuery } from "convex/react"
+import { api } from "../../convex/_generated/api"
+
+// Define the Property type needed for the feed
+interface Property {
+    id: string
+    title: string
+    price: number
+    address: string
+    city: string
+    bedrooms: number
+    bathrooms: number
+    size: number
+    type: string
+    images: string[]
+    amenities: string[]
+    description: string
+    coordinates?: { lat: number; lng: number } | null
 }
 
-async function getApprovedProperties(): Promise<NormalizedProperty[]> {
-  const supabase = await createClient()
+export default function HomePage() {
+    const properties = useQuery(api.properties.list, { onlyAvailable: true })
 
-  const { data, error } = await supabase
-    .from('properties')
-    .select('*')
-    .eq('is_available', true)
-    .eq('approval_status', 'approved')
-    .order('created_at', { ascending: false })
+    if (properties === undefined) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="text-sm text-muted-foreground">Loading properties...</div>
+            </div>
+        )
+    }
 
-  if (error) {
-    console.error('Error fetching properties:', error)
-    return []
-  }
+    const normalizedProperties: Property[] = (properties ?? []).map((property) => ({
+        id: property._id,
+        title: property.title,
+        description: property.description || '',
+        price: property.priceNad,
+        address: property.address,
+        city: property.city,
+        bedrooms: property.bedrooms ?? 0,
+        bathrooms: property.bathrooms ?? 0,
+        size: property.sizeSqm ?? 0,
+        type: property.propertyType,
+        images: property.imageUrls ?? [],
+        amenities: [],
+        coordinates: property.coordinates ?? null,
+    }))
 
-  // Normalize database properties to match mock structure
-  return (data || []).map(p => ({
-    id: p.id,
-    title: p.title,
-    description: p.description,
-    price: p.price_nad,
-    address: p.address,
-    city: p.city,
-    bedrooms: p.bedrooms,
-    bathrooms: p.bathrooms,
-    size: p.size_sqm,
-    type: p.property_type.charAt(0).toUpperCase() + p.property_type.slice(1),
-    images: p.images || [],
-    amenities: p.amenities || [],
-    isFromDatabase: true,
-  }))
-}
-
-export default async function HomePage() {
-  // Fetch real properties from database
-  const dbProperties = await getApprovedProperties()
-
-  // Combine with mock properties (database properties first)
-  const allProperties = [...dbProperties, ...MOCK_PROPERTIES]
-
-  return (
-    <div className="p-6 lg:p-8">
-      <PropertyFeed properties={allProperties} />
-    </div>
-  )
+    return <SearchPageClient initialProperties={normalizedProperties} />
 }

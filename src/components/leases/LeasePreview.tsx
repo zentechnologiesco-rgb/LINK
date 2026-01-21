@@ -17,12 +17,12 @@ interface LeasePreviewProps {
         images?: string[]
     }
     landlord: {
-        full_name: string
+        fullName: string
         email: string
         phone?: string
     }
     tenant?: {
-        full_name: string
+        fullName: string
         email: string
         phone?: string
     }
@@ -137,7 +137,7 @@ export function LeasePreview({
                 <div className="grid md:grid-cols-2 gap-6">
                     <div className="p-4 border rounded-lg">
                         <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Landlord</p>
-                        <p className="font-semibold">{landlord.full_name || 'Not specified'}</p>
+                        <p className="font-semibold">{landlord.fullName || 'Not specified'}</p>
                         <p className="text-sm text-muted-foreground">{landlord.email}</p>
                         {landlord.phone && <p className="text-sm text-muted-foreground">{landlord.phone}</p>}
                     </div>
@@ -145,7 +145,7 @@ export function LeasePreview({
                         <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Tenant</p>
                         {tenant ? (
                             <>
-                                <p className="font-semibold">{tenant.full_name || 'Not specified'}</p>
+                                <p className="font-semibold">{tenant.fullName || 'Not specified'}</p>
                                 <p className="text-sm text-muted-foreground">{tenant.email}</p>
                                 {tenant.phone && <p className="text-sm text-muted-foreground">{tenant.phone}</p>}
                             </>
@@ -274,7 +274,7 @@ export function LeasePreview({
                                     Pending signature
                                 </div>
                             )}
-                            <p className="text-sm mt-2">{landlord.full_name}</p>
+                            <p className="text-sm mt-2">{landlord.fullName}</p>
                         </div>
 
                         {/* Tenant Signature */}
@@ -297,7 +297,7 @@ export function LeasePreview({
                                     Pending signature
                                 </div>
                             )}
-                            {tenant && <p className="text-sm mt-2">{tenant.full_name}</p>}
+                            {tenant && <p className="text-sm mt-2">{tenant.fullName}</p>}
                             {signedAt && (
                                 <p className="text-xs text-muted-foreground">
                                     Signed: {format(new Date(signedAt), 'MMM d, yyyy h:mm a')}
@@ -310,7 +310,7 @@ export function LeasePreview({
                 {/* Footer */}
                 <div className="text-center text-xs text-muted-foreground pt-4 border-t">
                     <p>This document was generated electronically and is legally binding upon acceptance by all parties.</p>
-                    <p className="mt-1">ZEN Property Rental Platform</p>
+                    <p className="mt-1">LINK Property Rental Platform</p>
                 </div>
             </div>
         </div>

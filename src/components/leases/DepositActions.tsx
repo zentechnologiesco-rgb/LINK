@@ -14,10 +14,11 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { releaseDeposit, forfeitDeposit, getDepositForLease } from '@/lib/deposits'
 import { toast } from 'sonner'
 import { Loader2, Banknote, AlertTriangle } from 'lucide-react'
-import { useEffect } from 'react'
+import { useMutation, useQuery } from "convex/react"
+import { api } from "../../../convex/_generated/api"
+import { Id } from "../../../convex/_generated/dataModel"
 
 interface DepositActionsProps {
     leaseId: string
@@ -30,18 +31,16 @@ export function DepositActions({ leaseId, depositAmount, depositStatus }: Deposi
     const [isForfeiting, setIsForfeiting] = useState(false)
     const [releaseOpen, setReleaseOpen] = useState(false)
     const [forfeitOpen, setForfeitOpen] = useState(false)
-    const [depositId, setDepositId] = useState<string | null>(null)
 
-    // Fetch the deposit ID for this lease
-    useEffect(() => {
-        async function fetchDeposit() {
-            const result = await getDepositForLease(leaseId)
-            if (result.data) {
-                setDepositId(result.data.id)
-            }
-        }
-        fetchDeposit()
-    }, [leaseId])
+    // Fetch deposit using Convex Query
+    const deposit = useQuery(api.deposits.getForLease, {
+        leaseId: leaseId as Id<"leases">
+    })
+    const depositId = deposit?._id
+
+    // Mutations
+    const releaseDeposit = useMutation(api.deposits.release)
+    const forfeitDeposit = useMutation(api.deposits.forfeit)
 
     async function handleRelease(formData: FormData) {
         if (!depositId) {
@@ -53,16 +52,21 @@ export function DepositActions({ leaseId, depositAmount, depositStatus }: Deposi
         const deductions = Number(formData.get('deductions')) || 0
         const reason = formData.get('reason') as string
 
-        const result = await releaseDeposit(depositId, deductions, reason)
+        try {
+            const result = await releaseDeposit({
+                depositId,
+                deductionAmount: deductions,
+                deductionReason: reason || undefined
+            })
 
-        if (result.error) {
-            toast.error(result.error)
-        } else {
             const refund = result.releasedAmount ?? (depositAmount - deductions)
             toast.success(`Deposit released! Refund: N$ ${refund.toLocaleString()}`)
             setReleaseOpen(false)
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to release deposit')
+        } finally {
+            setIsReleasing(false)
         }
-        setIsReleasing(false)
     }
 
     async function handleForfeit(formData: FormData) {
@@ -74,15 +78,18 @@ export function DepositActions({ leaseId, depositAmount, depositStatus }: Deposi
         setIsForfeiting(true)
         const reason = formData.get('reason') as string
 
-        const result = await forfeitDeposit(depositId, reason)
-
-        if (result.error) {
-            toast.error(result.error)
-        } else {
+        try {
+            await forfeitDeposit({
+                depositId,
+                reason
+            })
             toast.success('Deposit forfeited.')
             setForfeitOpen(false)
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to forfeit deposit')
+        } finally {
+            setIsForfeiting(false)
         }
-        setIsForfeiting(false)
     }
 
     if (depositStatus !== 'held' && depositStatus !== 'pending') {

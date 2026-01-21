@@ -1,6 +1,8 @@
-import { createClient } from '@/lib/supabase/server'
-import { MOCK_PROPERTIES } from '@/lib/mock-data'
+"use client"
+
 import { SearchPageClient } from './SearchPageClient'
+import { useQuery } from "convex/react"
+import { api } from "../../../convex/_generated/api"
 
 // Define the Property type needed for the feed
 interface Property {
@@ -19,60 +21,32 @@ interface Property {
     coordinates?: { lat: number; lng: number } | null
 }
 
-async function getAvailableProperties(): Promise<Property[]> {
-    const supabase = await createClient()
+export default function SearchPage() {
+    const properties = useQuery(api.properties.list, { onlyAvailable: true })
 
-    const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('is_available', true)
-        .eq('approval_status', 'approved')
-        .order('created_at', { ascending: false })
-
-    if (error) {
-        console.error('Error fetching properties:', error)
-        return []
+    if (properties === undefined) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="text-sm text-muted-foreground">Loading properties...</div>
+            </div>
+        )
     }
 
-    // Normalize database properties to match structure
-    return (data || []).map(p => ({
-        id: p.id,
-        title: p.title,
-        description: p.description,
-        price: p.price_nad,
-        address: p.address,
-        city: p.city,
-        bedrooms: p.bedrooms,
-        bathrooms: p.bathrooms,
-        size: p.size_sqm,
-        type: p.property_type.charAt(0).toUpperCase() + p.property_type.slice(1),
-        images: p.images || [],
-        amenities: p.amenities || [],
-        coordinates: p.coordinates || null, // Pass coordinates
-    }))
-}
-
-export default async function SearchPage() {
-    const dbProperties = await getAvailableProperties()
-
-    // Normalize mock properties to match the interface
-    const normalizedMockProperties: Property[] = MOCK_PROPERTIES.map(p => ({
-        id: p.id,
-        title: p.title,
-        description: p.description,
-        price: p.price,
-        address: p.address,
-        city: p.city,
-        bedrooms: p.bedrooms,
-        bathrooms: p.bathrooms,
-        size: p.size,
-        type: p.type,
-        images: p.images,
-        amenities: p.amenities,
-        coordinates: null // Mock data doesn't have coordinates stored
+    const normalizedProperties: Property[] = (properties ?? []).map((property) => ({
+        id: property._id,
+        title: property.title,
+        description: property.description || '',
+        price: property.priceNad,
+        address: property.address,
+        city: property.city,
+        bedrooms: property.bedrooms ?? 0,
+        bathrooms: property.bathrooms ?? 0,
+        size: property.sizeSqm ?? 0,
+        type: property.propertyType,
+        images: property.imageUrls ?? [],
+        amenities: [],
+        coordinates: property.coordinates ?? null,
     }))
 
-    const allProperties = [...dbProperties, ...normalizedMockProperties]
-
-    return <SearchPageClient initialProperties={allProperties} />
+    return <SearchPageClient initialProperties={normalizedProperties} />
 }

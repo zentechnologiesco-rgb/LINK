@@ -1,14 +1,18 @@
+'use client'
+
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { MOCK_PROPERTIES } from '@/lib/mock-data'
-import { createClient } from '@/lib/supabase/server'
-import { MapPin, Bed, Bath, Square, Check, Share2, Heart, ArrowLeft, Phone, User, Sparkles } from 'lucide-react'
+import { MapPin, Bed, Bath, Square, Check, Share2, ArrowLeft, Phone, User, Sparkles } from 'lucide-react'
 import { InquiryDialog } from '@/components/properties/InquiryDialog'
-import { getSavedStatus } from '@/actions/saved-properties'
 import { SavePropertyButton } from '@/components/properties/SavePropertyButton'
 import { PropertyDetailMap } from '@/components/maps/PropertyDetailMap'
+import { useQuery } from "convex/react"
+import { api } from "../../../../convex/_generated/api"
+import { Id } from "../../../../convex/_generated/dataModel"
+import { use } from 'react'
 
 interface Props {
     params: Promise<{ id: string }>
@@ -34,15 +38,38 @@ interface PropertyDetails {
         name: string | null
         email: string
         phone: string | null
-        avatar_url: string | null
     } | null
 }
 
-async function getProperty(id: string): Promise<PropertyDetails | null> {
-    // First, try to find in mock data
+function PropertyDetailContent({ id }: { id: string }) {
+    // Check if it matches a mock property first
     const mockProperty = MOCK_PROPERTIES.find((p) => p.id === id)
+
+    // Only query Convex if it's NOT a mock property
+    // We cast to Id<"properties"> but ideally we'd validate the ID format first
+    const convexQueryArgs = !mockProperty ? { propertyId: id as Id<"properties"> } : "skip"
+    const convexProperty = useQuery(api.properties.getById, convexQueryArgs)
+
+    // Loading state: Only if we are querying Convex and it's still loading
+    const isConvexLoading = !mockProperty && convexProperty === undefined
+
+    if (isConvexLoading) {
+        return (
+            <div className="p-6 lg:p-8">
+                <div className="animate-pulse space-y-4">
+                    <div className="h-8 w-32 bg-gray-200 rounded" />
+                    <div className="aspect-[16/9] bg-gray-100 rounded-xl" />
+                    <div className="h-8 w-64 bg-gray-200 rounded" />
+                    <div className="h-64 bg-gray-100 rounded" />
+                </div>
+            </div>
+        )
+    }
+
+    let property: PropertyDetails | null = null
+
     if (mockProperty) {
-        return {
+        property = {
             id: mockProperty.id,
             title: mockProperty.title,
             description: mockProperty.description,
@@ -58,62 +85,34 @@ async function getProperty(id: string): Promise<PropertyDetails | null> {
             isFromDatabase: false,
             landlord: null,
         }
+    } else if (convexProperty) {
+        property = {
+            id: convexProperty._id,
+            title: convexProperty.title,
+            description: convexProperty.description || 'No description available',
+            price: convexProperty.priceNad,
+            address: convexProperty.address,
+            city: convexProperty.city,
+            bedrooms: convexProperty.bedrooms || 0,
+            bathrooms: convexProperty.bathrooms || 0,
+            size: convexProperty.sizeSqm || 0,
+            type: convexProperty.propertyType.charAt(0).toUpperCase() + convexProperty.propertyType.slice(1),
+            images: convexProperty.imageUrls || [],
+            amenities: convexProperty.amenityNames || [],
+            isFromDatabase: true,
+            coordinates: convexProperty.coordinates || null,
+            landlord: convexProperty.landlordInfo || null,
+        }
     }
-
-    // If not in mock data, try database
-    const supabase = await createClient()
-
-    const { data, error } = await supabase
-        .from('properties')
-        .select(`
-            *,
-            coordinates,
-            landlord:profiles!landlord_id (
-                full_name,
-                email,
-                phone,
-                avatar_url
-            )
-        `)
-        .eq('id', id)
-        .single()
-
-    if (error || !data) {
-        return null
-    }
-
-    return {
-        id: data.id,
-        title: data.title,
-        description: data.description,
-        price: data.price_nad,
-        address: data.address,
-        city: data.city,
-        bedrooms: data.bedrooms,
-        bathrooms: data.bathrooms,
-        size: data.size_sqm,
-        type: data.property_type.charAt(0).toUpperCase() + data.property_type.slice(1),
-        images: data.images || [],
-        amenities: data.amenities || [],
-        isFromDatabase: true,
-        coordinates: data.coordinates || null,
-        landlord: data.landlord ? {
-            name: data.landlord.full_name,
-            email: data.landlord.email,
-            phone: data.landlord.phone,
-            avatar_url: data.landlord.avatar_url,
-        } : null,
-    }
-}
-
-export default async function PropertyPage({ params }: Props) {
-    const { id } = await params
-    const property = await getProperty(id)
-    const isSaved = await getSavedStatus(id)
 
     if (!property) {
         notFound()
     }
+
+    // Use fallback image if no images
+    const displayImages = property.images.length > 0
+        ? property.images
+        : ['https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=2070&auto=format&fit=crop']
 
     return (
         <div className="p-6 lg:p-8">
@@ -133,7 +132,7 @@ export default async function PropertyPage({ params }: Props) {
                     <div className="aspect-[16/9] rounded-xl overflow-hidden bg-gray-100 relative">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                            src={property.images[0]}
+                            src={displayImages[0]}
                             alt={property.title}
                             className="w-full h-full object-cover"
                         />
@@ -157,7 +156,7 @@ export default async function PropertyPage({ params }: Props) {
                                 </Button>
                                 <SavePropertyButton
                                     propertyId={property.id}
-                                    initialSaved={isSaved}
+                                    initialSaved={false}
                                     variant="default"
                                     className="h-9 px-3 border-0 bg-transparent hover:bg-gray-100 text-gray-600"
                                 />
@@ -230,11 +229,11 @@ export default async function PropertyPage({ params }: Props) {
                     )}
 
                     {/* Gallery */}
-                    {property.images.length > 1 && (
+                    {displayImages.length > 1 && (
                         <div>
                             <h2 className="text-lg font-medium text-gray-900 mb-3">Photos</h2>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                {property.images.map((image, index) => (
+                                {displayImages.map((image, index) => (
                                     <div key={index} className="aspect-[4/3] rounded-lg overflow-hidden bg-gray-100">
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img
@@ -288,16 +287,7 @@ export default async function PropertyPage({ params }: Props) {
                             <p className="text-sm text-gray-500 mb-4">Listed by</p>
                             <div className="flex items-center gap-4 mb-4">
                                 <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-                                    {property.landlord?.avatar_url ? (
-                                        // eslint-disable-next-line @next/next/no-img-element
-                                        <img
-                                            src={property.landlord.avatar_url}
-                                            alt={property.landlord.name || 'Landlord'}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <User className="h-6 w-6 text-gray-400" />
-                                    )}
+                                    <User className="h-6 w-6 text-gray-400" />
                                 </div>
                                 <div>
                                     <p className="font-medium text-gray-900">
@@ -308,7 +298,7 @@ export default async function PropertyPage({ params }: Props) {
                                     </p>
                                 </div>
                             </div>
-                            {property.landlord?.phone && (
+                            {property.landlord?.phone ? (
                                 <div className="space-y-2 text-sm">
                                     <a
                                         href={`tel:${property.landlord.phone}`}
@@ -318,8 +308,7 @@ export default async function PropertyPage({ params }: Props) {
                                         {property.landlord.phone}
                                     </a>
                                 </div>
-                            )}
-                            {!property.landlord?.phone && (
+                            ) : (
                                 <p className="text-sm text-gray-500">
                                     Contact via the app for inquiries
                                 </p>
@@ -330,4 +319,9 @@ export default async function PropertyPage({ params }: Props) {
             </div>
         </div>
     )
+}
+
+export default function PropertyPage({ params }: Props) {
+    const { id } = use(params)
+    return <PropertyDetailContent id={id} />
 }

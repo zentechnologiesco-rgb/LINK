@@ -1,17 +1,18 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { User, Bell, Shield, CreditCard, Upload, Loader2, Camera } from 'lucide-react'
+import { User, Bell, Shield, CreditCard, Loader2, Camera } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { getInitials } from '@/lib/user-name'
+import { useQuery, useMutation } from "convex/react"
+import { api } from "../../../convex/_generated/api"
+import { Authenticated, Unauthenticated, AuthLoading } from "convex/react"
 
 const settingsTabs = [
     { id: 'profile', label: 'Profile', icon: User },
@@ -20,87 +21,44 @@ const settingsTabs = [
     { id: 'billing', label: 'Billing', icon: CreditCard },
 ]
 
-export default function SettingsPage() {
-    const [user, setUser] = useState<any>(null)
-    const [loading, setLoading] = useState(true)
+function SettingsContent() {
+    const user = useQuery(api.users.currentUser)
+    const updateProfile = useMutation(api.users.updateProfile)
+    const generateUploadUrl = useMutation(api.files.generateUploadUrl)
+
     const [saving, setSaving] = useState(false)
     const [uploading, setUploading] = useState(false)
     const [activeTab, setActiveTab] = useState('profile')
     const [profile, setProfile] = useState({
         firstName: '',
         surname: '',
-        email: '',
         phone: '',
-        avatar_url: '',
     })
+    const [initialized, setInitialized] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
-    const supabase = createClient()
+    // Initialize profile state when user data loads
+    if (user && !initialized) {
+        const nameParts = (user.fullName || '').split(' ')
+        setProfile({
+            firstName: nameParts[0] || '',
+            surname: nameParts.slice(1).join(' ') || '',
+            phone: user.phone || '',
+        })
+        setInitialized(true)
+    }
 
-    useEffect(() => {
-        const loadUserData = async () => {
-            // Use getSession() for faster initial load - it uses cached data
-            // instead of getUser() which always makes a network verification call
-            const { data: { session } } = await supabase.auth.getSession()
-
-            if (!session?.user) {
-                setLoading(false)
-                return
-            }
-
-            const user = session.user
-            setUser(user)
-
-            // Fetch profile data
-            const { data: profileData } = await supabase
-                .from('profiles')
-                .select('first_name, surname, phone, avatar_url')
-                .eq('id', user.id)
-                .single()
-
-            setProfile({
-                firstName: user.user_metadata?.first_name || profileData?.first_name || '',
-                surname: user.user_metadata?.surname || profileData?.surname || '',
-                email: user.email || '',
-                phone: user.user_metadata?.phone || profileData?.phone || '',
-                avatar_url: profileData?.avatar_url || '',
-            })
-
-            setLoading(false)
-        }
-        loadUserData()
-    }, [])
+    const loading = user === undefined
 
     const handleSaveProfile = async () => {
+        if (!user) return
         setSaving(true)
         try {
             const fullName = `${profile.firstName} ${profile.surname}`.trim()
-
-            // Update auth metadata
-            const { error: authError } = await supabase.auth.updateUser({
-                data: {
-                    first_name: profile.firstName,
-                    surname: profile.surname,
-                    full_name: fullName,
-                    phone: profile.phone,
-                }
+            await updateProfile({
+                fullName: fullName,
+                phone: profile.phone,
             })
-            if (authError) throw authError
-
-            // Update profiles table
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .update({
-                    first_name: profile.firstName,
-                    surname: profile.surname,
-                    full_name: fullName,
-                    phone: profile.phone,
-                    updated_at: new Date().toISOString(),
-                })
-                .eq('id', user.id)
-
-            if (profileError) throw profileError
-
             toast.success('Profile updated successfully')
         } catch (error: any) {
             toast.error(error.message || 'Failed to update profile')
@@ -108,59 +66,54 @@ export default function SettingsPage() {
         setSaving(false)
     }
 
-
     const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0]
+        if (!file) return
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            toast.error('Please select an image file')
+            return
+        }
+
+        // Validate file size (max 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            toast.error('File size must be less than 2MB')
+            return
+        }
+
+        setUploading(true)
         try {
-            const file = event.target.files?.[0]
-            if (!file) return
+            // Get upload URL from Convex
+            const uploadUrl = await generateUploadUrl()
 
-            setUploading(true)
+            // Upload the file
+            const response = await fetch(uploadUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': file.type },
+                body: file,
+            })
 
-            if (!file.type.startsWith('image/')) {
-                toast.error('Please upload an image file')
-                return
+            if (!response.ok) {
+                throw new Error('Failed to upload file')
             }
 
-            if (file.size > 2 * 1024 * 1024) { // 2MB limit
-                toast.error('Image size must be less than 2MB')
-                return
-            }
+            const { storageId } = await response.json()
 
-            const fileExt = file.name.split('.').pop()
-            const filePath = `${user.id}/avatar-${Math.random()}.${fileExt}`
+            // Get the public URL for the uploaded file
+            // For now, we'll store the storage ID and the files API will handle URL generation
+            // The avatarUrl field stores a URL, so we need to construct it
+            const avatarUrl = `${process.env.NEXT_PUBLIC_CONVEX_URL?.replace('.cloud', '.site')}/api/storage/${storageId}`
 
-            // Upload image to Storage
-            const { error: uploadError } = await supabase.storage
-                .from('avatars')
-                .upload(filePath, file)
+            // Update the user profile with the new avatar URL
+            await updateProfile({ avatarUrl })
 
-            if (uploadError) throw uploadError
-
-            // Get Public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from('avatars')
-                .getPublicUrl(filePath)
-
-            // Update local state
-            setProfile(prev => ({ ...prev, avatar_url: publicUrl }))
-
-            // Update profile in DB immediately
-            const { error: updateError } = await supabase
-                .from('profiles')
-                .update({
-                    avatar_url: publicUrl, // Ensure this column name matches your DB
-                    updated_at: new Date().toISOString(),
-                })
-                .eq('id', user.id)
-
-            if (updateError) throw updateError
-
-            toast.success('Profile picture updated')
+            toast.success('Profile picture updated!')
         } catch (error: any) {
-            console.error('Error uploading avatar:', error)
-            toast.error(error.message || 'Error uploading avatar')
+            toast.error(error.message || 'Failed to upload avatar')
         } finally {
             setUploading(false)
+            // Reset the input
             if (fileInputRef.current) {
                 fileInputRef.current.value = ''
             }
@@ -173,19 +126,6 @@ export default function SettingsPage() {
                 <div className="animate-pulse space-y-4">
                     <div className="h-8 w-48 bg-gray-200 rounded" />
                     <div className="h-64 bg-gray-100 rounded-xl" />
-                </div>
-            </div>
-        )
-    }
-
-    if (!user) {
-        return (
-            <div className="p-6 lg:p-8">
-                <div className="text-center py-16">
-                    <p className="text-gray-500">Please sign in to view settings</p>
-                    <Link href="/sign-in">
-                        <Button className="mt-4 bg-gray-900 hover:bg-gray-800">Sign In</Button>
-                    </Link>
                 </div>
             </div>
         )
@@ -230,9 +170,12 @@ export default function SettingsPage() {
                                 <div className="flex items-center gap-6">
                                     <div className="relative group">
                                         <Avatar className="h-24 w-24 border-2 border-gray-100">
-                                            <AvatarImage src={profile.avatar_url} className="object-cover" />
+                                            <AvatarImage src={user?.avatarUrl} className="object-cover" />
                                             <AvatarFallback className="bg-gray-100 text-gray-400 text-xl">
-                                                {getInitials({ first_name: profile.firstName, surname: profile.surname }, user.email?.charAt(0) || 'U')}
+                                                {profile.firstName && profile.surname
+                                                    ? `${profile.firstName.charAt(0)}${profile.surname.charAt(0)}`.toUpperCase()
+                                                    : profile.firstName?.charAt(0)?.toUpperCase() || 'U'
+                                                }
                                             </AvatarFallback>
                                         </Avatar>
                                         <div
@@ -294,7 +237,7 @@ export default function SettingsPage() {
                                         <Label htmlFor="email">Email</Label>
                                         <Input
                                             id="email"
-                                            value={profile.email}
+                                            value={user?.email || ''}
                                             disabled
                                             className="bg-gray-50"
                                         />
@@ -368,5 +311,35 @@ export default function SettingsPage() {
                 </div>
             </div>
         </div>
+    )
+}
+
+export default function SettingsPage() {
+    return (
+        <>
+            <AuthLoading>
+                <div className="p-6 lg:p-8">
+                    <div className="animate-pulse space-y-4">
+                        <div className="h-8 w-48 bg-gray-200 rounded" />
+                        <div className="h-64 bg-gray-100 rounded-xl" />
+                    </div>
+                </div>
+            </AuthLoading>
+
+            <Unauthenticated>
+                <div className="p-6 lg:p-8">
+                    <div className="text-center py-16">
+                        <p className="text-gray-500">Please sign in to view settings</p>
+                        <Link href="/sign-in">
+                            <Button className="mt-4 bg-gray-900 hover:bg-gray-800">Sign In</Button>
+                        </Link>
+                    </div>
+                </div>
+            </Unauthenticated>
+
+            <Authenticated>
+                <SettingsContent />
+            </Authenticated>
+        </>
     )
 }

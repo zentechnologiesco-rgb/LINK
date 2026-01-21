@@ -1,36 +1,38 @@
+'use client'
+
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { VerificationForm } from '@/components/verification/VerificationForm'
 import { ResubmissionForm } from '@/components/verification/ResubmissionForm'
-import { submitVerificationRequest, getVerificationStatus } from '@/lib/verification'
-import { CheckCircle, Clock, XCircle, Building2, ArrowLeft, ChevronLeft, AlertCircle, RotateCcw } from 'lucide-react'
+
+import { CheckCircle, Clock, XCircle, Building2, ChevronLeft } from 'lucide-react'
 import { format } from 'date-fns'
+import { useQuery } from "convex/react"
+import { api } from "../../../convex/_generated/api"
+import { Authenticated, Unauthenticated, AuthLoading } from "convex/react"
 
-export default async function BecomeLandlordPage() {
-    const supabase = await createClient()
+function BecomeLandlordContent() {
+    const user = useQuery(api.users.currentUser)
+    const verificationStatus = useQuery(api.verification.getStatus)
 
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-        redirect('/sign-in')
+    if (user === undefined || verificationStatus === undefined) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+                <div className="animate-pulse space-y-4">
+                    <div className="h-32 w-96 bg-gray-200 rounded-xl" />
+                    <div className="h-64 w-96 bg-gray-100 rounded-xl" />
+                </div>
+            </div>
+        )
     }
 
-    // Check current role
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-    if (profile?.role === 'landlord') {
+    // Redirect if already a landlord
+    if (user?.role === 'landlord') {
         redirect('/landlord')
     }
-
-    const verificationStatus = await getVerificationStatus()
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
@@ -85,9 +87,9 @@ export default async function BecomeLandlordPage() {
                                         <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100 px-3 py-1">
                                             Pending Review
                                         </Badge>
-                                        {verificationStatus.created_at && (
+                                        {verificationStatus._creationTime && (
                                             <p className="text-xs text-muted-foreground mt-4">
-                                                Submitted on {format(new Date(verificationStatus.created_at), 'PPP p')}
+                                                Submitted on {format(new Date(verificationStatus._creationTime), 'PPP p')}
                                             </p>
                                         )}
                                     </div>
@@ -114,29 +116,59 @@ export default async function BecomeLandlordPage() {
                                 {verificationStatus.status === 'rejected' && (
                                     <div className="text-left">
                                         <ResubmissionForm
-                                            previousRequestId={verificationStatus.id}
+                                            previousRequestId={verificationStatus._id}
                                             previousData={{
-                                                id_type: verificationStatus.documents?.id_type,
-                                                id_number: verificationStatus.documents?.id_number,
-                                                business_name: verificationStatus.documents?.business_name,
-                                                business_registration: verificationStatus.documents?.business_registration,
+                                                id_type: verificationStatus.documents?.idType,
+                                                id_number: verificationStatus.documents?.idNumber,
+                                                business_name: verificationStatus.documents?.businessName,
+                                                business_registration: verificationStatus.documents?.businessRegistration,
                                             }}
-                                            rejectionReason={verificationStatus.admin_notes}
+                                            rejectionReason={verificationStatus.adminNotes}
                                         />
                                     </div>
                                 )}
                             </div>
                         ) : (
-                            <VerificationForm submitAction={submitVerificationRequest} />
+                            <VerificationForm />
                         )}
                     </div>
                 </div>
 
                 {/* Footer note */}
                 <p className="text-center text-xs text-gray-400 mt-8">
-                    &copy; {new Date().getFullYear()} ZEN Property Rental. All rights reserved.
+                    &copy; {new Date().getFullYear()} LINK Property Rental. All rights reserved.
                 </p>
             </div>
         </div>
+    )
+}
+
+export default function BecomeLandlordPage() {
+    return (
+        <>
+            <AuthLoading>
+                <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+                    <div className="animate-pulse space-y-4">
+                        <div className="h-32 w-96 bg-gray-200 rounded-xl" />
+                        <div className="h-64 w-96 bg-gray-100 rounded-xl" />
+                    </div>
+                </div>
+            </AuthLoading>
+
+            <Unauthenticated>
+                <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+                    <div className="text-center">
+                        <p className="text-gray-500 mb-4">Please sign in to become a landlord</p>
+                        <Link href="/sign-in">
+                            <Button className="bg-gray-900 hover:bg-gray-800">Sign In</Button>
+                        </Link>
+                    </div>
+                </div>
+            </Unauthenticated>
+
+            <Authenticated>
+                <BecomeLandlordContent />
+            </Authenticated>
+        </>
     )
 }

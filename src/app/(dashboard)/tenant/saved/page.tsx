@@ -1,22 +1,19 @@
-import { getSavedProperties } from '@/actions/saved-properties'
+'use client'
+
 import { PropertyCard } from '@/components/properties/PropertyCard'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { Heart } from 'lucide-react'
+import { Heart, Loader2 } from 'lucide-react'
+import { useQuery } from "convex/react"
+import { api } from "../../../../../convex/_generated/api"
 
-export default async function SavedPropertiesPage() {
-    const { data: savedProperties, error } = await getSavedProperties()
+export default function SavedPropertiesPage() {
+    const savedProperties = useQuery(api.savedProperties.list)
 
-    if (error) {
+    if (savedProperties === undefined) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[400px] p-6 text-center">
-                <h2 className="text-xl font-semibold mb-2">Error loading saved properties</h2>
-                <p className="text-muted-foreground mb-4">
-                    {error}
-                </p>
-                <Button asChild>
-                    <Link href="/search">Browse Properties</Link>
-                </Button>
+            <div className="flex justify-center items-center min-h-[400px]">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
         )
     }
@@ -48,21 +45,21 @@ export default async function SavedPropertiesPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {savedProperties.map((property) => (
-                    <div key={property.id} className="h-full">
+                {savedProperties.map((property: any) => (
+                    <div key={property._id} className="h-full">
                         <PropertyCard
                             property={{
-                                id: property.id,
+                                id: property._id,
                                 title: property.title,
-                                price: property.price_nad,
+                                price: property.priceNad,
                                 address: property.address,
-                                bedrooms: property.bedrooms,
-                                bathrooms: property.bathrooms,
-                                size: property.size_sqm,
-                                images: property.images || [],
-                                type: property.property_type,
-                                monthly_rent: property.price_nad,
-                                isSaved: true // These are all saved
+                                bedrooms: property.bedrooms ?? 0,
+                                bathrooms: property.bathrooms ?? 0,
+                                size: property.sizeSqm ?? 0,
+                                images: property.mainImage ? [property.mainImage] : [],
+                                type: property.propertyType,
+                                monthly_rent: property.priceNad,
+                                isSaved: true
                             }}
                         />
                     </div>

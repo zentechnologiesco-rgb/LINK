@@ -1,33 +1,36 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
-import { getLandlordProperties } from '../actions'
+'use client'
+
 import { CreateLeaseClient } from './CreateLeaseClient'
+import { Authenticated, Unauthenticated, AuthLoading } from "convex/react"
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
-export default async function CreateLeasePage() {
-    const supabase = await createClient()
-
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-        redirect('/signin')
-    }
-
-    // Get current user profile
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-    // Get landlord's available properties
-    const properties = await getLandlordProperties()
-
+export default function CreateLeasePage() {
     return (
-        <CreateLeaseClient
-            properties={properties}
-            currentUser={profile}
-        />
+        <>
+            <AuthLoading>
+                <div className="p-6 lg:p-8">
+                    <div className="animate-pulse space-y-4">
+                        <div className="h-8 w-48 bg-gray-200 rounded" />
+                        <div className="h-96 bg-gray-100 rounded-xl" />
+                    </div>
+                </div>
+            </AuthLoading>
+
+            <Unauthenticated>
+                <div className="p-6 lg:p-8">
+                    <div className="text-center py-16">
+                        <p className="text-gray-500">Please sign in to create a lease</p>
+                        <Link href="/sign-in">
+                            <Button className="mt-4 bg-gray-900 hover:bg-gray-800">Sign In</Button>
+                        </Link>
+                    </div>
+                </div>
+            </Unauthenticated>
+
+            <Authenticated>
+                <CreateLeaseClient />
+            </Authenticated>
+        </>
     )
 }

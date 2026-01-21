@@ -20,25 +20,26 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
-import { quickAssignTenant } from "@/app/(dashboard)/landlord/leases/actions"
+import { useMutation } from "convex/react"
+import { api } from "../../../convex/_generated/api"
+import { Id } from "../../../convex/_generated/dataModel"
 import { toast } from "sonner"
 import { Loader2, User, Calendar, DollarSign, Clock, Building2, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react"
 
+// ... (Interface unchanged)
 export interface PropertyWithLease {
-    id: string
+    id: Id<"properties">
     title: string
-    address: string
     city: string
     price_nad: number
-    leases: {
+    leases?: {
         status: string
         end_date: string
-        start_date: string // New field
-        deposit?: number // New field
-        monthly_rent?: number
+        start_date: string
+        monthly_rent: number
+        deposit: number
         tenant?: {
             email: string
-            full_name: string
         }
     }[]
 }
@@ -50,6 +51,7 @@ interface AssignTenantWizardProps {
 }
 
 type WizardStep = 'select-property' | 'lease-details'
+
 
 export function AssignTenantWizard({
     open,
@@ -70,8 +72,12 @@ export function AssignTenantWizard({
     const [deposit, setDeposit] = useState(0)
     const [isExistingLease, setIsExistingLease] = useState(false)
 
+    const createLease = useMutation(api.leases.createByEmail)
+    const generatePayments = useMutation(api.payments.generateRecurring)
+
     // Reset flow when closed
     const handleOpenChange = (newOpen: boolean) => {
+        // ... (unchanged)
         if (!newOpen) {
             setTimeout(() => {
                 setStep('select-property')
@@ -83,6 +89,7 @@ export function AssignTenantWizard({
     }
 
     const handleSelectProperty = (property: PropertyWithLease) => {
+        // ... (unchanged logic)
         const activeLease = property.leases?.find(l =>
             l.status === 'approved' && new Date(l.end_date) > new Date()
         )
@@ -124,25 +131,34 @@ export function AssignTenantWizard({
 
         setIsLoading(true)
         try {
-            const result = await quickAssignTenant({
-                property_id: selectedProperty.id,
-                tenant_email: tenantEmail,
-                monthly_rent: monthlyRent,
-                payment_day: paymentDay,
-                lease_months: leaseMonths,
-                start_date: startDate,
+            // Calculate endDate
+            const start = new Date(startDate)
+            const end = new Date(start)
+            end.setMonth(end.getMonth() + leaseMonths)
+            const endDateString = end.toISOString().split('T')[0]
+
+            const result = await createLease({
+                propertyId: selectedProperty.id as Id<"properties">,
+                tenantEmail,
+                monthlyRent: monthlyRent,
+                startDate: startDate,
+                endDate: endDateString,
                 deposit: deposit,
+                terms: { paymentDay },
             })
 
-            if (result.error) {
-                toast.error(result.error)
-            } else {
-                toast.success(`Lease created for ${result.tenantName || tenantEmail}!`)
-                handleOpenChange(false)
-                router.refresh()
+            if (result.leaseId) {
+                await generatePayments({
+                    leaseId: result.leaseId,
+                    monthsAhead: leaseMonths
+                })
             }
+
+            toast.success(`Lease created for ${result.tenantName || tenantEmail}!`)
+            handleOpenChange(false)
+            // router.refresh()
         } catch (error) {
-            toast.error("Failed to assign tenant")
+            toast.error(error instanceof Error ? error.message : "Failed to assign tenant")
         } finally {
             setIsLoading(false)
         }

@@ -21,9 +21,11 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
-import { quickAssignTenant } from "@/app/(dashboard)/landlord/leases/actions"
 import { toast } from "sonner"
 import { Loader2, User, Calendar, DollarSign, Clock } from "lucide-react"
+import { useMutation } from "convex/react"
+import { api } from "../../../convex/_generated/api"
+import { Id } from "../../../convex/_generated/dataModel"
 
 interface AssignTenantDialogProps {
     open: boolean
@@ -51,6 +53,9 @@ export function AssignTenantDialog({
     const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0])
     const [deposit, setDeposit] = useState(propertyPrice)
 
+    const createLease = useMutation(api.leases.createByEmail)
+    const generatePayments = useMutation(api.payments.generateRecurring) // Generate payments after lease
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
@@ -61,25 +66,35 @@ export function AssignTenantDialog({
 
         setIsLoading(true)
         try {
-            const result = await quickAssignTenant({
-                property_id: propertyId,
-                tenant_email: tenantEmail,
-                monthly_rent: monthlyRent,
-                payment_day: paymentDay,
-                lease_months: leaseMonths,
-                start_date: startDate,
+            // Calculate endDate
+            const start = new Date(startDate)
+            const end = new Date(start)
+            end.setMonth(end.getMonth() + leaseMonths)
+            const endDateString = end.toISOString().split('T')[0]
+
+            const result = await createLease({
+                propertyId: propertyId as Id<"properties">,
+                tenantEmail,
+                monthlyRent: monthlyRent,
+                startDate: startDate,
+                endDate: endDateString,
                 deposit: deposit,
+                terms: { paymentDay },
             })
 
-            if (result.error) {
-                toast.error(result.error)
-            } else {
-                toast.success(`Tenant ${result.tenantName || tenantEmail} assigned successfully!`)
-                onOpenChange(false)
-                router.refresh()
+            // Generate payments (optional but good for UX)
+            if (result.leaseId) {
+                await generatePayments({
+                    leaseId: result.leaseId,
+                    monthsAhead: leaseMonths
+                })
             }
+
+            toast.success(`Tenant ${result.tenantName || tenantEmail} assigned successfully!`)
+            onOpenChange(false)
+            // router.refresh() // Convex updates are realtime/fast
         } catch (error) {
-            toast.error("Failed to assign tenant")
+            toast.error(error instanceof Error ? error.message : "Failed to assign tenant")
         } finally {
             setIsLoading(false)
         }
@@ -220,7 +235,7 @@ export function AssignTenantDialog({
                                 onChange={(e) => setDeposit(Number(e.target.value))}
                             />
                             <p className="text-xs text-muted-foreground">
-                                Held securely by ZEN until lease ends
+                                Held securely by LINK until lease ends
                             </p>
                         </div>
 

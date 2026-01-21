@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
-import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import {
     Upload,
@@ -18,12 +17,14 @@ import {
     Loader2,
     Eye
 } from 'lucide-react'
+import { useMutation, useQuery } from "convex/react"
+import { api } from "../../../convex/_generated/api"
+import { Id } from "../../../convex/_generated/dataModel"
 
 export interface DocumentFile {
     type: 'id_front' | 'id_back' | 'payslip' | 'bank_statement' | 'employment_letter' | 'other'
-    url: string
-    name: string
-    uploaded_at: string
+    storageId: Id<"_storage">
+    uploadedAt: string
 }
 
 interface DocumentUploaderProps {
@@ -54,7 +55,23 @@ export function DocumentUploader({
     const [uploading, setUploading] = useState<string | null>(null)
     const [uploadProgress, setUploadProgress] = useState(0)
 
-    const supabase = createClient()
+    const generateUploadUrl = useMutation(api.files.generateUploadUrl)
+    // We can't delete files directly easily without knowing if they are used elsewhere, 
+    // but here we can probably just unlink them. 
+    // Actually, we should probably delete from storage if we replace/remove.
+    // Ideally we'd have a specific mutation for this, but general remove is fine.
+    // Note: The caller needs to update the lease object with the new document list.
+
+    // Get URLs for all documents
+    const storageIds = documents.map(d => d.storageId)
+    const urls = useQuery(api.files.getUrls, { storageIds })
+
+    const urlMap = new Map<string, string>()
+    if (urls) {
+        urls.forEach(({ id, url }) => {
+            if (url) urlMap.set(id, url)
+        })
+    }
 
     const uploadDocument = useCallback(async (
         file: File,
@@ -79,67 +96,27 @@ export function DocumentUploader({
         setUploadProgress(0)
 
         try {
-            const fileExt = file.name.split('.').pop()
-            // Use leaseId as fallback if tenantId is empty
-            const uploadPath = tenantId
-                ? `${tenantId}/${leaseId}/${docType}_${Date.now()}.${fileExt}`
-                : `${leaseId}/${docType}_${Date.now()}.${fileExt}`
+            // 1. Get upload URL
+            const postUrl = await generateUploadUrl()
 
-            console.log('Uploading to path:', uploadPath)
-            console.log('File size:', file.size, 'bytes')
+            // 2. Upload file
+            const result = await fetch(postUrl, {
+                method: "POST",
+                headers: { "Content-Type": file.type },
+                body: file,
+            })
 
-            // Simulate progress (since Supabase doesn't provide upload progress)
-            const progressInterval = setInterval(() => {
-                setUploadProgress(prev => Math.min(prev + 5, 90))
-            }, 300)
-
-            console.log('Starting upload...')
-            const startTime = Date.now()
-
-            // Add timeout to prevent hanging
-            const uploadPromise = supabase.storage
-                .from('lease_documents')
-                .upload(uploadPath, file, {
-                    cacheControl: '3600',
-                    upsert: true
-                })
-
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Upload timeout after 60 seconds')), 60000)
-            )
-
-            const { data, error } = await Promise.race([uploadPromise, timeoutPromise]) as any
-
-            clearInterval(progressInterval)
-            console.log('Upload completed in', Date.now() - startTime, 'ms')
-
-            if (error) {
-                console.error('Upload error:', error.message, error)
-                if (error.message.includes('timeout')) {
-                    toast.error('Upload timed out. Please try a smaller file or check your connection.')
-                } else if (error.message.includes('security') || error.message.includes('policy')) {
-                    toast.error('Upload permission denied. Please check storage policies.')
-                } else if (error.message.includes('not found')) {
-                    toast.error('Storage bucket not found. Please contact support.')
-                } else {
-                    toast.error(`Upload failed: ${error.message}`)
-                }
-                return
+            if (!result.ok) {
+                throw new Error(`Upload failed: ${result.statusText}`)
             }
 
-            console.log('Upload successful, data:', data)
-            setUploadProgress(100)
+            const { storageId } = await result.json()
 
-            // Get public URL (bucket should be set to public for reads)
-            const { data: urlData } = supabase.storage
-                .from('lease_documents')
-                .getPublicUrl(data.path)
-
+            // 3. Update documents list
             const newDoc: DocumentFile = {
                 type: docType,
-                url: urlData.publicUrl,
-                name: file.name,
-                uploaded_at: new Date().toISOString()
+                storageId: storageId as Id<"_storage">,
+                uploadedAt: new Date().toISOString()
             }
 
             // Remove existing document of same type and add new one
@@ -148,6 +125,7 @@ export function DocumentUploader({
             onDocumentsChange(updatedDocs)
 
             toast.success(`${documentTypes.find(d => d.type === docType)?.label} uploaded successfully!`)
+            setUploadProgress(100)
         } catch (error) {
             console.error('Upload error:', error)
             toast.error('Failed to upload document. Please try again.')
@@ -155,29 +133,13 @@ export function DocumentUploader({
             setUploading(null)
             setUploadProgress(0)
         }
-    }, [tenantId, leaseId, documents, onDocumentsChange, supabase])
+    }, [documents, onDocumentsChange, generateUploadUrl])
 
     const removeDocument = useCallback(async (docType: DocumentFile['type']) => {
-        const doc = documents.find(d => d.type === docType)
-        if (!doc) return
-
-        try {
-            // Extract file path from URL
-            const urlParts = doc.url.split('/lease_documents/')
-            if (urlParts.length > 1) {
-                await supabase.storage
-                    .from('lease_documents')
-                    .remove([urlParts[1]])
-            }
-
-            const updatedDocs = documents.filter(d => d.type !== docType)
-            onDocumentsChange(updatedDocs)
-            toast.success('Document removed')
-        } catch (error) {
-            console.error('Remove error:', error)
-            toast.error('Failed to remove document')
-        }
-    }, [documents, onDocumentsChange, supabase])
+        const updatedDocs = documents.filter(d => d.type !== docType)
+        onDocumentsChange(updatedDocs)
+        toast.success('Document removed')
+    }, [documents, onDocumentsChange])
 
     const getDocumentByType = (type: DocumentFile['type']) => {
         return documents.find(d => d.type === type)
@@ -202,6 +164,7 @@ export function DocumentUploader({
                     const uploadedDoc = getDocumentByType(type)
                     const isUploading = uploading === type
                     const isRequired = requiredDocuments.includes(type as any)
+                    const url = uploadedDoc ? urlMap.get(uploadedDoc.storageId) : null
 
                     return (
                         <Card
@@ -229,7 +192,7 @@ export function DocumentUploader({
                                             </p>
                                             {uploadedDoc ? (
                                                 <p className="text-xs text-muted-foreground truncate max-w-[200px]">
-                                                    {uploadedDoc.name}
+                                                    Uploaded {new Date(uploadedDoc.uploadedAt).toLocaleDateString()}
                                                 </p>
                                             ) : (
                                                 <p className="text-xs text-muted-foreground">
@@ -240,13 +203,13 @@ export function DocumentUploader({
                                     </div>
 
                                     <div className="flex items-center gap-2">
-                                        {uploadedDoc && (
+                                        {uploadedDoc && url && (
                                             <>
                                                 <Button
                                                     type="button"
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={() => window.open(uploadedDoc.url, '_blank')}
+                                                    onClick={() => window.open(url, '_blank')}
                                                     className="text-blue-600"
                                                 >
                                                     <Eye className="h-4 w-4" />
