@@ -19,7 +19,7 @@ import { Eye, Building2, CheckCircle2, XCircle, Clock, AlertCircle, MapPin, Bed,
 import { format } from 'date-fns'
 import { useQuery } from "convex/react"
 import { api } from "../../../../../convex/_generated/api"
-import { Authenticated, Unauthenticated, AuthLoading } from "convex/react"
+
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 
@@ -260,39 +260,15 @@ function PropertyRequestsContent() {
 
 export default function PropertyRequestsPage() {
     return (
-        <>
-            <AuthLoading>
-                <div className="p-6">
-                    <div className="animate-pulse space-y-4">
-                        <div className="h-12 w-64 bg-gray-200 rounded" />
-                        <div className="h-96 bg-gray-100 rounded-xl" />
-                    </div>
+        <Suspense fallback={
+            <div className="p-6">
+                <div className="animate-pulse space-y-4">
+                    <div className="h-12 w-64 bg-gray-200 rounded" />
+                    <div className="h-96 bg-gray-100 rounded-xl" />
                 </div>
-            </AuthLoading>
-
-            <Unauthenticated>
-                <div className="p-6">
-                    <div className="text-center py-16">
-                        <p className="text-gray-500">Please sign in to access admin panel</p>
-                        <Link href="/sign-in">
-                            <Button className="mt-4 bg-gray-900 hover:bg-gray-800">Sign In</Button>
-                        </Link>
-                    </div>
-                </div>
-            </Unauthenticated>
-
-            <Authenticated>
-                <Suspense fallback={
-                    <div className="p-6">
-                        <div className="animate-pulse space-y-4">
-                            <div className="h-12 w-64 bg-gray-200 rounded" />
-                            <div className="h-96 bg-gray-100 rounded-xl" />
-                        </div>
-                    </div>
-                }>
-                    <PropertyRequestsContent />
-                </Suspense>
-            </Authenticated>
-        </>
+            </div>
+        }>
+            <PropertyRequestsContent />
+        </Suspense>
     )
 }

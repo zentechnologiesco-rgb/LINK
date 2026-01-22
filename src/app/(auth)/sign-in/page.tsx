@@ -26,7 +26,8 @@ export default function SignInPage() {
 
         try {
             await signIn("password", { email, password, flow: "signIn" })
-            router.push('/dashboard/tenant')
+            router.refresh()
+            router.push('/')
         } catch (error) {
             toast.error(error instanceof Error ? error.message : 'Sign in failed')
             setIsLoading(false)

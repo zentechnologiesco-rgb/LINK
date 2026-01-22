@@ -49,6 +49,7 @@ interface SidebarProps {
     userRole?: 'tenant' | 'landlord' | 'admin' | null
     user?: any
     isLoading?: boolean
+    onItemClick?: () => void
 }
 
 interface NavItem {
@@ -92,7 +93,7 @@ const adminNavItems: NavItem[] = [
 // Documents section
 
 
-export function Sidebar({ collapsed, onToggle, userRole, user, isLoading }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, userRole, user, isLoading, onItemClick }: SidebarProps) {
     const pathname = usePathname()
     const router = useRouter()
     const { signOut } = useAuthActions()
@@ -116,9 +117,11 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading }: Side
     }
 
     // Determine which role-specific nav items to show
-    const roleNavItems = userRole === 'landlord' ? landlordNavItems :
-        userRole === 'tenant' ? tenantNavItems :
-            userRole === 'admin' ? adminNavItems :
+    const currentRole = userRole || user?.role
+
+    const roleNavItems = currentRole === 'landlord' ? landlordNavItems :
+        currentRole === 'tenant' ? tenantNavItems :
+            currentRole === 'admin' ? adminNavItems :
                 []
 
 
@@ -134,11 +137,11 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading }: Side
         >
             {/* Brand Header */}
             <div className="flex items-center justify-between h-14 px-4">
-                <Link href="/chat" className={cn("flex items-center gap-2", collapsed && "justify-center")}>
+                <Link href="/chat" onClick={() => { onItemClick?.() }} className={cn("flex items-center gap-2", collapsed && "justify-center")}>
                     <span className={cn("font-bold tracking-tight text-gray-900", collapsed ? "text-sm" : "text-2xl")}>LINK</span>
                 </Link>
                 {!collapsed && (
-                    <Link href="/chat">
+                    <Link href="/chat" onClick={() => { onItemClick?.() }}>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-gray-600">
                             <Mail className="h-4 w-4" />
                         </Button>
@@ -154,6 +157,9 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading }: Side
                         <li key={item.href}>
                             <Link
                                 href={item.href}
+                                onClick={() => {
+                                    onItemClick?.()
+                                }}
                                 className={cn(
                                     'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                                     isActive(item.href)
@@ -182,7 +188,7 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading }: Side
                     <div className="mt-6">
                         {!collapsed && (
                             <h3 className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                {userRole === 'landlord' ? 'Landlord' : userRole === 'admin' ? 'Admin' : 'Tenant'}
+                                {currentRole === 'landlord' ? 'Landlord' : currentRole === 'admin' ? 'Admin' : 'Tenant'}
                             </h3>
                         )}
                         <ul className="space-y-1">
@@ -190,6 +196,9 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading }: Side
                                 <li key={item.href}>
                                     <Link
                                         href={item.href}
+                                        onClick={() => {
+                                            onItemClick?.()
+                                        }}
                                         className={cn(
                                             'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                                             isActive(item.href)
@@ -214,10 +223,11 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading }: Side
             </nav>
 
             {/* Tenant: Become a Landlord CTA */}
-            {!isLoading && userRole === 'tenant' && (
+            {!isLoading && currentRole === 'tenant' && (
                 <div className="px-3 pb-2">
                     <Link
                         href="/become-landlord"
+                        onClick={() => { onItemClick?.() }}
                         className={cn(
                             'flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 bg-gray-50/50 p-4 transition-all hover:border-gray-900 hover:bg-white',
                             collapsed && 'p-2 border-0 bg-transparent hover:bg-gray-100'
@@ -245,6 +255,7 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading }: Side
                 <div className="px-3 pt-1">
                     <Link
                         href="/settings"
+                        onClick={() => { onItemClick?.() }}
                         className={cn(
                             'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                             isActive('/settings')
@@ -320,7 +331,7 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading }: Side
                                     </p>
                                     <div className="flex items-center gap-1.5 mt-1">
                                         <span className="inline-flex items-center rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
-                                            {userRole === 'landlord' ? 'Landlord' : userRole === 'admin' ? 'Admin' : 'Tenant'}
+                                            {currentRole === 'landlord' ? 'Landlord' : currentRole === 'admin' ? 'Admin' : 'Tenant'}
                                         </span>
                                     </div>
                                 </div>
@@ -336,7 +347,7 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading }: Side
                             </DropdownMenuItem>
 
                             {/* Show Billing for Landlords - placeholder for now */}
-                            {userRole !== 'tenant' && (
+                            {currentRole !== 'tenant' && (
                                 <DropdownMenuItem className="rounded-xl cursor-pointer text-gray-600 focus:bg-gray-50 focus:text-gray-900 py-2.5 px-3" onClick={() => router.push('/settings/billing')}>
                                     <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 text-gray-500 mr-3 group-hover:bg-white group-hover:shadow-sm transition-all">
                                         <Wallet className="h-4 w-4" />

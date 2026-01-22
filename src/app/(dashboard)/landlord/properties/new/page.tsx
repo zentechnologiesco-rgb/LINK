@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { PropertyForm } from '@/components/properties/PropertyForm'
 import { useQuery } from "convex/react"
 import { api } from "../../../../../../convex/_generated/api"
-import { Authenticated, Unauthenticated, AuthLoading } from "convex/react"
+
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
@@ -23,7 +23,14 @@ function CreatePropertyContent() {
     }
 
     if (!currentUser) {
-        redirect('/sign-in')
+        return (
+            <div className="p-6 text-center">
+                <p className="text-muted-foreground">Please sign in to continue</p>
+                <Link href="/sign-in">
+                    <Button variant="link">Sign In</Button>
+                </Link>
+            </div>
+        )
     }
 
     // Check if user is landlord or admin
@@ -39,31 +46,5 @@ function CreatePropertyContent() {
 }
 
 export default function CreatePropertyPage() {
-    return (
-        <>
-            <AuthLoading>
-                <div className="p-6 lg:p-8">
-                    <div className="animate-pulse space-y-4">
-                        <div className="h-8 w-48 bg-gray-200 rounded" />
-                        <div className="h-96 bg-gray-100 rounded-xl" />
-                    </div>
-                </div>
-            </AuthLoading>
-
-            <Unauthenticated>
-                <div className="p-6 lg:p-8">
-                    <div className="text-center py-16">
-                        <p className="text-gray-500">Please sign in to create a property</p>
-                        <Link href="/sign-in">
-                            <Button className="mt-4 bg-gray-900 hover:bg-gray-800">Sign In</Button>
-                        </Link>
-                    </div>
-                </div>
-            </Unauthenticated>
-
-            <Authenticated>
-                <CreatePropertyContent />
-            </Authenticated>
-        </>
-    )
+    return <CreatePropertyContent />
 }

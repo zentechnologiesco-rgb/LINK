@@ -9,7 +9,7 @@ import { CalendarDays, MessageSquare } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { useQuery } from "convex/react"
 import { api } from "../../../../../convex/_generated/api"
-import { Authenticated, Unauthenticated, AuthLoading } from "convex/react"
+
 
 function LandlordInquiriesContent() {
     const inquiries = useQuery(api.inquiries.getForLandlord, {})
@@ -83,31 +83,5 @@ function LandlordInquiriesContent() {
 }
 
 export default function LandlordInquiriesPage() {
-    return (
-        <>
-            <AuthLoading>
-                <div className="p-6 lg:p-8">
-                    <div className="animate-pulse space-y-4">
-                        <div className="h-8 w-48 bg-gray-200 rounded" />
-                        <div className="h-32 bg-gray-100 rounded-xl" />
-                    </div>
-                </div>
-            </AuthLoading>
-
-            <Unauthenticated>
-                <div className="p-6 lg:p-8">
-                    <div className="text-center py-16">
-                        <p className="text-gray-500">Please sign in to view your inquiries</p>
-                        <Link href="/sign-in">
-                            <Button className="mt-4 bg-gray-900 hover:bg-gray-800">Sign In</Button>
-                        </Link>
-                    </div>
-                </div>
-            </Unauthenticated>
-
-            <Authenticated>
-                <LandlordInquiriesContent />
-            </Authenticated>
-        </>
-    )
+    return <LandlordInquiriesContent />
 }

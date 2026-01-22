@@ -57,6 +57,7 @@ function AuthenticatedLayout({ children, sidebarCollapsed, onToggle, mobileMenuO
                             userRole={userRole}
                             user={user}
                             isLoading={isLoading}
+                            onItemClick={onMobileClose}
                         />
                     </div>
                 </div>
@@ -102,6 +103,7 @@ function GuestLayout({ sidebarCollapsed, onToggle, mobileMenuOpen, onMobileClose
                             userRole={null}
                             user={null}
                             isLoading={isLoading}
+                            onItemClick={onMobileClose}
                         />
                     </div>
                 </div>

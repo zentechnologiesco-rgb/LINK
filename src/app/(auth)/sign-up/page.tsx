@@ -37,10 +37,13 @@ export default function SignUpPage() {
                 email,
                 password,
                 name: `${firstName} ${surname}`,
+                firstName,
+                surname,
                 role: "tenant",
                 flow: "signUp"
             })
-            router.push('/dashboard/tenant')
+            router.refresh()
+            router.push('/')
         } catch (error) {
             toast.error(error instanceof Error ? error.message : 'Sign up failed')
             setIsLoading(false)

@@ -140,41 +140,63 @@ export function SearchPageClient({ initialProperties }: SearchPageClientProps) {
                 <div className="flex flex-1" style={{ height: 'calc(100vh - 200px)' }}>
                     {/* Property List */}
                     <div className="w-[380px] overflow-y-auto border-r border-gray-100 bg-white hidden md:block">
-                        <div className="p-3 space-y-2">
-                            {filteredProperties.map((property) => (
-                                <Link
-                                    key={property.id}
-                                    href={`/properties/${property.id}`}
-                                    className="block"
-                                    onMouseEnter={() => setSelectedPropertyId(property.id)}
-                                // Don't set null on leave to avoid excessive re-render if mouse briefly leaves
-                                // onMouseLeave={() => setSelectedPropertyId(null)}
+                        {filteredProperties.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                                <div className="bg-gray-50 p-4 rounded-full mb-4">
+                                    <Search className="h-6 w-6 text-gray-400" />
+                                </div>
+                                <h3 className="font-semibold text-gray-900 mb-1">No properties found</h3>
+                                <p className="text-sm text-gray-500 mb-6">
+                                    We couldn't find any properties that match your search criteria.
+                                </p>
+                                <Button 
+                                    variant="outline" 
+                                    onClick={() => {
+                                        setSearchQuery('')
+                                        setPropertyType('all')
+                                    }}
+                                    className="w-full"
                                 >
-                                    <div className={`flex gap-3 p-3 rounded-lg border transition-all ${selectedPropertyId === property.id
-                                        ? 'border-gray-900 bg-gray-50 ring-1 ring-gray-900'
-                                        : 'border-gray-100 hover:border-gray-200'
-                                        }`}>
-                                        <div className="w-20 h-16 rounded-lg bg-gray-100 overflow-hidden shrink-0">
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img
-                                                src={property.images[0] || '/window.svg'}
-                                                alt={property.title}
-                                                className="w-full h-full object-cover"
-                                            />
+                                    Clear filters
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="p-3 space-y-2">
+                                {filteredProperties.map((property) => (
+                                    <Link
+                                        key={property.id}
+                                        href={`/properties/${property.id}`}
+                                        className="block"
+                                        onMouseEnter={() => setSelectedPropertyId(property.id)}
+                                    // Don't set null on leave to avoid excessive re-render if mouse briefly leaves
+                                    // onMouseLeave={() => setSelectedPropertyId(null)}
+                                    >
+                                        <div className={`flex gap-3 p-3 rounded-lg border transition-all ${selectedPropertyId === property.id
+                                            ? 'border-gray-900 bg-gray-50 ring-1 ring-gray-900'
+                                            : 'border-gray-100 hover:border-gray-200'
+                                            }`}>
+                                            <div className="w-20 h-16 rounded-lg bg-gray-100 overflow-hidden shrink-0">
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img
+                                                    src={property.images[0] || '/window.svg'}
+                                                    alt={property.title}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="font-medium text-gray-900 text-sm truncate">
+                                                    {property.title}
+                                                </h3>
+                                                <p className="text-xs text-gray-500 mt-0.5">{property.city}</p>
+                                                <p className="font-semibold text-gray-900 text-sm mt-1">
+                                                    N$ {property.price.toLocaleString()}<span className="text-xs text-gray-400 font-normal">/mo</span>
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-medium text-gray-900 text-sm truncate">
-                                                {property.title}
-                                            </h3>
-                                            <p className="text-xs text-gray-500 mt-0.5">{property.city}</p>
-                                            <p className="font-semibold text-gray-900 text-sm mt-1">
-                                                N$ {property.price.toLocaleString()}<span className="text-xs text-gray-400 font-normal">/mo</span>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </Link>
-                            ))}
-                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Map Container */}
@@ -192,17 +214,23 @@ export function SearchPageClient({ initialProperties }: SearchPageClientProps) {
                 <div className="flex-1 overflow-y-auto p-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {filteredProperties.length === 0 ? (
-                            <div className="col-span-full text-center py-12 text-gray-500">
-                                <p>No properties found matching your criteria.</p>
-                                <button
+                            <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
+                                <div className="bg-gray-50 p-4 rounded-full mb-4">
+                                    <Search className="h-8 w-8 text-gray-400" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">No properties found</h3>
+                                <p className="text-gray-500 mb-6 max-w-sm mx-auto">
+                                    We couldn't find any properties that match your current search criteria. Try removing some filters.
+                                </p>
+                                <Button
                                     onClick={() => {
                                         setSearchQuery('')
                                         setPropertyType('all')
                                     }}
-                                    className="text-gray-900 hover:underline mt-2"
+                                    variant="outline"
                                 >
-                                    Clear filters
-                                </button>
+                                    Clear all filters
+                                </Button>
                             </div>
                         ) : (
                             filteredProperties.map((property) => (

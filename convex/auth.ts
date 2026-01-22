@@ -7,6 +7,8 @@ const CustomPassword = Password<DataModel>({
         return {
             email: params.email as string,
             fullName: params.name as string | undefined,
+            firstName: params.firstName as string | undefined,
+            surname: params.surname as string | undefined,
             role: (params.role as "tenant" | "landlord" | "admin") || "tenant",
             isVerified: false,
         };

@@ -8,7 +8,7 @@ import { Users, Building2, FileText, MessageSquare, Shield, Trash2 } from 'lucid
 import { format } from 'date-fns'
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../../convex/_generated/api"
-import { Authenticated, Unauthenticated, AuthLoading } from "convex/react"
+
 import { Id } from "../../../../convex/_generated/dataModel"
 import { toast } from 'sonner'
 
@@ -241,31 +241,5 @@ function AdminDashboardContent() {
 }
 
 export default function AdminDashboard() {
-    return (
-        <>
-            <AuthLoading>
-                <div className="p-6 lg:p-8">
-                    <div className="animate-pulse space-y-4">
-                        <div className="h-8 w-48 bg-gray-200 rounded" />
-                        <div className="h-64 bg-gray-100 rounded-xl" />
-                    </div>
-                </div>
-            </AuthLoading>
-
-            <Unauthenticated>
-                <div className="p-6 lg:p-8">
-                    <div className="text-center py-16">
-                        <p className="text-gray-500">Please sign in to access the admin dashboard</p>
-                        <Link href="/sign-in">
-                            <Button className="mt-4 bg-gray-900 hover:bg-gray-800">Sign In</Button>
-                        </Link>
-                    </div>
-                </div>
-            </Unauthenticated>
-
-            <Authenticated>
-                <AdminDashboardContent />
-            </Authenticated>
-        </>
-    )
+    return <AdminDashboardContent />
 }

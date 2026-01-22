@@ -47,6 +47,7 @@ export function DashboardLayout({ children, title = 'Dashboard', user }: Dashboa
                     collapsed={sidebarCollapsed}
                     onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
                     user={user}
+                    userRole={user?.role}
                 />
             </div>
 

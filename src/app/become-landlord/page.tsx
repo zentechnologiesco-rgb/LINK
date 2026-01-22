@@ -144,31 +144,5 @@ function BecomeLandlordContent() {
 }
 
 export default function BecomeLandlordPage() {
-    return (
-        <>
-            <AuthLoading>
-                <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-                    <div className="animate-pulse space-y-4">
-                        <div className="h-32 w-96 bg-gray-200 rounded-xl" />
-                        <div className="h-64 w-96 bg-gray-100 rounded-xl" />
-                    </div>
-                </div>
-            </AuthLoading>
-
-            <Unauthenticated>
-                <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-                    <div className="text-center">
-                        <p className="text-gray-500 mb-4">Please sign in to become a landlord</p>
-                        <Link href="/sign-in">
-                            <Button className="bg-gray-900 hover:bg-gray-800">Sign In</Button>
-                        </Link>
-                    </div>
-                </div>
-            </Unauthenticated>
-
-            <Authenticated>
-                <BecomeLandlordContent />
-            </Authenticated>
-        </>
-    )
+    return <BecomeLandlordContent />
 }
