@@ -56,6 +56,7 @@ export default defineSchema({
     bathrooms: v.optional(v.number()),
     sizeSqm: v.optional(v.number()),
     amenities: v.optional(v.array(v.id("amenities"))),
+    amenityNames: v.optional(v.array(v.string())), // Hardcoded amenity names
     petPolicy: v.optional(v.string()),
     utilitiesIncluded: v.optional(v.array(v.string())),
     images: v.optional(v.array(v.id("_storage"))),

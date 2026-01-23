@@ -16,6 +16,7 @@ export const create = mutation({
         bathrooms: v.optional(v.number()),
         sizeSqm: v.optional(v.number()),
         amenities: v.optional(v.array(v.id("amenities"))),
+        amenityNames: v.optional(v.array(v.string())),
         petPolicy: v.optional(v.string()),
         utilitiesIncluded: v.optional(v.array(v.string())),
         images: v.optional(v.array(v.id("_storage"))),
@@ -152,10 +153,33 @@ export const getByLandlord = query({
         const userId = args.landlordId || (await auth.getUserId(ctx));
         if (!userId) return [];
 
-        return await ctx.db
+        const properties = await ctx.db
             .query("properties")
             .withIndex("by_landlordId", (q) => q.eq("landlordId", userId))
             .collect();
+
+        // Resolve image URLs for each property
+        const propertiesWithImages = await Promise.all(
+            properties.map(async (property) => {
+                let imageUrls: string[] = [];
+                if (property.images && property.images.length > 0) {
+                    for (const imageId of property.images) {
+                        try {
+                            const url = await ctx.storage.getUrl(imageId);
+                            if (url) imageUrls.push(url);
+                        } catch (error) {
+                            // Ignore invalid image IDs
+                        }
+                    }
+                }
+                return {
+                    ...property,
+                    imageUrls,
+                };
+            })
+        );
+
+        return propertiesWithImages;
     },
 });
 
@@ -226,6 +250,7 @@ export const update = mutation({
         bathrooms: v.optional(v.number()),
         sizeSqm: v.optional(v.number()),
         amenities: v.optional(v.array(v.id("amenities"))),
+        amenityNames: v.optional(v.array(v.string())),
         petPolicy: v.optional(v.string()),
         utilitiesIncluded: v.optional(v.array(v.string())),
         images: v.optional(v.array(v.id("_storage"))),

@@ -56,6 +56,7 @@ interface NavItem {
     href: string
     icon: React.ElementType
     badge?: number
+    tag?: string
 }
 
 // General navigation for all users
@@ -76,7 +77,7 @@ const tenantNavItems: NavItem[] = [
 const landlordNavItems: NavItem[] = [
     { label: 'My Properties', href: '/landlord/properties', icon: Building2 },
     { label: 'Leases', href: '/landlord/leases', icon: FileCheck },
-    { label: 'Payments', href: '/landlord/payments', icon: Wallet },
+    { label: 'Payments', href: '/landlord/payments', icon: Wallet, tag: 'Soon' },
 ]
 
 // Admin-specific navigation
@@ -231,7 +232,12 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading, onItem
                                                     active ? "text-primary" : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground"
                                                 )} />
                                                 {!collapsed && (
-                                                    <span className="text-sm">{item.label}</span>
+                                                    <span className="text-sm flex-1">{item.label}</span>
+                                                )}
+                                                {!collapsed && item.tag && (
+                                                    <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-lime-100 text-lime-700">
+                                                        {item.tag}
+                                                    </span>
                                                 )}
                                             </Link>
                                         </li>

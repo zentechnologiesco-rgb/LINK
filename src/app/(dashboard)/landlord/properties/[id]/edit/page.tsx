@@ -20,10 +20,10 @@ function EditPropertyContent({ id }: { id: string }) {
 
     if (currentUser === undefined || property === undefined) {
         return (
-            <div className="p-6 lg:p-8">
-                <div className="animate-pulse space-y-4">
-                    <div className="h-8 w-48 bg-gray-200 rounded" />
-                    <div className="h-96 bg-gray-100 rounded-xl" />
+            <div className="min-h-[60vh] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="h-10 w-10 rounded-full border-2 border-lime-500/20 border-t-lime-500 animate-spin" />
+                    <p className="text-sm text-muted-foreground">Loading property...</p>
                 </div>
             </div>
         )
@@ -31,10 +31,12 @@ function EditPropertyContent({ id }: { id: string }) {
 
     if (!currentUser) {
         return (
-            <div className="p-6 text-center">
-                <p className="text-muted-foreground">Please sign in to continue</p>
+            <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
+                <p className="text-muted-foreground mb-4">Please sign in to continue</p>
                 <Link href="/sign-in">
-                    <Button variant="link">Sign In</Button>
+                    <Button className="bg-lime-500 hover:bg-lime-600 text-white rounded-lg">
+                        Sign In
+                    </Button>
                 </Link>
             </div>
         )
@@ -55,7 +57,7 @@ function EditPropertyContent({ id }: { id: string }) {
     }
 
     return (
-        <div className="px-4 py-6 sm:px-6 lg:px-8">
+        <div className="px-6 py-6">
             <PropertyForm
                 mode="edit"
                 propertyId={property._id}
@@ -69,7 +71,7 @@ function EditPropertyContent({ id }: { id: string }) {
                     bedrooms: property.bedrooms || 0,
                     bathrooms: property.bathrooms || 0,
                     sizeSqm: property.sizeSqm || 0,
-                    amenities: property.amenities || [],
+                    amenityNames: property.amenityNames || [],
                     images: property.images || [],
                     coordinates: property.coordinates,
                 }}
