@@ -59,10 +59,14 @@ interface NavItem {
     tag?: string
 }
 
-// General navigation for all users
-const generalNavItems: NavItem[] = [
+// Public navigation for all users (visible even when not logged in)
+const publicNavItems: NavItem[] = [
     { label: 'Home', href: '/', icon: Home },
     { label: 'Search', href: '/search', icon: Search },
+]
+
+// Navigation items that require authentication
+const authenticatedNavItems: NavItem[] = [
     { label: 'Messages', href: '/chat', icon: MessageSquare },
 ]
 
@@ -165,7 +169,35 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading, onItem
                             </h3>
                         )}
                         <ul className="space-y-1">
-                            {generalNavItems.map((item) => {
+                            {publicNavItems.map((item) => {
+                                const active = isActive(item.href);
+                                return (
+                                    <li key={item.href}>
+                                        <Link
+                                            href={item.href}
+                                            onClick={() => onItemClick?.()}
+                                            className={cn(
+                                                'group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ease-in-out',
+                                                active
+                                                    ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm ring-1 ring-sidebar-border'
+                                                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground',
+                                                collapsed && 'justify-center px-0 w-10 h-10 mx-auto aspect-square'
+                                            )}
+                                            title={collapsed ? item.label : undefined}
+                                        >
+                                            <item.icon className={cn(
+                                                "h-[1.15rem] w-[1.15rem] transition-colors",
+                                                active ? "text-primary" : "text-sidebar-foreground/60 group-hover:text-sidebar-foreground"
+                                            )} />
+                                            {!collapsed && (
+                                                <span className="text-sm">{item.label}</span>
+                                            )}
+                                        </Link>
+                                    </li>
+                                );
+                            })}
+                            {/* Authenticated-only items (Messages) */}
+                            {user && authenticatedNavItems.map((item) => {
                                 const active = isActive(item.href);
                                 return (
                                     <li key={item.href}>
