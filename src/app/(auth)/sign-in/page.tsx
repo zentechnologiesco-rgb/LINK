@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { Building2, Eye, EyeOff, ArrowRight, Home, Sparkles } from 'lucide-react'
+import { Eye, EyeOff, ArrowRight, Home, Loader2 } from 'lucide-react'
 import { useAuthActions } from "@convex-dev/auth/react"
 
 export default function SignInPage() {
@@ -35,79 +35,83 @@ export default function SignInPage() {
     }
 
     return (
-        <div className="min-h-screen flex">
-            {/* Left Side - Branding & Image */}
-            <div className="hidden lg:flex lg:w-1/2 bg-gray-100 relative overflow-hidden">
+        <div className="min-h-screen flex bg-background">
+            {/* Left Side - Branding */}
+            <div className="hidden lg:flex lg:w-1/2 bg-sidebar-accent relative overflow-hidden">
                 {/* Decorative Elements */}
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-900/5 via-transparent to-gray-900/10" />
-                <div className="absolute top-1/4 -left-20 w-96 h-96 bg-gray-900/5 rounded-full blur-3xl" />
-                <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-gray-900/5 rounded-full blur-3xl" />
+                <div className="absolute top-1/4 -left-20 w-96 h-96 bg-lime-500/10 rounded-full blur-3xl" />
+                <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-lime-500/10 rounded-full blur-3xl" />
 
                 {/* Content */}
                 <div className="relative z-10 flex flex-col justify-between p-12 w-full">
                     {/* Logo */}
-                    <Link href="/" className="flex items-center gap-3 group">
-                        <span className="text-3xl font-bold text-gray-900 tracking-tight">LINK</span>
+                    <Link href="/" className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-lg bg-lime-500 flex items-center justify-center">
+                            <span className="text-white font-bold text-sm">L</span>
+                        </div>
+                        <span className="text-2xl font-bold text-foreground tracking-tight">LINK</span>
                     </Link>
 
                     {/* Main Content */}
-                    <div className="space-y-8">
-                        <div className="space-y-4">
-                            <h1 className="text-4xl font-bold text-gray-900 leading-tight">
+                    <div className="space-y-6">
+                        <div className="space-y-3">
+                            <h1 className="text-4xl font-bold text-foreground leading-tight">
                                 Find your perfect
                                 <br />
-                                <span className="text-gray-600">place to call home</span>
+                                <span className="text-lime-500">place to call home</span>
                             </h1>
-                            <p className="text-gray-500 text-lg max-w-md">
+                            <p className="text-muted-foreground text-lg max-w-md">
                                 Discover premium properties, connect with trusted landlords, and make renting effortless.
                             </p>
                         </div>
 
-                        {/* Feature Cards */}
-                        <div className="grid grid-cols-2 gap-4 max-w-md">
-                            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-sm border border-gray-200/50">
-                                <Building2 className="h-6 w-6 text-gray-900 mb-2" />
-                                <p className="text-sm font-medium text-gray-900">Premium Properties</p>
-                                <p className="text-xs text-gray-500 mt-1">Verified listings only</p>
-                            </div>
-                            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-sm border border-gray-200/50">
-                                <Sparkles className="h-6 w-6 text-gray-900 mb-2" />
-                                <p className="text-sm font-medium text-gray-900">Smart Matching</p>
-                                <p className="text-xs text-gray-500 mt-1">Find what suits you</p>
-                            </div>
+                        {/* Feature Pills */}
+                        <div className="flex flex-wrap gap-2">
+                            <span className="px-4 py-2 rounded-full bg-background/50 text-sm font-medium text-foreground">
+                                ✓ Verified Properties
+                            </span>
+                            <span className="px-4 py-2 rounded-full bg-background/50 text-sm font-medium text-foreground">
+                                ✓ Secure Payments
+                            </span>
+                            <span className="px-4 py-2 rounded-full bg-background/50 text-sm font-medium text-foreground">
+                                ✓ Digital Leases
+                            </span>
                         </div>
                     </div>
 
                     {/* Footer */}
-                    <p className="text-sm text-gray-400">
+                    <p className="text-sm text-muted-foreground">
                         © 2024 LINK. All rights reserved.
                     </p>
                 </div>
             </div>
 
             {/* Right Side - Sign In Form */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 bg-white">
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12">
                 <div className="w-full max-w-md space-y-8">
                     {/* Mobile Logo */}
                     <div className="lg:hidden flex justify-center mb-8">
-                        <Link href="/" className="flex items-center gap-3">
-                            <span className="text-2xl font-bold text-gray-900 tracking-tight">LINK</span>
+                        <Link href="/" className="flex items-center gap-2">
+                            <div className="h-8 w-8 rounded-lg bg-lime-500 flex items-center justify-center">
+                                <span className="text-white font-bold text-sm">L</span>
+                            </div>
+                            <span className="text-2xl font-bold text-foreground tracking-tight">LINK</span>
                         </Link>
                     </div>
 
                     {/* Header */}
                     <div className="text-center lg:text-left space-y-2">
-                        <h2 className="text-3xl font-bold text-gray-900">Welcome back</h2>
-                        <p className="text-gray-500">
+                        <h2 className="text-3xl font-bold text-foreground">Welcome back</h2>
+                        <p className="text-muted-foreground">
                             Enter your credentials to access your account
                         </p>
                     </div>
 
                     {/* Form */}
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-5">
                         <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                            <div>
+                                <Label htmlFor="email" className="text-foreground">
                                     Email address
                                 </Label>
                                 <Input
@@ -117,18 +121,18 @@ export default function SignInPage() {
                                     placeholder="you@example.com"
                                     required
                                     disabled={isLoading}
-                                    className="h-12 bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+                                    className="mt-1.5 h-12 rounded-lg bg-sidebar-accent border-0 focus-visible:ring-2 focus-visible:ring-lime-500/50"
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                            <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <Label htmlFor="password" className="text-foreground">
                                         Password
                                     </Label>
                                     <Link
                                         href="/forgot-password"
-                                        className="text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors"
+                                        className="text-sm text-lime-600 hover:text-lime-700 transition-colors"
                                     >
                                         Forgot password?
                                     </Link>
@@ -141,12 +145,12 @@ export default function SignInPage() {
                                         placeholder="••••••••"
                                         required
                                         disabled={isLoading}
-                                        className="h-12 bg-gray-50 border-gray-200 rounded-xl pr-12 focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+                                        className="h-12 rounded-lg bg-sidebar-accent border-0 pr-12 focus-visible:ring-2 focus-visible:ring-lime-500/50"
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                                     >
                                         {showPassword ? (
                                             <EyeOff className="h-5 w-5" />
@@ -161,20 +165,17 @@ export default function SignInPage() {
                         <Button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full h-12 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-medium transition-all hover:shadow-lg group"
+                            className="w-full h-12 bg-lime-500 hover:bg-lime-600 text-white rounded-lg font-medium shadow-lg shadow-lime-500/20 transition-all"
                         >
                             {isLoading ? (
                                 <span className="flex items-center gap-2">
-                                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                    </svg>
+                                    <Loader2 className="h-5 w-5 animate-spin" />
                                     Signing in...
                                 </span>
                             ) : (
                                 <span className="flex items-center justify-center gap-2">
                                     Sign in
-                                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                                    <ArrowRight className="h-4 w-4" />
                                 </span>
                             )}
                         </Button>
@@ -183,10 +184,10 @@ export default function SignInPage() {
                     {/* Divider */}
                     <div className="relative">
                         <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-gray-200" />
+                            <div className="w-full border-t border-border" />
                         </div>
                         <div className="relative flex justify-center text-sm">
-                            <span className="px-4 bg-white text-gray-500">New to LINK?</span>
+                            <span className="px-4 bg-background text-muted-foreground">New to LINK?</span>
                         </div>
                     </div>
 
@@ -194,7 +195,7 @@ export default function SignInPage() {
                     <div className="text-center">
                         <Link
                             href="/sign-up"
-                            className="inline-flex items-center gap-2 text-gray-900 font-medium hover:text-gray-700 transition-colors group"
+                            className="inline-flex items-center gap-2 text-foreground font-medium hover:text-lime-600 transition-colors group"
                         >
                             Create an account
                             <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -205,7 +206,7 @@ export default function SignInPage() {
                     <div className="text-center pt-4">
                         <Link
                             href="/"
-                            className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+                            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                         >
                             <Home className="h-4 w-4" />
                             Back to home

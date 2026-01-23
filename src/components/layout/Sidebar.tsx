@@ -62,8 +62,8 @@ interface NavItem {
 // General navigation for all users
 const generalNavItems: NavItem[] = [
     { label: 'Home', href: '/', icon: Home },
-    { label: 'Messages', href: '/chat', icon: MessageSquare },
     { label: 'Search', href: '/search', icon: Search },
+    { label: 'Messages', href: '/chat', icon: MessageSquare },
 ]
 
 // Tenant-specific navigation
