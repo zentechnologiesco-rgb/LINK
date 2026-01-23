@@ -4,7 +4,6 @@ import { SearchPageClient } from './SearchPageClient'
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 
-// Define the Property type needed for the feed
 interface Property {
     id: string
     title: string
@@ -26,8 +25,11 @@ export default function SearchPage() {
 
     if (properties === undefined) {
         return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="text-sm text-muted-foreground">Loading properties...</div>
+            <div className="min-h-[80vh] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="h-10 w-10 rounded-full border-2 border-lime-500/20 border-t-lime-500 animate-spin" />
+                    <p className="text-sm text-muted-foreground">Loading properties...</p>
+                </div>
             </div>
         )
     }
