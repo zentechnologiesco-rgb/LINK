@@ -1,11 +1,26 @@
 'use client'
 
+import { useState } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { MOCK_PROPERTIES } from '@/lib/mock-data'
-import { MapPin, Bed, Bath, Square, Check, Share2, ArrowLeft, Phone, User, Sparkles } from 'lucide-react'
+import {
+    MapPin,
+    Bed,
+    Bath,
+    Square,
+    Check,
+    Share2,
+    ChevronLeft,
+    ChevronRight,
+    Phone,
+    User,
+    Sparkles,
+    X,
+    Grid3X3
+} from 'lucide-react'
 import { InquiryDialog } from '@/components/properties/InquiryDialog'
 import { SavePropertyButton } from '@/components/properties/SavePropertyButton'
 import { PropertyDetailMap } from '@/components/maps/PropertyDetailMap'
@@ -18,7 +33,6 @@ interface Props {
     params: Promise<{ id: string }>
 }
 
-// Unified property interface
 interface PropertyDetails {
     id: string
     title: string
@@ -42,25 +56,26 @@ interface PropertyDetails {
 }
 
 function PropertyDetailContent({ id }: { id: string }) {
-    // Check if it matches a mock property first
-    const mockProperty = MOCK_PROPERTIES.find((p) => p.id === id)
+    const [showAllPhotos, setShowAllPhotos] = useState(false)
+    const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
-    // Only query Convex if it's NOT a mock property
-    // We cast to Id<"properties"> but ideally we'd validate the ID format first
+    const mockProperty = MOCK_PROPERTIES.find((p) => p.id === id)
     const convexQueryArgs = !mockProperty ? { propertyId: id as Id<"properties"> } : "skip"
     const convexProperty = useQuery(api.properties.getById, convexQueryArgs)
-
-    // Loading state: Only if we are querying Convex and it's still loading
     const isConvexLoading = !mockProperty && convexProperty === undefined
 
     if (isConvexLoading) {
         return (
-            <div className="p-6 lg:p-8">
-                <div className="animate-pulse space-y-4">
-                    <div className="h-8 w-32 bg-gray-200 rounded" />
-                    <div className="aspect-[16/9] bg-gray-100 rounded-xl" />
-                    <div className="h-8 w-64 bg-gray-200 rounded" />
-                    <div className="h-64 bg-gray-100 rounded" />
+            <div className="max-w-6xl mx-auto px-6 py-8">
+                <div className="h-5 w-32 bg-muted rounded animate-pulse mb-6" />
+                <div className="h-8 w-2/3 bg-muted rounded animate-pulse mb-2" />
+                <div className="h-5 w-1/3 bg-muted rounded animate-pulse mb-6" />
+                <div className="grid grid-cols-4 gap-2 rounded-xl overflow-hidden mb-8">
+                    <div className="col-span-2 row-span-2 aspect-square bg-muted animate-pulse" />
+                    <div className="aspect-square bg-muted animate-pulse" />
+                    <div className="aspect-square bg-muted animate-pulse" />
+                    <div className="aspect-square bg-muted animate-pulse" />
+                    <div className="aspect-square bg-muted animate-pulse" />
                 </div>
             </div>
         )
@@ -109,211 +124,298 @@ function PropertyDetailContent({ id }: { id: string }) {
         notFound()
     }
 
-    // Use fallback image if no images
     const displayImages = property.images.length > 0
         ? property.images
         : ['https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=2070&auto=format&fit=crop']
 
+    // Full screen photo gallery
+    if (showAllPhotos) {
+        return (
+            <div className="min-h-screen bg-white">
+                <div className="sticky top-0 z-10 bg-white border-b border-border px-6 py-4">
+                    <div className="max-w-5xl mx-auto flex items-center justify-between">
+                        <button
+                            onClick={() => setShowAllPhotos(false)}
+                            className="flex items-center gap-2 text-sm font-medium text-foreground hover:underline"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                            Back to listing
+                        </button>
+                        <span className="text-sm text-muted-foreground">
+                            {displayImages.length} photos
+                        </span>
+                    </div>
+                </div>
+                <div className="max-w-5xl mx-auto px-6 py-8">
+                    <div className="space-y-4">
+                        {displayImages.map((image, index) => (
+                            <div key={index} className="rounded-xl overflow-hidden">
+                                <Image
+                                    src={image}
+                                    alt={`${property.title} - Photo ${index + 1}`}
+                                    width={1200}
+                                    height={800}
+                                    className="w-full h-auto object-cover"
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     return (
-        <div className="p-6 lg:p-8">
+        <div className="max-w-6xl mx-auto px-6 py-6">
             {/* Back Button */}
             <Link
                 href="/"
-                className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 mb-6"
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-5"
             >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to listings
+                <ChevronLeft className="h-4 w-4" />
+                Back
             </Link>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Content */}
-                <div className="lg:col-span-2 space-y-6">
-                    {/* Image */}
-                    <div className="aspect-[16/9] rounded-xl overflow-hidden bg-gray-100 relative">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                            src={displayImages[0]}
-                            alt={property.title}
-                            className="w-full h-full object-cover"
-                        />
+            {/* Title Section */}
+            <div className="mb-6">
+                <h1 className="text-2xl font-semibold text-foreground mb-1">
+                    {property.title}
+                </h1>
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex items-center gap-4 text-sm">
+                        <span className="text-muted-foreground flex items-center gap-1">
+                            <MapPin className="h-4 w-4" />
+                            {property.city}
+                        </span>
                         {property.isFromDatabase && (
-                            <Badge className="absolute top-4 left-4 bg-green-500 hover:bg-green-500 text-white gap-1">
-                                <Sparkles className="h-3 w-3" />
-                                Verified Listing
-                            </Badge>
+                            <span className="inline-flex items-center gap-1 text-lime-600 font-medium">
+                                <Sparkles className="h-3.5 w-3.5" />
+                                Verified
+                            </span>
                         )}
                     </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-2 text-sm font-medium hover:bg-sidebar-accent"
+                        >
+                            <Share2 className="h-4 w-4" />
+                            Share
+                        </Button>
+                        <SavePropertyButton
+                            propertyId={property.id}
+                            initialSaved={false}
+                        />
+                    </div>
+                </div>
+            </div>
 
-                    {/* Title & Location */}
-                    <div>
-                        <div className="flex items-start justify-between gap-4 mb-2">
-                            <h1 className="text-2xl font-semibold text-gray-900">
-                                {property.title}
-                            </h1>
-                            <div className="flex gap-2 shrink-0">
-                                <Button size="icon" variant="ghost" className="h-9 w-9 text-gray-400 hover:text-gray-600">
-                                    <Share2 className="h-4 w-4" />
-                                </Button>
-                                <SavePropertyButton
-                                    propertyId={property.id}
-                                    initialSaved={false}
-                                    variant="default"
-                                    className="h-9 px-3 border-0 bg-transparent hover:bg-gray-100 text-gray-600"
+            {/* Photo Gallery */}
+            <div className="relative mb-8">
+                <div className="grid grid-cols-4 gap-2 rounded-xl overflow-hidden">
+                    {/* Main large image */}
+                    <div
+                        className="col-span-2 row-span-2 relative aspect-square cursor-pointer group"
+                        onClick={() => setShowAllPhotos(true)}
+                    >
+                        <Image
+                            src={displayImages[0]}
+                            alt={property.title}
+                            fill
+                            className="object-cover group-hover:brightness-95 transition-all"
+                            sizes="50vw"
+                            priority
+                        />
+                    </div>
+                    {/* Smaller images */}
+                    {[1, 2, 3, 4].map((index) => (
+                        <div
+                            key={index}
+                            className="relative aspect-square cursor-pointer group"
+                            onClick={() => setShowAllPhotos(true)}
+                        >
+                            {displayImages[index] ? (
+                                <Image
+                                    src={displayImages[index]}
+                                    alt={`${property.title} - Photo ${index + 1}`}
+                                    fill
+                                    className="object-cover group-hover:brightness-95 transition-all"
+                                    sizes="25vw"
                                 />
+                            ) : (
+                                <div className="w-full h-full bg-muted" />
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Show all photos button */}
+                <button
+                    onClick={() => setShowAllPhotos(true)}
+                    className="absolute bottom-4 right-4 flex items-center gap-2 px-4 py-2 bg-white rounded-lg text-sm font-medium text-foreground border border-border shadow-sm hover:shadow-md transition-shadow"
+                >
+                    <Grid3X3 className="h-4 w-4" />
+                    Show all photos
+                </button>
+            </div>
+
+            {/* Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                {/* Main Content */}
+                <div className="lg:col-span-2">
+                    {/* Property type and host */}
+                    <div className="flex items-center justify-between pb-6 border-b border-border">
+                        <div>
+                            <h2 className="text-xl font-medium text-foreground">
+                                {property.type} in {property.city}
+                            </h2>
+                            <p className="text-muted-foreground mt-1">
+                                {property.bedrooms} bedroom{property.bedrooms !== 1 ? 's' : ''} · {property.bathrooms} bathroom{property.bathrooms !== 1 ? 's' : ''} · {property.size} m²
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="text-right">
+                                <p className="font-medium text-foreground">
+                                    {property.landlord?.name || 'Property Owner'}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                    {property.isFromDatabase ? 'Landlord' : 'Agent'}
+                                </p>
+                            </div>
+                            <div className="h-12 w-12 rounded-full bg-sidebar-accent flex items-center justify-center">
+                                <User className="h-6 w-6 text-muted-foreground" />
                             </div>
                         </div>
-                        <p className="text-gray-500 flex items-center gap-1">
-                            <MapPin className="h-4 w-4" />
-                            {property.address}, {property.city}
-                        </p>
                     </div>
 
-                    {/* Stats */}
-                    <div className="flex items-center gap-6 py-4 border-y border-gray-100">
-                        <div className="flex items-center gap-2">
-                            <Bed className="h-5 w-5 text-gray-400" />
-                            <span className="font-medium text-gray-900">{property.bedrooms}</span>
-                            <span className="text-gray-500">Beds</span>
+                    {/* Quick highlights */}
+                    <div className="py-6 border-b border-border">
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="flex items-start gap-3">
+                                <div className="h-10 w-10 rounded-lg bg-sidebar-accent flex items-center justify-center shrink-0">
+                                    <Bed className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                                <div>
+                                    <p className="font-medium text-foreground">{property.bedrooms} Bedrooms</p>
+                                    <p className="text-sm text-muted-foreground">Spacious rooms</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                                <div className="h-10 w-10 rounded-lg bg-sidebar-accent flex items-center justify-center shrink-0">
+                                    <Bath className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                                <div>
+                                    <p className="font-medium text-foreground">{property.bathrooms} Bathrooms</p>
+                                    <p className="text-sm text-muted-foreground">Modern fixtures</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                                <div className="h-10 w-10 rounded-lg bg-sidebar-accent flex items-center justify-center shrink-0">
+                                    <Square className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                                <div>
+                                    <p className="font-medium text-foreground">{property.size} m²</p>
+                                    <p className="text-sm text-muted-foreground">Total area</p>
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Bath className="h-5 w-5 text-gray-400" />
-                            <span className="font-medium text-gray-900">{property.bathrooms}</span>
-                            <span className="text-gray-500">Baths</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Square className="h-5 w-5 text-gray-400" />
-                            <span className="font-medium text-gray-900">{property.size}</span>
-                            <span className="text-gray-500">m²</span>
-                        </div>
-                        <span className="px-2 py-1 bg-gray-100 rounded text-sm text-gray-600">
-                            {property.type}
-                        </span>
                     </div>
 
                     {/* Description */}
-                    <div>
-                        <h2 className="text-lg font-medium text-gray-900 mb-3">About</h2>
-                        <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">
+                    <div className="py-6 border-b border-border">
+                        <p className="text-foreground leading-relaxed whitespace-pre-wrap">
                             {property.description}
                         </p>
                     </div>
 
                     {/* Amenities */}
                     {property.amenities.length > 0 && (
-                        <div>
-                            <h2 className="text-lg font-medium text-gray-900 mb-3">Amenities</h2>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <div className="py-6 border-b border-border">
+                            <h2 className="text-lg font-medium text-foreground mb-4">
+                                What this place offers
+                            </h2>
+                            <div className="grid grid-cols-2 gap-4">
                                 {property.amenities.map((amenity) => (
-                                    <div key={amenity} className="flex items-center gap-2 text-gray-600">
-                                        <Check className="h-4 w-4 text-green-500" />
-                                        {amenity}
+                                    <div
+                                        key={amenity}
+                                        className="flex items-center gap-3"
+                                    >
+                                        <Check className="h-5 w-5 text-foreground" />
+                                        <span className="text-foreground">{amenity}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     )}
 
-                    {/* Location Map */}
-                    {property.coordinates && (
-                        <div>
-                            <h2 className="text-lg font-medium text-gray-900 mb-3">Location</h2>
-                            <PropertyDetailMap
-                                coordinates={property.coordinates}
-                                address={`${property.address}, ${property.city}`}
-                            />
-                            <p className="mt-2 text-sm text-gray-500 flex items-center gap-1">
-                                <MapPin className="h-4 w-4" />
-                                {property.address}, {property.city}
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Gallery */}
-                    {displayImages.length > 1 && (
-                        <div>
-                            <h2 className="text-lg font-medium text-gray-900 mb-3">Photos</h2>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                {displayImages.map((image, index) => (
-                                    <div key={index} className="aspect-[4/3] rounded-lg overflow-hidden bg-gray-100">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                            src={image}
-                                            alt={`${property.title} - Photo ${index + 1}`}
-                                            className="w-full h-full object-cover hover:scale-105 transition-transform"
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                    {/* Location */}
+                    <div className="py-6">
+                        <h2 className="text-lg font-medium text-foreground mb-4">
+                            Where you'll be
+                        </h2>
+                        {property.coordinates ? (
+                            <>
+                                <div className="rounded-xl overflow-hidden mb-4">
+                                    <PropertyDetailMap
+                                        coordinates={property.coordinates}
+                                        address={`${property.address}, ${property.city}`}
+                                    />
+                                </div>
+                                <p className="text-foreground font-medium">{property.city}</p>
+                                <p className="text-muted-foreground mt-1">{property.address}</p>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-foreground font-medium">{property.city}</p>
+                                <p className="text-muted-foreground mt-1">{property.address}</p>
+                            </>
+                        )}
+                    </div>
                 </div>
 
-                {/* Sidebar */}
+                {/* Sticky Booking Card */}
                 <div className="lg:col-span-1">
-                    <div className="sticky top-6 space-y-6">
-                        {/* Price Card */}
-                        <div className="p-6 rounded-xl border border-gray-100 bg-white">
-                            <p className="text-sm text-gray-500 mb-1">Monthly Rent</p>
-                            <p className="text-3xl font-semibold text-gray-900 mb-6">
-                                N$ {property.price.toLocaleString()}
-                            </p>
+                    <div className="sticky top-6">
+                        <div className="p-6 rounded-xl border border-border bg-card shadow-lg">
+                            <div className="flex items-baseline gap-1 mb-6">
+                                <span className="text-2xl font-semibold text-foreground">
+                                    N$ {property.price.toLocaleString()}
+                                </span>
+                                <span className="text-muted-foreground">/ month</span>
+                            </div>
 
-                            <div className="space-y-3">
-                                <InquiryDialog
-                                    propertyId={property.id}
-                                    propertyTitle={property.title}
-                                    mode="viewing"
-                                    trigger={
-                                        <Button className="w-full h-11 bg-gray-900 hover:bg-gray-800 text-white">
-                                            Request Viewing
-                                        </Button>
-                                    }
-                                />
+                            <div className="mb-4">
                                 <InquiryDialog
                                     propertyId={property.id}
                                     propertyTitle={property.title}
                                     mode="message"
                                     trigger={
-                                        <Button variant="outline" className="w-full h-11 border-gray-200">
+                                        <Button className="w-full h-12 bg-lime-500 hover:bg-lime-600 text-white font-medium rounded-lg transition-colors">
                                             Send Message
                                         </Button>
                                     }
                                 />
                             </div>
+
+                            <p className="text-center text-sm text-muted-foreground">
+                                Contact the landlord directly
+                            </p>
                         </div>
 
-                        {/* Landlord Card */}
-                        <div className="p-6 rounded-xl border border-gray-100 bg-white">
-                            <p className="text-sm text-gray-500 mb-4">Listed by</p>
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-                                    <User className="h-6 w-6 text-gray-400" />
-                                </div>
-                                <div>
-                                    <p className="font-medium text-gray-900">
-                                        {property.landlord?.name || 'Property Owner'}
-                                    </p>
-                                    <p className="text-sm text-gray-500">
-                                        {property.isFromDatabase ? 'Verified Landlord' : 'Property Agent'}
-                                    </p>
-                                </div>
+                        {/* Contact info */}
+                        {property.landlord?.phone && (
+                            <div className="mt-4 p-4 rounded-xl border border-border bg-card">
+                                <p className="text-sm text-muted-foreground mb-2">Contact directly</p>
+                                <a
+                                    href={`tel:${property.landlord.phone}`}
+                                    className="flex items-center gap-2 text-foreground font-medium hover:text-lime-600 transition-colors"
+                                >
+                                    <Phone className="h-4 w-4" />
+                                    {property.landlord.phone}
+                                </a>
                             </div>
-                            {property.landlord?.phone ? (
-                                <div className="space-y-2 text-sm">
-                                    <a
-                                        href={`tel:${property.landlord.phone}`}
-                                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-                                    >
-                                        <Phone className="h-4 w-4" />
-                                        {property.landlord.phone}
-                                    </a>
-                                </div>
-                            ) : (
-                                <p className="text-sm text-gray-500">
-                                    Contact via the app for inquiries
-                                </p>
-                            )}
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>
