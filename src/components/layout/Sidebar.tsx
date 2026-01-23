@@ -74,7 +74,7 @@ const authenticatedNavItems: NavItem[] = [
 const tenantNavItems: NavItem[] = [
     { label: 'My Favorites', href: '/tenant/saved', icon: Heart },
     { label: 'My Leases', href: '/tenant/leases', icon: FileCheck },
-    { label: 'Payments', href: '/tenant/payments', icon: Wallet },
+    { label: 'Payments', href: '/tenant/payments', icon: Wallet, tag: 'Soon' },
 ]
 
 // Landlord-specific navigation

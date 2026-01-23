@@ -1,93 +1,28 @@
 'use client'
 
 import Link from 'next/link'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LeaseStatusBadge } from '@/components/leases/LeaseStatusTimeline'
-import { FileText, Building2, DollarSign, Calendar, ArrowRight, Eye, PenTool } from 'lucide-react'
+import { FileText, Users, Calendar, Eye, PenTool, Search, MoreHorizontal } from 'lucide-react'
 import { format } from 'date-fns'
 import { useQuery } from "convex/react"
 import { api } from "../../../../../convex/_generated/api"
-
-
-function LeaseCard({
-    lease,
-    actionLabel,
-    actionIcon: ActionIcon
-}: {
-    lease: any
-    actionLabel: string
-    actionIcon: React.ElementType
-}) {
-    return (
-        <Link href={`/tenant/leases/${lease._id}`}>
-            <Card className="hover:shadow-md transition-all cursor-pointer group">
-                <CardContent className="p-0">
-                    <div className="flex flex-col md:flex-row">
-                        {/* Property Image Placeholder */}
-                        <div className="relative w-full md:w-48 h-40 md:h-auto bg-gray-100 flex-shrink-0">
-                            <div className="h-full w-full flex items-center justify-center">
-                                <Building2 className="h-12 w-12 text-gray-300" />
-                            </div>
-                        </div>
-
-                        {/* Lease Info */}
-                        <div className="flex-1 p-4 md:p-6">
-                            <div className="flex items-start justify-between gap-4 mb-3">
-                                <div>
-                                    <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
-                                        {lease.property?.title || 'Untitled Property'}
-                                    </h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        {lease.property?.address}
-                                    </p>
-                                </div>
-                                <LeaseStatusBadge status={lease.status} />
-                            </div>
-
-                            <div className="flex flex-wrap items-center gap-4 text-sm mb-4">
-                                <div className="flex items-center gap-1.5 text-muted-foreground">
-                                    <DollarSign className="h-4 w-4" />
-                                    <span className="font-medium text-foreground">
-                                        N$ {lease.monthlyRent?.toLocaleString()}
-                                    </span>
-                                    <span>/month</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 text-muted-foreground">
-                                    <Calendar className="h-4 w-4" />
-                                    <span>
-                                        {format(new Date(lease.startDate), 'MMM d, yyyy')} - {format(new Date(lease.endDate), 'MMM d, yyyy')}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                                <p className="text-sm text-muted-foreground">
-                                    Landlord: <span className="text-foreground">{lease.landlord?.fullName || 'Unknown'}</span>
-                                </p>
-                                <Button size="sm" variant="ghost" className="gap-1 group-hover:bg-primary group-hover:text-white transition-colors">
-                                    {actionLabel}
-                                    <ActionIcon className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-        </Link>
-    )
-}
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 function TenantLeasesContent() {
     const leases = useQuery(api.leases.getForTenant, {})
 
     if (leases === undefined) {
         return (
-            <div className="p-6 lg:p-8">
-                <div className="animate-pulse space-y-4">
-                    <div className="h-8 w-48 bg-gray-200 rounded" />
-                    <div className="h-40 bg-gray-100 rounded-xl" />
-                    <div className="h-40 bg-gray-100 rounded-xl" />
+            <div className="min-h-[60vh] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="h-10 w-10 rounded-full border-2 border-lime-500/20 border-t-lime-500 animate-spin" />
+                    <p className="text-sm text-muted-foreground">Loading leases...</p>
                 </div>
             </div>
         )
@@ -104,41 +39,60 @@ function TenantLeasesContent() {
     )
 
     return (
-        <div className="p-6 lg:p-8 space-y-8">
+        <div className="px-6 py-6">
             {/* Header */}
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">My Leases</h1>
-                <p className="text-muted-foreground">
-                    View and manage your rental agreements
-                </p>
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+                <div>
+                    <h1 className="text-2xl font-semibold text-foreground">My Leases</h1>
+                    <p className="text-muted-foreground mt-1">View and manage your rental agreements</p>
+                </div>
             </div>
+
+            {/* Stats */}
+            {leases.length > 0 && (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+                    <StatCard
+                        label="Pending Review"
+                        value={pendingLeases.length}
+                        highlight={pendingLeases.length > 0}
+                    />
+                    <StatCard label="Awaiting Approval" value={signedLeases.length} />
+                    <StatCard label="Active" value={activeLeases.length} />
+                    <StatCard label="Total" value={leases.length} />
+                </div>
+            )}
 
             {/* Empty State */}
             {leases.length === 0 && (
-                <Card>
-                    <CardContent className="flex flex-col items-center justify-center p-12 text-center">
-                        <FileText className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                        <h3 className="text-lg font-semibold mb-2">No Leases Yet</h3>
-                        <p className="text-muted-foreground mb-4">
-                            When a landlord sends you a lease agreement, it will appear here.
-                        </p>
-                        <Link href="/search">
-                            <Button>Browse Properties</Button>
-                        </Link>
-                    </CardContent>
-                </Card>
+                <div className="flex flex-col items-center justify-center py-16 px-8 text-center rounded-xl bg-sidebar-accent/30">
+                    <div className="h-16 w-16 rounded-2xl bg-sidebar-accent flex items-center justify-center mb-4">
+                        <FileText className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-medium text-foreground mb-2">No leases yet</h3>
+                    <p className="text-muted-foreground mb-6 max-w-sm">
+                        When a landlord sends you a lease agreement, it will appear here.
+                    </p>
+                    <Link href="/search">
+                        <Button className="bg-lime-500 hover:bg-lime-600 text-white rounded-lg h-11 px-5 font-medium shadow-lg shadow-lime-500/20">
+                            <Search className="mr-2 h-4 w-4" />
+                            Browse Properties
+                        </Button>
+                    </Link>
+                </div>
             )}
 
             {/* Pending Review Section */}
             {pendingLeases.length > 0 && (
-                <section>
+                <section className="mb-8">
                     <div className="flex items-center gap-2 mb-4">
-                        <div className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
-                        <h2 className="text-lg font-semibold">Pending Your Review ({pendingLeases.length})</h2>
+                        <div className="h-2 w-2 rounded-full bg-lime-500 animate-pulse" />
+                        <h2 className="text-lg font-medium text-foreground">
+                            Pending Review ({pendingLeases.length})
+                        </h2>
                     </div>
-                    <div className="grid gap-4">
+                    <div className="space-y-2">
                         {pendingLeases.map((lease: any) => (
-                            <LeaseCard key={lease._id} lease={lease} actionLabel="Review & Sign" actionIcon={PenTool} />
+                            <LeaseRow key={lease._id} lease={lease} actionLabel="Review & Sign" highlight />
                         ))}
                     </div>
                 </section>
@@ -146,14 +100,13 @@ function TenantLeasesContent() {
 
             {/* Awaiting Landlord Approval */}
             {signedLeases.length > 0 && (
-                <section>
-                    <div className="flex items-center gap-2 mb-4">
-                        <div className="h-2 w-2 rounded-full bg-purple-500" />
-                        <h2 className="text-lg font-semibold">Awaiting Landlord Approval ({signedLeases.length})</h2>
-                    </div>
-                    <div className="grid gap-4">
+                <section className="mb-8">
+                    <h2 className="text-lg font-medium text-foreground mb-4">
+                        Awaiting Landlord Approval ({signedLeases.length})
+                    </h2>
+                    <div className="space-y-2">
                         {signedLeases.map((lease: any) => (
-                            <LeaseCard key={lease._id} lease={lease} actionLabel="View" actionIcon={Eye} />
+                            <LeaseRow key={lease._id} lease={lease} actionLabel="View" />
                         ))}
                     </div>
                 </section>
@@ -161,31 +114,104 @@ function TenantLeasesContent() {
 
             {/* Active Leases */}
             {activeLeases.length > 0 && (
-                <section>
-                    <div className="flex items-center gap-2 mb-4">
-                        <div className="h-2 w-2 rounded-full bg-green-500" />
-                        <h2 className="text-lg font-semibold">Active Leases ({activeLeases.length})</h2>
-                    </div>
-                    <div className="grid gap-4">
+                <section className="mb-8">
+                    <h2 className="text-lg font-medium text-foreground mb-4">
+                        Active Leases ({activeLeases.length})
+                    </h2>
+                    <div className="space-y-2">
                         {activeLeases.map((lease: any) => (
-                            <LeaseCard key={lease._id} lease={lease} actionLabel="View Details" actionIcon={ArrowRight} />
+                            <LeaseRow key={lease._id} lease={lease} actionLabel="View Details" />
                         ))}
                     </div>
                 </section>
             )}
 
-            {/* Past/Other Leases */}
+            {/* Past Leases */}
             {otherLeases.length > 0 && (
                 <section>
-                    <h2 className="text-lg font-semibold mb-4 text-muted-foreground">Past Leases</h2>
-                    <div className="grid gap-4 opacity-75">
+                    <h2 className="text-lg font-medium text-muted-foreground mb-4">
+                        Past Leases ({otherLeases.length})
+                    </h2>
+                    <div className="space-y-2 opacity-70">
                         {otherLeases.map((lease: any) => (
-                            <LeaseCard key={lease._id} lease={lease} actionLabel="View" actionIcon={Eye} />
+                            <LeaseRow key={lease._id} lease={lease} actionLabel="View" />
                         ))}
                     </div>
                 </section>
             )}
         </div>
+    )
+}
+
+// Stat Card Component
+function StatCard({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
+    return (
+        <div className={`p-4 rounded-xl ${highlight && value > 0 ? 'bg-lime-500/10 border border-lime-500/20' : 'bg-sidebar-accent/50'}`}>
+            <p className="text-xs font-medium text-muted-foreground">{label}</p>
+            <p className={`text-2xl font-semibold mt-1 ${highlight && value > 0 ? 'text-lime-600' : 'text-foreground'}`}>
+                {value}
+            </p>
+        </div>
+    )
+}
+
+// Lease Row Component
+function LeaseRow({ lease, actionLabel, highlight }: { lease: any; actionLabel: string; highlight?: boolean }) {
+    return (
+        <Link href={`/tenant/leases/${lease._id}`} className="block">
+            <div className={`flex items-center gap-4 p-4 rounded-xl transition-all ${highlight
+                    ? 'bg-lime-500/5 border border-lime-500/20 hover:bg-lime-500/10'
+                    : 'bg-sidebar-accent/30 hover:bg-sidebar-accent/50'
+                }`}>
+                {/* Property Info */}
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3">
+                        <h3 className="font-medium text-foreground truncate">
+                            {lease.property?.title || 'Untitled Property'}
+                        </h3>
+                        <LeaseStatusBadge status={lease.status} />
+                    </div>
+                    <div className="flex items-center gap-4 mt-1.5 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1.5">
+                            <Users className="h-3.5 w-3.5" />
+                            {lease.landlord?.fullName || 'Landlord'}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <Calendar className="h-3.5 w-3.5" />
+                            {format(new Date(lease.startDate), 'MMM d, yyyy')} - {format(new Date(lease.endDate), 'MMM d, yyyy')}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Rent */}
+                <div className="text-right shrink-0">
+                    <p className="font-semibold text-foreground">
+                        N$ {lease.monthlyRent?.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-muted-foreground">per month</p>
+                </div>
+
+                {/* Actions */}
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button
+                            className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-sidebar-accent transition-colors shrink-0"
+                            onClick={(e) => e.preventDefault()}
+                        >
+                            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                            <Link href={`/tenant/leases/${lease._id}`} className="flex items-center">
+                                <Eye className="mr-2 h-4 w-4" />
+                                {actionLabel}
+                            </Link>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+        </Link>
     )
 }
 

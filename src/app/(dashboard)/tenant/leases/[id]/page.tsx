@@ -7,8 +7,6 @@ import { api } from "../../../../../../convex/_generated/api"
 import { Id } from "../../../../../../convex/_generated/dataModel"
 
 import { use } from 'react'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
 
 interface Props {
     params: Promise<{ id: string }>
@@ -20,10 +18,10 @@ function TenantLeaseDetailContent({ id }: { id: string }) {
 
     if (lease === undefined || currentUser === undefined) {
         return (
-            <div className="p-6 lg:p-8">
-                <div className="animate-pulse space-y-4">
-                    <div className="h-8 w-48 bg-gray-200 rounded" />
-                    <div className="h-96 bg-gray-100 rounded-xl" />
+            <div className="min-h-[60vh] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="h-10 w-10 rounded-full border-2 border-lime-500/20 border-t-lime-500 animate-spin" />
+                    <p className="text-sm text-muted-foreground">Loading lease...</p>
                 </div>
             </div>
         )
