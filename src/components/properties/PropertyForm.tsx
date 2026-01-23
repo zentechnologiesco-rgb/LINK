@@ -224,6 +224,7 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                                         <SelectItem value="room">Room</SelectItem>
                                         <SelectItem value="studio">Studio</SelectItem>
                                         <SelectItem value="penthouse">Penthouse</SelectItem>
+                                        <SelectItem value="townhouse">Townhouse</SelectItem>
                                         <SelectItem value="commercial">Commercial</SelectItem>
                                     </SelectContent>
                                 </Select>
