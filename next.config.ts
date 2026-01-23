@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
         hostname: 'admired-falcon-221.convex.cloud',
       },
     ],
+    // Skip optimization for Convex storage images to avoid timeouts
+    unoptimized: process.env.NODE_ENV === 'development',
+    // Increase cache TTL to reduce re-fetching
+    minimumCacheTTL: 60 * 60 * 24, // 24 hours
   },
 };
 
