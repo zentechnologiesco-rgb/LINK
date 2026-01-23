@@ -362,13 +362,6 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading, onItem
                                 <span className="font-medium">Settings</span>
                             </DropdownMenuItem>
 
-                            {currentRole !== 'tenant' && (
-                                <DropdownMenuItem className="cursor-pointer rounded-lg p-2.5 text-sm focus:bg-sidebar-accent focus:text-sidebar-accent-foreground" onClick={() => router.push('/settings/billing')}>
-                                    <Wallet className="mr-2 h-4 w-4 text-sidebar-foreground/70" />
-                                    <span className="font-medium">Billing</span>
-                                </DropdownMenuItem>
-                            )}
-
                             <DropdownMenuSeparator className="bg-sidebar-border" />
 
                             <DropdownMenuItem
