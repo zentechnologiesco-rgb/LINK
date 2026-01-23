@@ -1,11 +1,11 @@
 "use client"
 
 import Link from "next/link"
-import { SearchPageClient } from './search/SearchPageClient'
 import { useQuery } from "convex/react"
 import { api } from "../../convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Building2 } from "lucide-react"
+import { PropertyCard } from "@/components/properties/PropertyCard"
 
 // Define the Property type needed for the feed
 interface Property {
@@ -75,5 +75,16 @@ export default function HomePage() {
         )
     }
 
-    return <SearchPageClient initialProperties={normalizedProperties} />
+    return (
+        <div className="container mx-auto px-4 py-8">
+            <div className="flex items-center justify-between mb-8">
+                <h1 className="text-3xl font-bold tracking-tight text-gray-900">Featured Properties</h1>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {normalizedProperties.map((property) => (
+                    <PropertyCard key={property.id} property={property} />
+                ))}
+            </div>
+        </div>
+    )
 }
