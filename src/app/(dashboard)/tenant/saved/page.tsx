@@ -14,8 +14,8 @@ export default function SavedPropertiesPage() {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="h-10 w-10 rounded-full border-2 border-lime-500/20 border-t-lime-500 animate-spin" />
-                    <p className="text-sm text-muted-foreground">Loading saved properties...</p>
+                    <div className="h-10 w-10 rounded-full border-2 border-black/10 border-t-black animate-spin" />
+                    <p className="text-sm text-black/60 font-medium">Loading saved properties...</p>
                 </div>
             </div>
         )
@@ -23,23 +23,29 @@ export default function SavedPropertiesPage() {
 
     if (!savedProperties || savedProperties.length === 0) {
         return (
-            <div className="px-6 py-6">
-                <div className="mb-8">
-                    <h1 className="text-2xl font-semibold text-foreground">Saved Properties</h1>
-                    <p className="text-muted-foreground mt-1">Your collection of favorite homes</p>
+            <div className="px-8 py-8 md:px-12 md:py-12 max-w-7xl mx-auto">
+                <div className="mb-12">
+                    <h1 className="font-[family-name:var(--font-anton)] text-4xl md:text-5xl tracking-wide text-black mb-3">
+                        Saved Properties
+                    </h1>
+                    <p className="text-black/60 text-lg font-medium">
+                        Your collection of favorite homes
+                    </p>
                 </div>
 
-                <div className="flex flex-col items-center justify-center py-16 px-8 text-center rounded-xl bg-sidebar-accent/30">
-                    <div className="h-16 w-16 rounded-2xl bg-sidebar-accent flex items-center justify-center mb-4">
-                        <Heart className="h-8 w-8 text-muted-foreground" />
+                <div className="flex flex-col items-center justify-center py-24 px-8 text-center rounded-3xl border border-dashed border-black/10 bg-gray-50/50">
+                    <div className="h-20 w-20 rounded-2xl bg-white border border-black/5 flex items-center justify-center mb-6 shadow-xl shadow-black/5">
+                        <Heart className="h-8 w-8 text-black/20" fill="currentColor" />
                     </div>
-                    <h3 className="text-lg font-medium text-foreground mb-2">No saved properties yet</h3>
-                    <p className="text-muted-foreground mb-6 max-w-sm">
+                    <h3 className="font-[family-name:var(--font-anton)] text-2xl text-black mb-3 tracking-wide">
+                        No saved properties yet
+                    </h3>
+                    <p className="text-black/60 mb-8 max-w-md text-lg leading-relaxed">
                         Start exploring and save properties you're interested in to easily find them later.
                     </p>
                     <Link href="/search">
-                        <Button className="bg-lime-500 hover:bg-lime-600 text-white rounded-lg h-11 px-5 font-medium shadow-lg shadow-lime-500/20">
-                            <Search className="mr-2 h-4 w-4" />
+                        <Button className="bg-black hover:bg-black/80 text-white rounded-full h-14 px-8 text-lg font-medium shadow-xl shadow-black/10 transition-all hover:scale-105 active:scale-95">
+                            <Search className="mr-3 h-5 w-5" />
                             Browse Properties
                         </Button>
                     </Link>
@@ -49,17 +55,19 @@ export default function SavedPropertiesPage() {
     }
 
     return (
-        <div className="px-6 py-6">
+        <div className="px-8 py-8 md:px-12 md:py-12 max-w-7xl mx-auto">
             {/* Header */}
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
                 <div>
-                    <h1 className="text-2xl font-semibold text-foreground">Saved Properties</h1>
-                    <p className="text-muted-foreground mt-1">
+                    <h1 className="font-[family-name:var(--font-anton)] text-4xl md:text-5xl tracking-wide text-black mb-3">
+                        Saved Properties
+                    </h1>
+                    <p className="text-black/60 text-lg font-medium">
                         {savedProperties.length} {savedProperties.length === 1 ? 'property' : 'properties'} saved
                     </p>
                 </div>
                 <Link href="/search">
-                    <Button variant="outline" className="rounded-lg h-10">
+                    <Button variant="outline" className="rounded-full h-12 px-6 border-black/10 hover:bg-black/5 text-black font-medium text-base transition-all hover:border-black/20">
                         <Search className="mr-2 h-4 w-4" />
                         Find More
                     </Button>
@@ -67,7 +75,7 @@ export default function SavedPropertiesPage() {
             </div>
 
             {/* Properties Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
                 {savedProperties.map((property: any) => (
                     <div key={property._id} className="h-full">
                         <PropertyCard

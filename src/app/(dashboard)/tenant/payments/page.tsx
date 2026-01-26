@@ -4,54 +4,60 @@ import { Clock, CreditCard, BarChart3, Bell } from 'lucide-react'
 
 export default function TenantPaymentsPage() {
     return (
-        <div className="px-6 py-6">
+        <div className="px-8 py-8 md:px-12 md:py-12 max-w-7xl mx-auto">
             {/* Page Header */}
-            <div className="mb-8">
-                <h1 className="text-2xl font-semibold text-foreground">Payments</h1>
-                <p className="text-muted-foreground mt-1">Manage your rent payments and deposits</p>
+            <div className="mb-12">
+                <h1 className="font-[family-name:var(--font-anton)] text-4xl md:text-5xl tracking-wide text-black mb-3">
+                    Payments
+                </h1>
+                <p className="text-black/60 text-lg font-medium">
+                    Manage your rent payments and deposits
+                </p>
             </div>
 
             {/* Coming Soon Card */}
-            <div className="flex flex-col items-center justify-center py-16 px-8 text-center rounded-xl bg-sidebar-accent/30 min-h-[50vh]">
+            <div className="flex flex-col items-center justify-center py-24 px-8 text-center rounded-3xl border border-dashed border-black/10 bg-gray-50/50 min-h-[50vh]">
                 {/* Icon */}
-                <div className="h-16 w-16 rounded-2xl bg-sidebar-accent flex items-center justify-center mb-6">
-                    <Clock className="h-8 w-8 text-muted-foreground" />
+                <div className="h-20 w-20 rounded-2xl bg-white border border-black/10 flex items-center justify-center mb-6">
+                    <Clock className="h-8 w-8 text-black/20" />
                 </div>
 
                 {/* Content */}
-                <h3 className="text-xl font-semibold text-foreground mb-2">Payment Management</h3>
-                <p className="text-muted-foreground mb-8 max-w-md">
+                <h3 className="font-[family-name:var(--font-anton)] text-3xl text-black mb-4 tracking-wide">
+                    Payment Management
+                </h3>
+                <p className="text-black/60 mb-12 max-w-lg text-lg leading-relaxed">
                     We're building a powerful payment management system to help you track rent payments,
                     manage deposits, and stay on top of your rental expenses.
                 </p>
 
                 {/* Feature Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-xl">
-                    <div className="p-4 rounded-xl bg-background text-center">
-                        <div className="w-10 h-10 rounded-lg bg-sidebar-accent flex items-center justify-center mx-auto mb-3">
-                            <CreditCard className="w-5 h-5 text-muted-foreground" />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full max-w-3xl">
+                    <div className="p-6 rounded-2xl border border-black/10 bg-white text-center">
+                        <div className="w-12 h-12 rounded-xl bg-black/5 flex items-center justify-center mx-auto mb-4">
+                            <CreditCard className="w-6 h-6 text-black/60" />
                         </div>
-                        <p className="text-sm font-medium text-foreground">Payment Tracking</p>
-                        <p className="text-xs text-muted-foreground mt-1">Track all your payments</p>
+                        <p className="font-[family-name:var(--font-anton)] text-lg text-black mb-1">Payment Tracking</p>
+                        <p className="text-sm text-black/40 font-medium">Track all your payments</p>
                     </div>
-                    <div className="p-4 rounded-xl bg-background text-center">
-                        <div className="w-10 h-10 rounded-lg bg-sidebar-accent flex items-center justify-center mx-auto mb-3">
-                            <BarChart3 className="w-5 h-5 text-muted-foreground" />
+                    <div className="p-6 rounded-2xl border border-black/10 bg-white text-center">
+                        <div className="w-12 h-12 rounded-xl bg-black/5 flex items-center justify-center mx-auto mb-4">
+                            <BarChart3 className="w-6 h-6 text-black/60" />
                         </div>
-                        <p className="text-sm font-medium text-foreground">Payment History</p>
-                        <p className="text-xs text-muted-foreground mt-1">View past transactions</p>
+                        <p className="font-[family-name:var(--font-anton)] text-lg text-black mb-1">Payment History</p>
+                        <p className="text-sm text-black/40 font-medium">View past transactions</p>
                     </div>
-                    <div className="p-4 rounded-xl bg-background text-center">
-                        <div className="w-10 h-10 rounded-lg bg-sidebar-accent flex items-center justify-center mx-auto mb-3">
-                            <Bell className="w-5 h-5 text-muted-foreground" />
+                    <div className="p-6 rounded-2xl border border-black/10 bg-white text-center">
+                        <div className="w-12 h-12 rounded-xl bg-black/5 flex items-center justify-center mx-auto mb-4">
+                            <Bell className="w-6 h-6 text-black/60" />
                         </div>
-                        <p className="text-sm font-medium text-foreground">Reminders</p>
-                        <p className="text-xs text-muted-foreground mt-1">Payment notifications</p>
+                        <p className="font-[family-name:var(--font-anton)] text-lg text-black mb-1">Reminders</p>
+                        <p className="text-sm text-black/40 font-medium">Payment notifications</p>
                     </div>
                 </div>
 
                 {/* Coming Soon Badge */}
-                <div className="mt-8 px-5 py-2.5 rounded-full bg-lime-500 text-white text-sm font-medium shadow-lg shadow-lime-500/20">
+                <div className="mt-12 px-6 py-2.5 rounded-full bg-black text-white text-sm font-bold tracking-wide uppercase">
                     Coming Soon
                 </div>
             </div>

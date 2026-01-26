@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { LeaseStatusBadge } from '@/components/leases/LeaseStatusTimeline'
-import { FileText, Users, Calendar, Eye, PenTool, Search, MoreHorizontal } from 'lucide-react'
+import { FileText, Users, Calendar, Eye, Search, MoreHorizontal } from 'lucide-react'
 import { format } from 'date-fns'
 import { useQuery } from "convex/react"
 import { api } from "../../../../../convex/_generated/api"
@@ -13,6 +13,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
 
 function TenantLeasesContent() {
     const leases = useQuery(api.leases.getForTenant, {})
@@ -21,8 +22,8 @@ function TenantLeasesContent() {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="h-10 w-10 rounded-full border-2 border-lime-500/20 border-t-lime-500 animate-spin" />
-                    <p className="text-sm text-muted-foreground">Loading leases...</p>
+                    <div className="h-5 w-32 bg-black/5 rounded animate-pulse" />
+                    <div className="h-4 w-24 bg-black/5 rounded animate-pulse" />
                 </div>
             </div>
         )
@@ -39,24 +40,26 @@ function TenantLeasesContent() {
     )
 
     return (
-        <div className="px-6 py-6">
+        <div className="px-6 py-8 max-w-5xl mx-auto space-y-12 pb-24">
             {/* Header */}
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-                <div>
-                    <h1 className="text-2xl font-semibold text-foreground">My Leases</h1>
-                    <p className="text-muted-foreground mt-1">View and manage your rental agreements</p>
-                </div>
+            <div className="space-y-2">
+                <h1 className="font-[family-name:var(--font-anton)] text-4xl uppercase tracking-wide text-black">
+                    My Leases
+                </h1>
+                <p className="text-black/60 font-medium max-w-lg">
+                    Manage your rental agreements, view status updates, and access lease documents.
+                </p>
             </div>
 
             {/* Stats */}
             {leases.length > 0 && (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <StatCard
-                        label="Pending Review"
+                        label="Pending"
                         value={pendingLeases.length}
                         highlight={pendingLeases.length > 0}
                     />
-                    <StatCard label="Awaiting Approval" value={signedLeases.length} />
+                    <StatCard label="Awaiting" value={signedLeases.length} />
                     <StatCard label="Active" value={activeLeases.length} />
                     <StatCard label="Total" value={leases.length} />
                 </div>
@@ -64,18 +67,20 @@ function TenantLeasesContent() {
 
             {/* Empty State */}
             {leases.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-16 px-8 text-center rounded-xl bg-sidebar-accent/30">
-                    <div className="h-16 w-16 rounded-2xl bg-sidebar-accent flex items-center justify-center mb-4">
-                        <FileText className="h-8 w-8 text-muted-foreground" />
+                <div className="flex flex-col items-center justify-center py-20 px-8 text-center rounded-3xl border border-black/5 bg-gray-50/50">
+                    <div className="h-16 w-16 rounded-full bg-white shadow-sm flex items-center justify-center mb-6">
+                        <FileText className="h-8 w-8 text-black/20" />
                     </div>
-                    <h3 className="text-lg font-medium text-foreground mb-2">No leases yet</h3>
-                    <p className="text-muted-foreground mb-6 max-w-sm">
+                    <h3 className="font-[family-name:var(--font-anton)] text-xl uppercase tracking-wide text-black mb-2">
+                        No leases yet
+                    </h3>
+                    <p className="text-black/50 mb-8 max-w-sm">
                         When a landlord sends you a lease agreement, it will appear here.
                     </p>
                     <Link href="/search">
-                        <Button className="bg-lime-500 hover:bg-lime-600 text-white rounded-lg h-11 px-5 font-medium shadow-lg shadow-lime-500/20">
+                        <Button className="bg-black hover:bg-black/80 text-white rounded-full h-12 px-8 font-bold uppercase tracking-wider text-xs shadow-lg shadow-black/5 transition-all hover:scale-105">
                             <Search className="mr-2 h-4 w-4" />
-                            Browse Properties
+                            Find a Home
                         </Button>
                     </Link>
                 </div>
@@ -83,14 +88,14 @@ function TenantLeasesContent() {
 
             {/* Pending Review Section */}
             {pendingLeases.length > 0 && (
-                <section className="mb-8">
-                    <div className="flex items-center gap-2 mb-4">
-                        <div className="h-2 w-2 rounded-full bg-lime-500 animate-pulse" />
-                        <h2 className="text-lg font-medium text-foreground">
-                            Pending Review ({pendingLeases.length})
+                <section className="space-y-6">
+                    <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-black animate-pulse" />
+                        <h2 className="font-[family-name:var(--font-anton)] text-xl uppercase tracking-wide text-black">
+                            Action Required
                         </h2>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         {pendingLeases.map((lease: any) => (
                             <LeaseRow key={lease._id} lease={lease} actionLabel="Review & Sign" highlight />
                         ))}
@@ -100,13 +105,13 @@ function TenantLeasesContent() {
 
             {/* Awaiting Landlord Approval */}
             {signedLeases.length > 0 && (
-                <section className="mb-8">
-                    <h2 className="text-lg font-medium text-foreground mb-4">
-                        Awaiting Landlord Approval ({signedLeases.length})
+                <section className="space-y-6">
+                    <h2 className="font-[family-name:var(--font-anton)] text-xl uppercase tracking-wide text-black/40">
+                        Awaiting Approval
                     </h2>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         {signedLeases.map((lease: any) => (
-                            <LeaseRow key={lease._id} lease={lease} actionLabel="View" />
+                            <LeaseRow key={lease._id} lease={lease} actionLabel="View Status" />
                         ))}
                     </div>
                 </section>
@@ -114,11 +119,11 @@ function TenantLeasesContent() {
 
             {/* Active Leases */}
             {activeLeases.length > 0 && (
-                <section className="mb-8">
-                    <h2 className="text-lg font-medium text-foreground mb-4">
-                        Active Leases ({activeLeases.length})
+                <section className="space-y-6">
+                    <h2 className="font-[family-name:var(--font-anton)] text-xl uppercase tracking-wide text-black">
+                        Active Leases
                     </h2>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         {activeLeases.map((lease: any) => (
                             <LeaseRow key={lease._id} lease={lease} actionLabel="View Details" />
                         ))}
@@ -128,13 +133,13 @@ function TenantLeasesContent() {
 
             {/* Past Leases */}
             {otherLeases.length > 0 && (
-                <section>
-                    <h2 className="text-lg font-medium text-muted-foreground mb-4">
-                        Past Leases ({otherLeases.length})
+                <section className="space-y-6">
+                    <h2 className="font-[family-name:var(--font-anton)] text-xl uppercase tracking-wide text-black/20">
+                        Archive
                     </h2>
-                    <div className="space-y-2 opacity-70">
+                    <div className="space-y-3 opacity-60 hover:opacity-100 transition-opacity">
                         {otherLeases.map((lease: any) => (
-                            <LeaseRow key={lease._id} lease={lease} actionLabel="View" />
+                            <LeaseRow key={lease._id} lease={lease} actionLabel="View Record" />
                         ))}
                     </div>
                 </section>
@@ -146,9 +151,22 @@ function TenantLeasesContent() {
 // Stat Card Component
 function StatCard({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
     return (
-        <div className={`p-4 rounded-xl ${highlight && value > 0 ? 'bg-lime-500/10 border border-lime-500/20' : 'bg-sidebar-accent/50'}`}>
-            <p className="text-xs font-medium text-muted-foreground">{label}</p>
-            <p className={`text-2xl font-semibold mt-1 ${highlight && value > 0 ? 'text-lime-600' : 'text-foreground'}`}>
+        <div className={cn(
+            "p-5 rounded-2xl border transition-all duration-300",
+            highlight && value > 0
+                ? "bg-black border-black text-white shadow-xl shadow-black/10 scale-105"
+                : "bg-white border-black/5 text-black hover:border-black/10"
+        )}>
+            <p className={cn(
+                "text-[10px] font-bold uppercase tracking-widest mb-1",
+                highlight && value > 0 ? "text-white/60" : "text-black/40"
+            )}>
+                {label}
+            </p>
+            <p className={cn(
+                "font-[family-name:var(--font-anton)] text-3xl",
+                highlight && value > 0 ? "text-white" : "text-black"
+            )}>
                 {value}
             </p>
         </div>
@@ -158,20 +176,32 @@ function StatCard({ label, value, highlight }: { label: string; value: number; h
 // Lease Row Component
 function LeaseRow({ lease, actionLabel, highlight }: { lease: any; actionLabel: string; highlight?: boolean }) {
     return (
-        <Link href={`/tenant/leases/${lease._id}`} className="block">
-            <div className={`flex items-center gap-4 p-4 rounded-xl transition-all ${highlight
-                    ? 'bg-lime-500/5 border border-lime-500/20 hover:bg-lime-500/10'
-                    : 'bg-sidebar-accent/30 hover:bg-sidebar-accent/50'
-                }`}>
+        <Link href={`/tenant/leases/${lease._id}`} className="block group">
+            <div className={cn(
+                "flex items-center gap-5 p-5 rounded-3xl border transition-all duration-300",
+                highlight
+                    ? "bg-white border-black ring-1 ring-black shadow-lg"
+                    : "bg-white border-black/5 hover:border-black/20 hover:shadow-md"
+            )}>
+                {/* Icon/Image Placeholder */}
+                <div className={cn(
+                    "h-12 w-12 rounded-full flex items-center justify-center shrink-0 transition-colors",
+                    highlight ? "bg-black text-white" : "bg-black/5 text-black/40 group-hover:bg-black group-hover:text-white"
+                )}>
+                    <FileText className="h-5 w-5" />
+                </div>
+
                 {/* Property Info */}
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center gap-3">
-                        <h3 className="font-medium text-foreground truncate">
+                        <h3 className="font-bold text-black text-base truncate">
                             {lease.property?.title || 'Untitled Property'}
                         </h3>
-                        <LeaseStatusBadge status={lease.status} />
+                        <div className="scale-90 origin-left">
+                            <LeaseStatusBadge status={lease.status} />
+                        </div>
                     </div>
-                    <div className="flex items-center gap-4 mt-1.5 text-sm text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-black/50">
                         <span className="flex items-center gap-1.5">
                             <Users className="h-3.5 w-3.5" />
                             {lease.landlord?.fullName || 'Landlord'}
@@ -184,26 +214,26 @@ function LeaseRow({ lease, actionLabel, highlight }: { lease: any; actionLabel: 
                 </div>
 
                 {/* Rent */}
-                <div className="text-right shrink-0">
-                    <p className="font-semibold text-foreground">
+                <div className="text-right shrink-0 hidden sm:block">
+                    <p className="font-[family-name:var(--font-anton)] text-xl text-black">
                         N$ {lease.monthlyRent?.toLocaleString()}
                     </p>
-                    <p className="text-xs text-muted-foreground">per month</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-black/40">per month</p>
                 </div>
 
                 {/* Actions */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <button
-                            className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-sidebar-accent transition-colors shrink-0"
+                            className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-black/5 transition-colors shrink-0"
                             onClick={(e) => e.preventDefault()}
                         >
-                            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                            <MoreHorizontal className="h-4 w-4 text-black/40" />
                         </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                            <Link href={`/tenant/leases/${lease._id}`} className="flex items-center">
+                    <DropdownMenuContent align="end" className="rounded-xl border-black/5 shadow-xl">
+                        <DropdownMenuItem asChild className="rounded-lg focus:bg-black/5 cursor-pointer">
+                            <Link href={`/tenant/leases/${lease._id}`} className="flex items-center font-medium">
                                 <Eye className="mr-2 h-4 w-4" />
                                 {actionLabel}
                             </Link>

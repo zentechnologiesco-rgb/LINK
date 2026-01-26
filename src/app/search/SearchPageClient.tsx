@@ -5,8 +5,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { PropertyMap } from '@/components/maps/PropertyMap'
-import { List, Map, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { List, Map, Search, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { SavePropertyButton } from '@/components/properties/SavePropertyButton'
+import { cn } from '@/lib/utils'
 
 interface Property {
     id: string
@@ -40,7 +41,6 @@ const propertyTypes = [
 ]
 
 export function SearchPageClient({ initialProperties }: SearchPageClientProps) {
-    const [showMap, setShowMap] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
     const [propertyType, setPropertyType] = useState('all')
     const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null)
@@ -78,111 +78,85 @@ export function SearchPageClient({ initialProperties }: SearchPageClientProps) {
     }), [filteredProperties])
 
     return (
-        <div className="flex flex-col h-[calc(100vh-6rem)] md:h-[calc(100vh-4rem)] bg-background">
+        <div className="flex flex-col h-[calc(100vh-6rem)] md:h-[calc(100vh-4rem)] bg-white">
             {/* Search Header */}
-            <div className="px-5 py-4 border-b border-border">
+            <div className="px-6 py-4 border-b border-black/5">
                 <div className="flex flex-wrap gap-4 items-center">
                     {/* Search Input */}
-                    <div className="flex-1 min-w-[200px] max-w-md relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <div className="flex-1 min-w-[200px] max-w-md relative group">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-black/40 group-focus-within:text-black transition-colors" />
                         <input
                             type="text"
                             placeholder="Search by location..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-sidebar-accent border-0 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-lime-500/50 transition-all"
+                            className="w-full pl-11 pr-4 py-3 rounded-full bg-black/5 border-transparent text-black placeholder:text-black/40 focus:outline-none focus:bg-black/10 transition-all font-medium"
                         />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-black/40 hover:text-black"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
                     </div>
 
                     {/* Type Filters */}
-                    <div className="flex gap-2 flex-wrap">
+                    <div className="flex gap-2 overflow-x-auto pb-2 -mx-6 px-6 md:flex-wrap md:overflow-visible md:pb-0 md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden items-center">
                         {propertyTypes.map((type) => (
                             <button
                                 key={type.value}
                                 onClick={() => setPropertyType(type.value)}
-                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${propertyType === type.value
-                                    ? 'bg-foreground text-background'
-                                    : 'bg-sidebar-accent text-muted-foreground hover:text-foreground'
-                                    }`}
+                                className={cn(
+                                    "whitespace-nowrap flex-none px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide transition-all duration-200 border",
+                                    propertyType === type.value
+                                        ? "bg-black text-white border-black"
+                                        : "bg-transparent text-black/60 border-transparent hover:bg-black/5 hover:text-black"
+                                )}
                             >
                                 {type.label}
                             </button>
                         ))}
                     </div>
-
-                    {/* View Toggle */}
-                    <div className="flex gap-1 ml-auto bg-sidebar-accent rounded-lg p-1">
-                        <button
-                            onClick={() => setShowMap(false)}
-                            className={`h-8 w-8 rounded-md flex items-center justify-center transition-all ${!showMap
-                                ? 'bg-background text-foreground shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                        >
-                            <List className="h-4 w-4" />
-                        </button>
-                        <button
-                            onClick={() => setShowMap(true)}
-                            className={`h-8 w-8 rounded-md flex items-center justify-center transition-all ${showMap
-                                ? 'bg-background text-foreground shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                        >
-                            <Map className="h-4 w-4" />
-                        </button>
-                    </div>
                 </div>
             </div>
 
             {/* Results Count */}
-            <div className="px-5 py-2 border-b border-border">
-                <p className="text-sm text-muted-foreground">
+            <div className="px-6 py-3 border-b border-black/5 flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-widest text-black/40">
                     {filteredProperties.length} property{filteredProperties.length !== 1 ? 'ies' : 'y'} found
                 </p>
             </div>
 
-            {/* Main Content */}
-            {showMap ? (
-                <div className="flex flex-1 overflow-hidden">
-                    {/* Property List Sidebar */}
-                    <div className="w-96 overflow-y-auto border-r border-border hidden md:block">
-                        {filteredProperties.length === 0 ? (
-                            <EmptyState onClear={() => { setSearchQuery(''); setPropertyType('all'); }} />
-                        ) : (
-                            <div className="p-3 space-y-2">
-                                {filteredProperties.map((property) => (
-                                    <PropertyListItem
-                                        key={property.id}
-                                        property={property}
-                                        isSelected={selectedPropertyId === property.id}
-                                        onMouseEnter={() => setSelectedPropertyId(property.id)}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Map Container */}
-                    <div className="flex-1 bg-muted relative">
-                        <PropertyMap
-                            properties={mapProperties}
-                            onPropertyClick={(id) => setSelectedPropertyId(id)}
-                        />
-                    </div>
-                </div>
-            ) : (
-                <div className="flex-1 overflow-y-auto p-5">
+            {/* Main Content - Always Split View */}
+            <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+                {/* Property List Sidebar */}
+                <div className="w-full h-[45vh] md:h-auto md:w-[400px] overflow-y-auto border-t md:border-t-0 md:border-r border-black/5 bg-white order-2 md:order-1 relative z-10">
                     {filteredProperties.length === 0 ? (
                         <EmptyState onClear={() => { setSearchQuery(''); setPropertyType('all'); }} />
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                        <div className="p-4 space-y-4">
                             {filteredProperties.map((property) => (
-                                <PropertyCard key={property.id} property={property} />
+                                <PropertyListItem
+                                    key={property.id}
+                                    property={property}
+                                    isSelected={selectedPropertyId === property.id}
+                                    onMouseEnter={() => setSelectedPropertyId(property.id)}
+                                />
                             ))}
                         </div>
                     )}
                 </div>
-            )}
+
+                {/* Map Container */}
+                <div className="flex-1 bg-gray-100 relative order-1 md:order-2">
+                    <PropertyMap
+                        properties={mapProperties}
+                        onPropertyClick={(id) => setSelectedPropertyId(id)}
+                    />
+                </div>
+            </div>
         </div>
     )
 }
@@ -190,18 +164,18 @@ export function SearchPageClient({ initialProperties }: SearchPageClientProps) {
 // Empty State Component
 function EmptyState({ onClear }: { onClear: () => void }) {
     return (
-        <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
-            <div className="h-14 w-14 rounded-2xl bg-sidebar-accent flex items-center justify-center mb-4">
-                <Search className="h-7 w-7 text-muted-foreground" />
+        <div className="flex flex-col items-center justify-center py-20 px-8 text-center">
+            <div className="h-16 w-16 rounded-full bg-black/5 flex items-center justify-center mb-6">
+                <Search className="h-8 w-8 text-black/20" />
             </div>
-            <h3 className="text-lg font-medium text-foreground mb-2">No properties found</h3>
-            <p className="text-muted-foreground mb-6 max-w-sm">
+            <h3 className="text-xl font-bold uppercase tracking-wide text-black mb-2">No properties found</h3>
+            <p className="text-black/50 mb-8 max-w-sm">
                 We couldn't find any properties matching your criteria. Try adjusting your filters.
             </p>
             <Button
                 onClick={onClear}
                 variant="outline"
-                className="rounded-lg"
+                className="rounded-full px-8 border-black text-black hover:bg-black hover:text-white transition-colors uppercase font-bold text-xs tracking-widest"
             >
                 Clear all filters
             </Button>
@@ -222,32 +196,44 @@ function PropertyListItem({
     return (
         <Link
             href={`/properties/${property.id}`}
-            className="block"
+            className="block group"
             onMouseEnter={onMouseEnter}
         >
-            <div className={`flex gap-3 p-3 rounded-xl transition-all duration-200 ${isSelected
-                ? 'bg-sidebar-accent ring-1 ring-border'
-                : 'hover:bg-sidebar-accent/50'
-                }`}>
-                <div className="w-24 h-20 rounded-lg bg-muted overflow-hidden shrink-0 relative">
+            <div className={cn(
+                "flex gap-3 p-3 rounded-2xl transition-all duration-300 border border-transparent",
+                isSelected
+                    ? "bg-black text-white shadow-lg transform scale-[1.02]"
+                    : "hover:bg-gray-50 hover:border-black/5"
+            )}>
+                <div className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden shrink-0 relative">
                     <Image
                         src={property.images[0] || '/window.svg'}
                         alt={property.title}
                         fill
                         className="object-cover"
-                        sizes="96px"
+                        sizes="80px"
                     />
                 </div>
-                <div className="flex-1 min-w-0 py-0.5">
-                    <h3 className="font-medium text-foreground text-sm truncate">
-                        {property.title}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">{property.city}</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                        {property.bedrooms} bed{property.bedrooms !== 1 ? 's' : ''} · {property.bathrooms} bath{property.bathrooms !== 1 ? 's' : ''}
+                <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+                    <div className="flex justify-between items-start">
+                        <h3 className={cn("font-bold text-sm truncate pr-2", isSelected ? "text-white" : "text-black")}>
+                            {property.title}
+                        </h3>
+                    </div>
+
+                    <p className={cn("text-xs truncate", isSelected ? "text-white/60" : "text-black/40")}>
+                        {property.city}
                     </p>
-                    <p className="font-semibold text-foreground text-sm mt-1">
-                        N$ {property.price.toLocaleString()}<span className="text-xs text-muted-foreground font-normal">/mo</span>
+
+                    <p className={cn("text-[10px] font-medium truncate mt-1", isSelected ? "text-white/80" : "text-black/60")}>
+                        {property.bedrooms} Bed · {property.bathrooms} Bath · {property.size}m²
+                    </p>
+
+                    <p className={cn(
+                        "font-[family-name:var(--font-anton)] text-lg tracking-wide mt-1",
+                        isSelected ? "text-white" : "text-black"
+                    )}>
+                        N$ {property.price.toLocaleString()}
                     </p>
                 </div>
             </div>
@@ -255,7 +241,7 @@ function PropertyListItem({
     )
 }
 
-// Airbnb-style Property Card (for grid view)
+// Updated Property Card (Grid View) - Matches Home Page Design
 function PropertyCard({ property }: { property: Property }) {
     const [currentImageIndex, setCurrentImageIndex] = useState(0)
     const images = property.images.length > 0 ? property.images : ['/window.svg']
@@ -275,41 +261,51 @@ function PropertyCard({ property }: { property: Property }) {
     return (
         <Link href={`/properties/${property.id}`} className="group block">
             {/* Image Container */}
-            <div className="relative aspect-square rounded-xl overflow-hidden bg-muted mb-3">
+            <div className="relative aspect-square rounded-3xl overflow-hidden bg-gray-100 mb-4 cursor-pointer">
                 <Image
                     src={images[currentImageIndex]}
                     alt={property.title}
                     fill
-                    className="object-cover transition-transform duration-500"
+                    className="object-cover transition-transform duration-700 will-change-transform group-hover:scale-110"
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                 />
 
+                {/* Dark Gradient Overlay */}
+                <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/50 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
                 {/* Save Button */}
                 <div className="absolute right-3 top-3 z-10">
-                    <SavePropertyButton propertyId={property.id} />
+                    <SavePropertyButton propertyId={property.id} className="bg-white/90 hover:bg-white text-black border-none shadow-sm" />
                 </div>
 
-                {/* Image Navigation */}
+                {/* Type Badge */}
+                <div className="absolute left-3 top-3 z-10">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-black text-white shadow-xl shadow-black/10">
+                        {property.type}
+                    </span>
+                </div>
+
+                {/* Navigation Arrows */}
                 {images.length > 1 && (
                     <>
                         <button
                             onClick={prevImage}
-                            className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                            className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/50 backdrop-blur-md hover:bg-black text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
                         >
-                            <ChevronLeft className="h-4 w-4 text-foreground" />
+                            <ChevronLeft className="h-4 w-4" />
                         </button>
                         <button
                             onClick={nextImage}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/50 backdrop-blur-md hover:bg-black text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
                         >
-                            <ChevronRight className="h-4 w-4 text-foreground" />
+                            <ChevronRight className="h-4 w-4" />
                         </button>
                     </>
                 )}
 
-                {/* Carousel Dots */}
+                {/* Dots */}
                 {images.length > 1 && (
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
                         {images.slice(0, 5).map((_, index) => (
                             <button
                                 key={index}
@@ -318,38 +314,43 @@ function PropertyCard({ property }: { property: Property }) {
                                     e.stopPropagation()
                                     setCurrentImageIndex(index)
                                 }}
-                                className={`h-1.5 w-1.5 rounded-full transition-all duration-200 ${currentImageIndex === index
-                                    ? 'bg-white'
-                                    : 'bg-white/60'
-                                    }`}
+                                className={cn(
+                                    "h-1.5 rounded-full transition-all duration-300 shadow-sm",
+                                    currentImageIndex === index ? "w-4 bg-white" : "w-1.5 bg-white/50 hover:bg-white/80"
+                                )}
                             />
                         ))}
                     </div>
                 )}
-
-                {/* Property Type Badge */}
-                <div className="absolute left-3 top-3">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white shadow-sm text-foreground capitalize">
-                        {property.type}
-                    </span>
-                </div>
             </div>
 
             {/* Content */}
-            <div className="space-y-1">
-                <h3 className="font-medium text-foreground truncate">
-                    {property.city}
-                </h3>
-                <p className="text-muted-foreground text-sm truncate">
-                    {property.title}
-                </p>
-                <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                        {property.bedrooms} bed{property.bedrooms !== 1 ? 's' : ''} · {property.bathrooms} bath{property.bathrooms !== 1 ? 's' : ''} · {property.size} m²
-                    </span>
-                    <span className="font-semibold text-foreground whitespace-nowrap">
-                        N$ {property.price.toLocaleString()}<span className="text-muted-foreground font-normal text-xs">/mo</span>
-                    </span>
+            <div className="flex justify-between items-start gap-4">
+                <div className="space-y-1 flex-1 min-w-0">
+                    <h3 className="font-bold text-black text-lg leading-tight truncate">
+                        {property.title}
+                    </h3>
+                    <p className="text-black/50 text-sm truncate">
+                        {property.city}
+                    </p>
+                    {/* Specs Row - Cleaner text based */}
+                    <div className="flex items-center gap-2 pt-1 text-sm font-medium text-black/60">
+                        <span>{property.bedrooms} Bed</span>
+                        <span className="text-black/20">·</span>
+                        <span>{property.bathrooms} Bath</span>
+                        <span className="text-black/20">·</span>
+                        <span>{property.size} m²</span>
+                    </div>
+                </div>
+
+                {/* Price */}
+                <div className="text-right shrink-0">
+                    <p className="font-[family-name:var(--font-anton)] text-xl text-black tracking-wide">
+                        N${property.price.toLocaleString()}
+                    </p>
+                    <p className="text-[10px] text-black/40 font-medium uppercase tracking-wider text-right">
+                        /month
+                    </p>
                 </div>
             </div>
         </Link>

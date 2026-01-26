@@ -15,11 +15,13 @@ import {
     Building2,
     Check,
     Loader2,
-    Eye
+    Eye,
+    AlertCircle
 } from 'lucide-react'
 import { useMutation, useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
+import { cn } from '@/lib/utils'
 
 export interface DocumentFile {
     type: 'id_front' | 'id_back' | 'payslip' | 'bank_statement' | 'employment_letter' | 'other'
@@ -56,13 +58,6 @@ export function DocumentUploader({
     const [uploadProgress, setUploadProgress] = useState(0)
 
     const generateUploadUrl = useMutation(api.files.generateUploadUrl)
-    // We can't delete files directly easily without knowing if they are used elsewhere, 
-    // but here we can probably just unlink them. 
-    // Actually, we should probably delete from storage if we replace/remove.
-    // Ideally we'd have a specific mutation for this, but general remove is fine.
-    // Note: The caller needs to update the lease object with the new document list.
-
-    // Get URLs for all documents
     const storageIds = documents.map(d => d.storageId)
     const urls = useQuery(api.files.getUrls, { storageIds })
 
@@ -79,14 +74,12 @@ export function DocumentUploader({
     ) => {
         if (!file) return
 
-        // Validate file type
         const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
         if (!validTypes.includes(file.type)) {
             toast.error('Invalid file type. Please upload an image (JPG, PNG, WebP) or PDF.')
             return
         }
 
-        // Validate file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
             toast.error('File too large. Maximum size is 5MB.')
             return
@@ -96,10 +89,7 @@ export function DocumentUploader({
         setUploadProgress(0)
 
         try {
-            // 1. Get upload URL
             const postUrl = await generateUploadUrl()
-
-            // 2. Upload file
             const result = await fetch(postUrl, {
                 method: "POST",
                 headers: { "Content-Type": file.type },
@@ -112,14 +102,12 @@ export function DocumentUploader({
 
             const { storageId } = await result.json()
 
-            // 3. Update documents list
             const newDoc: DocumentFile = {
                 type: docType,
                 storageId: storageId as Id<"_storage">,
                 uploadedAt: new Date().toISOString()
             }
 
-            // Remove existing document of same type and add new one
             const updatedDocs = documents.filter(d => d.type !== docType)
             updatedDocs.push(newDoc)
             onDocumentsChange(updatedDocs)
@@ -148,18 +136,20 @@ export function DocumentUploader({
     const completedRequired = requiredDocuments.every(type => getDocumentByType(type))
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <Label className="text-base font-semibold">Required Documents</Label>
+                <Label className="font-[family-name:var(--font-anton)] uppercase tracking-wide text-lg text-black">
+                    Required Documents
+                </Label>
                 {completedRequired && (
-                    <div className="flex items-center gap-1 text-green-600 text-sm">
-                        <Check className="h-4 w-4" />
-                        All required documents uploaded
+                    <div className="flex items-center gap-2 text-black text-xs font-bold uppercase tracking-wider bg-black/5 px-3 py-1.5 rounded-full">
+                        <Check className="h-3 w-3" />
+                        Complete
                     </div>
                 )}
             </div>
 
-            <div className="grid gap-3">
+            <div className="grid gap-4">
                 {documentTypes.map(({ type, label, icon: Icon, required }) => {
                     const uploadedDoc = getDocumentByType(type)
                     const isUploading = uploading === type
@@ -169,33 +159,33 @@ export function DocumentUploader({
                     return (
                         <Card
                             key={type}
-                            className={`transition-all ${uploadedDoc
-                                ? 'border-green-200 bg-green-50/50'
-                                : isRequired
-                                    ? 'border-orange-200 bg-orange-50/30'
-                                    : ''
-                                }`}
+                            className={cn(
+                                "border transition-all duration-200 border-black/5",
+                                uploadedDoc ? "bg-white shadow-sm" : "bg-white hover:bg-gray-50/50"
+                            )}
                         >
                             <CardContent className="p-4">
                                 <div className="flex items-center justify-between gap-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${uploadedDoc
-                                            ? 'bg-green-100 text-green-600'
-                                            : 'bg-gray-100 text-gray-500'
-                                            }`}>
+                                    <div className="flex items-center gap-4">
+                                        <div className={cn(
+                                            "h-12 w-12 rounded-xl flex items-center justify-center transition-colors",
+                                            uploadedDoc ? "bg-black text-white" : "bg-black/5 text-black/40"
+                                        )}>
                                             {uploadedDoc ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
                                         </div>
                                         <div>
-                                            <p className="font-medium text-sm">
+                                            <p className="font-bold text-sm text-black flex items-center gap-2">
                                                 {label}
-                                                {isRequired && <span className="text-red-500 ml-1">*</span>}
+                                                {isRequired && !uploadedDoc && (
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-black/40 bg-black/5 px-2 py-0.5 rounded-full">Required</span>
+                                                )}
                                             </p>
                                             {uploadedDoc ? (
-                                                <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                                <p className="text-xs text-black/40 font-medium mt-0.5">
                                                     Uploaded {new Date(uploadedDoc.uploadedAt).toLocaleDateString()}
                                                 </p>
                                             ) : (
-                                                <p className="text-xs text-muted-foreground">
+                                                <p className="text-xs text-black/40 mt-0.5">
                                                     JPG, PNG, WebP, or PDF (max 5MB)
                                                 </p>
                                             )}
@@ -208,26 +198,26 @@ export function DocumentUploader({
                                                 <Button
                                                     type="button"
                                                     variant="ghost"
-                                                    size="sm"
+                                                    size="icon"
                                                     onClick={() => window.open(url, '_blank')}
-                                                    className="text-blue-600"
+                                                    className="h-9 w-9 text-black/60 hover:text-black hover:bg-black/5 rounded-full"
                                                 >
                                                     <Eye className="h-4 w-4" />
                                                 </Button>
                                                 <Button
                                                     type="button"
                                                     variant="ghost"
-                                                    size="sm"
+                                                    size="icon"
                                                     onClick={() => removeDocument(type)}
                                                     disabled={disabled}
-                                                    className="text-red-500 hover:text-red-600"
+                                                    className="h-9 w-9 text-black/40 hover:text-red-600 hover:bg-red-50 rounded-full"
                                                 >
                                                     <X className="h-4 w-4" />
                                                 </Button>
                                             </>
                                         )}
 
-                                        <label className={`cursor-pointer ${disabled ? 'pointer-events-none opacity-50' : ''}`}>
+                                        <label className={cn("cursor-pointer", disabled && "pointer-events-none opacity-50")}>
                                             <input
                                                 type="file"
                                                 accept="image/jpeg,image/png,image/webp,application/pdf"
@@ -238,30 +228,27 @@ export function DocumentUploader({
                                                 }}
                                                 disabled={disabled || isUploading}
                                             />
-                                            <Button
-                                                type="button"
-                                                variant={uploadedDoc ? 'outline' : 'default'}
-                                                size="sm"
-                                                disabled={disabled || isUploading}
-                                                asChild
-                                            >
-                                                <span>
-                                                    {isUploading ? (
-                                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                                    ) : (
-                                                        <>
-                                                            <Upload className="h-4 w-4 mr-1" />
-                                                            {uploadedDoc ? 'Replace' : 'Upload'}
-                                                        </>
-                                                    )}
-                                                </span>
-                                            </Button>
+                                            <div className={cn(
+                                                "inline-flex items-center justify-center gap-2 h-9 px-4 text-xs font-bold uppercase tracking-wider rounded-full transition-all",
+                                                uploadedDoc
+                                                    ? "bg-white border border-black/10 text-black hover:bg-black/5"
+                                                    : "bg-black text-white hover:bg-black/80 shadow-lg shadow-black/5"
+                                            )}>
+                                                {isUploading ? (
+                                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                                ) : (
+                                                    <>
+                                                        <Upload className="h-3 w-3" />
+                                                        {uploadedDoc ? 'Replace' : 'Upload'}
+                                                    </>
+                                                )}
+                                            </div>
                                         </label>
                                     </div>
                                 </div>
 
                                 {isUploading && (
-                                    <Progress value={uploadProgress} className="mt-3 h-1" />
+                                    <Progress value={uploadProgress} className="mt-4 h-1 bg-black/5" />
                                 )}
                             </CardContent>
                         </Card>
@@ -269,9 +256,10 @@ export function DocumentUploader({
                 })}
             </div>
 
-            <p className="text-xs text-muted-foreground">
-                <span className="text-red-500">*</span> Required documents must be uploaded before signing
-            </p>
+            <div className="flex items-center gap-2 text-xs text-black/40 font-medium bg-black/5 p-3 rounded-xl">
+                <AlertCircle className="h-4 w-4" />
+                <p>Required documents must be uploaded before signing</p>
+            </div>
         </div>
     )
 }

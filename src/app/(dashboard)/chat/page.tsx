@@ -5,10 +5,10 @@ import { AuthedChatInterface } from './ChatInterface'
 
 function ChatLoading() {
     return (
-        <div className="flex h-full items-center justify-center bg-background">
+        <div className="flex h-full items-center justify-center bg-gray-50/50">
             <div className="flex flex-col items-center gap-4">
-                <div className="h-10 w-10 rounded-full border-2 border-lime-500/20 border-t-lime-500 animate-spin" />
-                <p className="text-sm text-muted-foreground">Loading messages...</p>
+                <div className="h-10 w-10 rounded-full border-2 border-black/10 border-t-black animate-spin" />
+                <p className="text-sm font-medium text-black/60">Loading messages...</p>
             </div>
         </div>
     )
