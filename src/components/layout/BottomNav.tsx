@@ -62,7 +62,7 @@ export function BottomNav({ userRole, user }: BottomNavProps) {
 
     return (
         <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center px-4 md:hidden pointer-events-none">
-            <nav className="bg-white/90 backdrop-blur-xl text-black rounded-2xl p-1.5 border border-black/5 flex items-center gap-1 pointer-events-auto transition-transform duration-300 w-full max-w-sm">
+            <nav className="bg-gray-50/90 backdrop-blur-xl text-black rounded-2xl p-1.5 border border-black/5 flex items-center gap-1 pointer-events-auto transition-transform duration-300 w-full max-w-sm">
 
                 {/* Navigation Items - Flexible Grid */}
                 <div className="flex items-center justify-between flex-1 gap-1 px-1">
@@ -94,7 +94,7 @@ export function BottomNav({ userRole, user }: BottomNavProps) {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <button className="relative outline-none group shrink-0 pr-1">
-                                <Avatar className="h-10 w-10 border border-black/5 transition-all group-hover:border-black/20 group-hover:shadow-sm">
+                                <Avatar className="h-10 w-10 border border-black/5 transition-all group-hover:border-black/20">
                                     <AvatarImage src={user.avatarUrl} />
                                     <AvatarFallback className="bg-black/5 text-black font-medium text-xs">
                                         {getInitials(user)}
@@ -106,7 +106,7 @@ export function BottomNav({ userRole, user }: BottomNavProps) {
                         <DropdownMenuContent
                             side="top"
                             align="end"
-                            className="w-60 p-2 rounded-2xl border border-black/5 bg-white/80 backdrop-blur-xl mb-2"
+                            className="w-60 p-2 rounded-2xl border border-black/5 bg-white mb-2"
                         >
                             <div className="px-3 py-2 mb-1">
                                 <p className="text-sm font-semibold text-black/90">
@@ -148,7 +148,7 @@ export function BottomNav({ userRole, user }: BottomNavProps) {
                     </DropdownMenu>
                 ) : (
                     <Link href="/sign-in" className="shrink-0 pr-1">
-                        <div className="p-2.5 bg-black text-white rounded-xl hover:bg-gray-900 shadow-sm hover:shadow-md transition-all">
+                        <div className="p-2.5 bg-black text-white rounded-xl hover:bg-gray-900 transition-all">
                             <UserIcon className="h-5 w-5" />
                         </div>
                     </Link>

@@ -104,7 +104,7 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading, onItem
         <aside
             className={cn(
                 'fixed left-0 top-0 z-40 h-screen transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) flex flex-col',
-                'bg-transparent md:bg-sidebar/0', // Transparent on desktop to blend with body, handled by wrapper on mobile if needed
+                'bg-gray-50', // Consistent gray background, no border
                 collapsed ? 'w-[60px]' : 'w-[200px]'
             )}
         >
@@ -152,17 +152,17 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading, onItem
                                             href={item.href}
                                             onClick={() => onItemClick?.()}
                                             className={cn(
-                                                'group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ease-in-out',
+                                                'group flex items-center gap-4 px-4 py-3 rounded-full transition-all duration-200 ease-in-out hover:bg-black/5',
                                                 active
-                                                    ? 'bg-black text-[#a9ff3c] font-medium'
-                                                    : 'text-black/70 hover:bg-black/5 hover:text-black',
-                                                collapsed && 'justify-center px-0 w-10 h-10 mx-auto aspect-square'
+                                                    ? 'text-black font-bold'
+                                                    : 'text-black/60 font-medium hover:text-black',
+                                                collapsed && 'justify-center px-0 w-12 h-12 mx-auto aspect-square'
                                             )}
                                             title={collapsed ? item.label : undefined}
                                         >
-                                            <item.icon className={cn(
-                                                "h-[1.15rem] w-[1.15rem] transition-colors",
-                                                active ? "text-[#a9ff3c]" : "text-black/60 group-hover:text-black"
+                                            <item.icon strokeWidth={active ? 3 : 2} className={cn(
+                                                "h-6 w-6 transition-colors",
+                                                active ? "text-black" : "text-black/60 group-hover:text-black"
                                             )} />
                                             {!collapsed && (
                                                 <span className="text-sm">{item.label}</span>
@@ -180,17 +180,17 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading, onItem
                                             href={item.href}
                                             onClick={() => onItemClick?.()}
                                             className={cn(
-                                                'group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ease-in-out',
+                                                'group flex items-center gap-4 px-4 py-3 rounded-full transition-all duration-200 ease-in-out hover:bg-black/5',
                                                 active
-                                                    ? 'bg-black text-[#a9ff3c] font-medium shadow-md'
-                                                    : 'text-black/70 hover:bg-black/5 hover:text-black',
-                                                collapsed && 'justify-center px-0 w-10 h-10 mx-auto aspect-square'
+                                                    ? 'text-black font-bold'
+                                                    : 'text-black/60 font-medium hover:text-black',
+                                                collapsed && 'justify-center px-0 w-12 h-12 mx-auto aspect-square'
                                             )}
                                             title={collapsed ? item.label : undefined}
                                         >
-                                            <item.icon className={cn(
-                                                "h-[1.15rem] w-[1.15rem] transition-colors",
-                                                active ? "text-[#a9ff3c]" : "text-black/60 group-hover:text-black"
+                                            <item.icon strokeWidth={active ? 3 : 2} className={cn(
+                                                "h-6 w-6 transition-colors",
+                                                active ? "text-black" : "text-black/60 group-hover:text-black"
                                             )} />
                                             {!collapsed && (
                                                 <span className="text-sm">{item.label}</span>
@@ -226,17 +226,17 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading, onItem
                                                 href={item.href}
                                                 onClick={() => onItemClick?.()}
                                                 className={cn(
-                                                    'group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ease-in-out',
+                                                    'group flex items-center gap-4 px-4 py-3 rounded-full transition-all duration-200 ease-in-out hover:bg-black/5',
                                                     active
-                                                        ? 'bg-black text-[#a9ff3c] font-medium shadow-md'
-                                                        : 'text-black/70 hover:bg-black/5 hover:text-black',
-                                                    collapsed && 'justify-center px-0 w-10 h-10 mx-auto aspect-square'
+                                                        ? 'text-black font-bold'
+                                                        : 'text-black/60 font-medium hover:text-black',
+                                                    collapsed && 'justify-center px-0 w-12 h-12 mx-auto aspect-square'
                                                 )}
                                                 title={collapsed ? item.label : undefined}
                                             >
-                                                <item.icon className={cn(
-                                                    "h-[1.15rem] w-[1.15rem] transition-colors",
-                                                    active ? "text-[#a9ff3c]" : "text-black/60 group-hover:text-black"
+                                                <item.icon strokeWidth={active ? 3 : 2} className={cn(
+                                                    "h-6 w-6 transition-colors",
+                                                    active ? "text-black" : "text-black/60 group-hover:text-black"
                                                 )} />
                                                 {!collapsed && (
                                                     <span className="text-sm flex-1">{item.label}</span>
@@ -263,7 +263,7 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading, onItem
                             onClick={() => onItemClick?.()}
                             className={cn(
                                 'relative overflow-hidden group flex flex-col items-center justify-center rounded-xl transition-all duration-300',
-                                'border border-dashed border-black/20 hover:border-black bg-transparent hover:bg-black/5',
+                                'border border-dashed border-black/10 hover:border-black bg-gray-50 hover:bg-[#a9ff3c]/10',
                                 collapsed ? 'w-10 h-10 mx-auto p-0 border-transparent hover:border-black' : 'p-4 gap-3'
                             )}
                             title="Become a Landlord"
@@ -339,7 +339,7 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading, onItem
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
-                            className="w-60 p-2 rounded-2xl border border-black/5 bg-white/80 backdrop-blur-xl"
+                            className="w-60 p-2 rounded-2xl border border-black/5 bg-white shadow-xl shadow-black/5"
                             align="start"
                             side="right"
                             sideOffset={12}

@@ -49,7 +49,7 @@ function AuthenticatedLayout({ children, sidebarCollapsed, onToggle, mobileMenuO
                     onClick={onMobileClose}
                 >
                     <div
-                        className="fixed left-0 top-0 h-full w-[280px] bg-white sm:rounded-r-3xl shadow-2xl shadow-black/20 overflow-hidden"
+                        className="fixed left-0 top-0 h-full w-[280px] bg-gray-50 sm:rounded-r-3xl shadow-2xl shadow-black/20 overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <Sidebar
@@ -97,7 +97,7 @@ function GuestLayout({ sidebarCollapsed, onToggle, mobileMenuOpen, onMobileClose
                     onClick={onMobileClose}
                 >
                     <div
-                        className="fixed left-0 top-0 h-full w-[280px] bg-white sm:rounded-r-3xl shadow-2xl shadow-black/20 overflow-hidden"
+                        className="fixed left-0 top-0 h-full w-[280px] bg-gray-50 sm:rounded-r-3xl shadow-2xl shadow-black/20 overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <Sidebar
@@ -127,7 +127,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     const handleMobileToggle = () => setMobileMenuOpen(!mobileMenuOpen)
 
     return (
-        <div className="min-h-screen bg-[#a9ff3c] dark:bg-black transition-colors duration-300">
+        <div className="min-h-screen bg-gray-50 dark:bg-black transition-colors duration-300">
             {/* Conditionally render sidebar based on auth state */}
             <Authenticated>
                 <AuthenticatedLayout
