@@ -109,93 +109,111 @@ function SettingsContent() {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="h-10 w-10 rounded-full border-2 border-lime-500/20 border-t-lime-500 animate-spin" />
-                    <p className="text-sm text-muted-foreground">Loading settings...</p>
+                    <div className="h-10 w-10 rounded-full border-2 border-black/10 border-t-black animate-spin" />
+                    <p className="text-sm text-black/60 font-medium">Loading settings...</p>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="px-6 py-6">
-            <div className="max-w-4xl mx-auto">
+        <div className="min-h-screen bg-white">
+            <div className="max-w-6xl mx-auto px-6 py-12">
                 {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
-                    <p className="text-muted-foreground mt-1">Manage your account preferences</p>
+                <div className="mb-12">
+                    <h1 className="font-[family-name:var(--font-anton)] text-4xl mb-2 text-black tracking-wide">SETTINGS</h1>
+                    <p className="text-black/60 font-medium">Manage your account preferences and profile</p>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-8">
+                <div className="flex flex-col md:flex-row gap-12">
                     {/* Sidebar Tabs */}
-                    <div className="w-full md:w-48 shrink-0">
-                        <nav className="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible pb-2 md:pb-0">
+                    <div className="w-full md:w-64 shrink-0">
+                        <nav className="flex md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-4 md:pb-0 scrollbar-hide">
                             {settingsTabs.map((tab) => (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={cn(
-                                        'flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap',
+                                        'group flex items-center gap-4 px-4 py-3 rounded-full transition-all duration-200 ease-in-out whitespace-nowrap',
                                         activeTab === tab.id
-                                            ? 'bg-lime-500 text-white shadow-lg shadow-lime-500/20'
-                                            : 'text-muted-foreground hover:bg-sidebar-accent hover:text-foreground'
+                                            ? 'bg-black text-white shadow-lg shadow-black/10'
+                                            : 'text-black/60 font-medium hover:bg-black/5 hover:text-black'
                                     )}
                                 >
-                                    <tab.icon className="h-4 w-4" />
-                                    {tab.label}
+                                    <tab.icon className={cn(
+                                        "h-5 w-5",
+                                        activeTab === tab.id ? "text-white" : "text-black/60 group-hover:text-black"
+                                    )} />
+                                    <span className="text-sm font-medium tracking-wide">{tab.label}</span>
                                 </button>
                             ))}
                         </nav>
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1">
+                    <div className="flex-1 max-w-2xl">
                         {activeTab === 'profile' && (
-                            <div className="space-y-8">
+                            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                 {/* Avatar Section */}
                                 <section>
-                                    <h2 className="text-lg font-medium text-foreground mb-4">Profile Picture</h2>
-                                    <div className="flex items-center gap-6">
-                                        <div className="relative group">
-                                            <div className="h-24 w-24 rounded-full overflow-hidden bg-sidebar-accent flex items-center justify-center">
+                                    <h2 className="font-[family-name:var(--font-anton)] text-2xl text-black mb-6 uppercase tracking-wide">
+                                        Profile Picture
+                                    </h2>
+                                    <div className="flex items-center gap-8">
+                                        <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                                            <div className="h-32 w-32 rounded-full overflow-hidden bg-gray-100 border-4 border-white shadow-xl shadow-black/5 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
                                                 {user?.avatarUrl ? (
-                                                    /* eslint-disable-next-line @next/next/no-img-element */
+                                                    // eslint-disable-next-line @next/next/no-img-element
                                                     <img
                                                         src={user.avatarUrl}
                                                         alt="Profile"
                                                         className="h-full w-full object-cover"
                                                     />
                                                 ) : (
-                                                    <span className="text-2xl font-medium text-muted-foreground">
+                                                    <span className="text-4xl font-bold text-black/20 group-hover:text-black/40 transition-colors">
                                                         {profile.firstName && profile.surname
                                                             ? `${profile.firstName.charAt(0)}${profile.surname.charAt(0)}`.toUpperCase()
                                                             : profile.firstName?.charAt(0)?.toUpperCase() || 'U'
                                                         }
                                                     </span>
                                                 )}
+
+                                                {/* Overlay */}
+                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+                                                    <Camera className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all duration-300" />
+                                                </div>
                                             </div>
-                                            <button
-                                                className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                                                onClick={() => fileInputRef.current?.click()}
-                                            >
-                                                <Camera className="h-6 w-6 text-white" />
-                                            </button>
+
                                             {uploading && (
-                                                <div className="absolute inset-0 bg-white/60 rounded-full flex items-center justify-center">
-                                                    <Loader2 className="h-6 w-6 text-lime-500 animate-spin" />
+                                                <div className="absolute inset-0 z-10 bg-white/80 rounded-full flex items-center justify-center backdrop-blur-sm">
+                                                    <Loader2 className="h-8 w-8 text-black animate-spin" />
                                                 </div>
                                             )}
                                         </div>
-                                        <div>
-                                            <p className="text-sm text-muted-foreground mb-2">JPG, GIF or PNG. Max size 2MB.</p>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="rounded-lg"
-                                                onClick={() => fileInputRef.current?.click()}
-                                                disabled={uploading}
-                                            >
-                                                {uploading ? 'Uploading...' : 'Upload New'}
-                                            </Button>
+
+                                        <div className="flex-1">
+                                            <div className="flex gap-3 mb-3">
+                                                <Button
+                                                    variant="outline"
+                                                    className="rounded-xl border-black/10 hover:bg-black hover:text-white transition-colors h-11 px-6 font-medium"
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    disabled={uploading}
+                                                >
+                                                    {uploading ? 'Uploading...' : 'Change Photo'}
+                                                </Button>
+                                                {user?.avatarUrl && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        className="rounded-xl text-red-500 hover:bg-red-50 hover:text-red-600 h-11 px-6 font-medium"
+                                                        onClick={() => {/* Implement remove photo */ }}
+                                                    >
+                                                        Remove
+                                                    </Button>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-black/40 font-medium">
+                                                Accepts JPG, GIF or PNG. Max size 2MB.
+                                            </p>
                                             <input
                                                 type="file"
                                                 ref={fileInputRef}
@@ -209,69 +227,72 @@ function SettingsContent() {
 
                                 {/* Personal Info Section */}
                                 <section>
-                                    <h2 className="text-lg font-medium text-foreground mb-4">Personal Information</h2>
-                                    <div className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <Label htmlFor="firstName" className="text-foreground">First Name</Label>
+                                    <h2 className="font-[family-name:var(--font-anton)] text-2xl text-black mb-6 uppercase tracking-wide">
+                                        Personal Information
+                                    </h2>
+                                    <div className="grid gap-6">
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="firstName" className="text-sm font-bold text-black/80 ml-1">First Name</Label>
                                                 <Input
                                                     id="firstName"
                                                     value={profile.firstName}
                                                     onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
                                                     placeholder="Enter your first name"
-                                                    className="mt-1.5 h-11 rounded-lg bg-sidebar-accent border-0 focus-visible:ring-2 focus-visible:ring-lime-500/50"
+                                                    className="h-12 rounded-xl bg-gray-50 border-transparent focus:border-black/20 focus:bg-white focus:ring-0 transition-all font-medium placeholder:text-black/20"
                                                 />
                                             </div>
-                                            <div>
-                                                <Label htmlFor="surname" className="text-foreground">Surname</Label>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="surname" className="text-sm font-bold text-black/80 ml-1">Surname</Label>
                                                 <Input
                                                     id="surname"
                                                     value={profile.surname}
                                                     onChange={(e) => setProfile({ ...profile, surname: e.target.value })}
                                                     placeholder="Enter your surname"
-                                                    className="mt-1.5 h-11 rounded-lg bg-sidebar-accent border-0 focus-visible:ring-2 focus-visible:ring-lime-500/50"
+                                                    className="h-12 rounded-xl bg-gray-50 border-transparent focus:border-black/20 focus:bg-white focus:ring-0 transition-all font-medium placeholder:text-black/20"
                                                 />
                                             </div>
                                         </div>
-                                        <div>
-                                            <Label htmlFor="email" className="text-foreground">Email</Label>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="email" className="text-sm font-bold text-black/80 ml-1">Email Address</Label>
                                             <Input
                                                 id="email"
                                                 value={user?.email || ''}
                                                 disabled
-                                                className="mt-1.5 h-11 rounded-lg bg-sidebar-accent/50 border-0 text-muted-foreground"
+                                                className="h-12 rounded-xl bg-gray-50/50 border-transparent text-black/40 font-medium"
                                             />
-                                            <p className="text-xs text-muted-foreground mt-1.5">Email cannot be changed</p>
+                                            <p className="text-[11px] text-black/40 font-medium ml-1">Email address is managed via your secure login provider.</p>
                                         </div>
-                                        <div>
-                                            <Label htmlFor="phone" className="text-foreground">Phone Number</Label>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="phone" className="text-sm font-bold text-black/80 ml-1">Phone Number</Label>
                                             <Input
                                                 id="phone"
                                                 value={profile.phone}
                                                 onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                                                placeholder="+264 81 000 0000"
-                                                className="mt-1.5 h-11 rounded-lg bg-sidebar-accent border-0 focus-visible:ring-2 focus-visible:ring-lime-500/50"
+                                                placeholder="+1 (555) 000-0000"
+                                                className="h-12 rounded-xl bg-gray-50 border-transparent focus:border-black/20 focus:bg-white focus:ring-0 transition-all font-medium placeholder:text-black/20"
                                             />
                                         </div>
                                     </div>
                                 </section>
 
                                 {/* Save Button */}
-                                <div className="pt-4 border-t border-border">
+                                <div className="pt-6">
                                     <Button
                                         onClick={handleSaveProfile}
                                         disabled={saving}
-                                        className="bg-lime-500 hover:bg-lime-600 text-white rounded-lg h-11 px-6 font-medium shadow-lg shadow-lime-500/20"
+                                        className="w-full md:w-auto bg-black hover:bg-gray-900 text-white rounded-xl h-12 px-8 font-bold tracking-wide shadow-xl shadow-black/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
                                     >
                                         {saving ? (
                                             <>
                                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                Saving...
+                                                SAVING...
                                             </>
                                         ) : (
                                             <>
-                                                <Check className="mr-2 h-4 w-4" />
-                                                Save Changes
+                                                SAVE CHANGES
                                             </>
                                         )}
                                     </Button>
@@ -280,35 +301,62 @@ function SettingsContent() {
                         )}
 
                         {activeTab === 'notifications' && (
-                            <div>
-                                <h2 className="text-lg font-medium text-foreground mb-1">Notification Preferences</h2>
-                                <p className="text-sm text-muted-foreground mb-6">Manage how you receive notifications</p>
-                                <div className="p-8 rounded-xl bg-sidebar-accent/30 text-center">
-                                    <Bell className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                                    <p className="text-muted-foreground">Notification settings coming soon...</p>
+                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <h2 className="font-[family-name:var(--font-anton)] text-2xl text-black mb-2 uppercase tracking-wide">
+                                    Notification Preferences
+                                </h2>
+                                <p className="text-black/60 font-medium mb-8">Choose how you want to be notified</p>
+
+                                <div className="p-12 rounded-2xl bg-gray-50 border-2 border-dashed border-black/5 text-center flex flex-col items-center justify-center">
+                                    <div className="h-16 w-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm">
+                                        <Bell className="h-8 w-8 text-black/20" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-black mb-1">Coming Soon</h3>
+                                    <p className="text-black/40 max-w-xs mx-auto">We're working on more granular notification controls for you.</p>
                                 </div>
                             </div>
                         )}
 
                         {activeTab === 'security' && (
-                            <div>
-                                <h2 className="text-lg font-medium text-foreground mb-1">Security Settings</h2>
-                                <p className="text-sm text-muted-foreground mb-6">Manage your account security</p>
-                                <div className="p-6 rounded-xl bg-sidebar-accent/30">
-                                    <h3 className="font-medium text-foreground mb-2">Password</h3>
-                                    <p className="text-sm text-muted-foreground mb-4">Update your password to keep your account secure</p>
-                                    <Button variant="outline" className="rounded-lg">Change Password</Button>
+                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <h2 className="font-[family-name:var(--font-anton)] text-2xl text-black mb-2 uppercase tracking-wide">
+                                    Security Settings
+                                </h2>
+                                <p className="text-black/60 font-medium mb-8">Manage your account security and authentication</p>
+
+                                <div className="p-8 rounded-2xl bg-gray-50 border border-transparent hover:border-black/5 transition-all">
+                                    <div className="flex items-start justify-between">
+                                        <div>
+                                            <h3 className="font-bold text-black mb-2">Password</h3>
+                                            <p className="text-sm text-black/60 mb-6 max-w-sm">Secure your account with a strong password. We recommend changing it periodically.</p>
+                                        </div>
+                                        <div className="h-10 w-10 bg-white rounded-full flex items-center justify-center">
+                                            <Shield className="h-5 w-5 text-black" />
+                                        </div>
+                                    </div>
+                                    <Button variant="outline" className="rounded-xl border-black/10 hover:bg-black hover:text-white h-11 px-6 font-medium bg-white">
+                                        Update Password
+                                    </Button>
                                 </div>
                             </div>
                         )}
 
                         {activeTab === 'billing' && (
-                            <div>
-                                <h2 className="text-lg font-medium text-foreground mb-1">Billing & Subscription</h2>
-                                <p className="text-sm text-muted-foreground mb-6">Manage your billing information</p>
-                                <div className="p-8 rounded-xl bg-sidebar-accent/30 text-center">
-                                    <CreditCard className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                                    <p className="text-muted-foreground">Billing settings coming soon...</p>
+                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <h2 className="font-[family-name:var(--font-anton)] text-2xl text-black mb-2 uppercase tracking-wide">
+                                    Billing & Payments
+                                </h2>
+                                <p className="text-black/60 font-medium mb-8">Manage your subscription and payment methods</p>
+
+                                <div className="p-12 rounded-2xl bg-gray-50 border-2 border-dashed border-black/5 text-center flex flex-col items-center justify-center">
+                                    <div className="h-16 w-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm">
+                                        <CreditCard className="h-8 w-8 text-black/20" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-black mb-1">No Active Plan</h3>
+                                    <p className="text-black/40 max-w-xs mx-auto mb-6">You are currently on the free plan. Upgrade to unlock premium features.</p>
+                                    <Button className="bg-black text-white hover:bg-gray-900 rounded-xl h-11 px-6 font-bold">
+                                        View Plans
+                                    </Button>
                                 </div>
                             </div>
                         )}

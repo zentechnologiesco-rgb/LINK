@@ -32,78 +32,78 @@ function BecomeLandlordContent() {
     }
 
     return (
-        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
-            <div className="w-full max-w-lg">
+        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
+            <div className="w-full max-w-2xl">
                 {/* Back Link */}
                 <Link
                     href="/"
-                    className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+                    className="inline-flex items-center gap-2 text-sm text-black/60 hover:text-black transition-colors mb-8 font-medium"
                 >
                     <ChevronLeft className="h-4 w-4" />
                     Back to Dashboard
                 </Link>
 
                 {/* Main Card */}
-                <div className="rounded-2xl overflow-hidden bg-sidebar-accent/20 border border-border">
+                <div className="rounded-3xl overflow-hidden bg-white border border-black/5">
                     {/* Header Section */}
-                    <div className="bg-lime-500 px-8 py-10 text-center relative overflow-hidden">
-                        {/* Decorative elements */}
-                        <div className="absolute top-1/2 -left-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-                        <div className="absolute top-1/2 -right-10 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
-
-                        <div className="relative z-10">
-                            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm mb-5">
-                                <Building2 className="h-8 w-8 text-white" />
-                            </div>
-                            <h1 className="text-2xl font-bold text-white tracking-tight">Become a Landlord</h1>
-                            <p className="mt-2 text-white/80 text-sm max-w-xs mx-auto">
-                                Join our partner program to list properties and start earning rental income.
-                            </p>
+                    <div className="px-8 pt-12 pb-6 text-center">
+                        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-black text-white mb-6">
+                            <Building2 className="h-8 w-8" />
                         </div>
+                        <h1 className="font-[family-name:var(--font-anton)] text-4xl text-black tracking-wide mb-3">
+                            Become a Landlord
+                        </h1>
+                        <p className="text-black/60 text-lg max-w-md mx-auto leading-relaxed">
+                            Join our partner program to list properties and start earning rental income.
+                        </p>
                     </div>
 
                     {/* Content Section */}
-                    <div className="p-8 bg-background">
+                    <div className="p-8 md:p-10 pt-4">
                         {verificationStatus ? (
-                            <div className="text-center py-4">
+                            <div className="text-center py-6">
                                 {verificationStatus.status === 'pending' && (
-                                    <div className="space-y-4">
-                                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10">
-                                            <Clock className="h-8 w-8 text-amber-500" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-lg font-semibold text-foreground">Verification Pending</h2>
-                                            <p className="text-sm text-muted-foreground mt-1 max-w-xs mx-auto">
+                                    <div className="space-y-8">
+                                        <div className="p-8 rounded-2xl border border-dashed border-black/10 bg-gray-50/50">
+                                            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-black/5 mb-4">
+                                                <Clock className="h-8 w-8 text-black/60" />
+                                            </div>
+                                            <h2 className="font-[family-name:var(--font-anton)] text-2xl text-black mb-2">
+                                                Verification Pending
+                                            </h2>
+                                            <p className="text-black/60 max-w-xs mx-auto mb-6">
                                                 Your application is currently under review. We'll notify you once it's approved.
                                             </p>
+                                            <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-black text-white text-xs font-bold tracking-wide uppercase">
+                                                Pending Review
+                                            </span>
+                                            {verificationStatus._creationTime && (
+                                                <p className="text-xs text-black/40 mt-6 font-medium uppercase tracking-wider">
+                                                    Submitted on {format(new Date(verificationStatus._creationTime), 'MMM dd, yyyy')}
+                                                </p>
+                                            )}
                                         </div>
-                                        <span className="inline-block px-4 py-1.5 rounded-full bg-amber-500/10 text-amber-600 text-sm font-medium">
-                                            Pending Review
-                                        </span>
-                                        {verificationStatus._creationTime && (
-                                            <p className="text-xs text-muted-foreground mt-4">
-                                                Submitted on {format(new Date(verificationStatus._creationTime), 'PPP p')}
-                                            </p>
-                                        )}
                                     </div>
                                 )}
 
                                 {verificationStatus.status === 'approved' && (
-                                    <div className="space-y-4">
-                                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-lime-500/10">
-                                            <CheckCircle className="h-8 w-8 text-lime-500" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-lg font-semibold text-foreground">You're Verified!</h2>
-                                            <p className="text-sm text-muted-foreground mt-1">
+                                    <div className="space-y-8">
+                                        <div className="p-8 rounded-2xl border border-dashed border-black/10 bg-gray-50/50">
+                                            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-black mb-4">
+                                                <CheckCircle className="h-8 w-8 text-white" />
+                                            </div>
+                                            <h2 className="font-[family-name:var(--font-anton)] text-2xl text-black mb-2">
+                                                You're Verified!
+                                            </h2>
+                                            <p className="text-black/60 max-w-sm mx-auto mb-6">
                                                 Your landlord account has been approved. You can now list properties.
                                             </p>
+                                            <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-black/5 text-black text-xs font-bold tracking-wide uppercase border border-black/10">
+                                                Approved
+                                            </span>
                                         </div>
-                                        <span className="inline-block px-4 py-1.5 rounded-full bg-lime-500/10 text-lime-600 text-sm font-medium">
-                                            Approved
-                                        </span>
-                                        <div className="pt-4">
-                                            <Button asChild className="w-full bg-lime-500 hover:bg-lime-600 text-white rounded-lg h-11 font-medium shadow-lg shadow-lime-500/20">
+                                        <div className="pt-2">
+                                            <Button asChild className="w-full bg-black hover:bg-black/80 text-white rounded-full h-12 font-medium text-base shadow-lg shadow-black/10">
                                                 <Link href="/landlord">Go to Dashboard</Link>
                                             </Button>
                                         </div>
@@ -112,6 +112,13 @@ function BecomeLandlordContent() {
 
                                 {verificationStatus.status === 'rejected' && (
                                     <div className="text-left">
+                                        <div className="mb-8 text-center p-6 rounded-2xl bg-red-50/50 border border-red-100">
+                                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 mb-3">
+                                                <XCircle className="h-6 w-6 text-red-600" />
+                                            </div>
+                                            <h3 className="font-[family-name:var(--font-anton)] text-xl text-red-900 mb-1">Action Required</h3>
+                                            <p className="text-red-700/80 text-sm">Please review the issues and resubmit.</p>
+                                        </div>
                                         <ResubmissionForm
                                             previousRequestId={verificationStatus._id}
                                             previousData={{
@@ -132,7 +139,7 @@ function BecomeLandlordContent() {
                 </div>
 
                 {/* Footer note */}
-                <p className="text-center text-xs text-muted-foreground mt-8">
+                <p className="text-center text-xs text-black/40 mt-8 font-medium">
                     &copy; {new Date().getFullYear()} LINK Property Rental. All rights reserved.
                 </p>
             </div>
