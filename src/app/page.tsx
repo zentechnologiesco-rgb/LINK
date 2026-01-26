@@ -8,6 +8,7 @@ import { api } from "../../convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Building2, ChevronLeft, ChevronRight } from "lucide-react"
 import { SavePropertyButton } from "@/components/properties/SavePropertyButton"
+import { cn } from "@/lib/utils"
 
 // Define the Property type needed for the feed
 interface Property {
@@ -110,9 +111,9 @@ export default function HomePage() {
             <div className="min-h-[80vh] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <div className="relative">
-                        <div className="h-10 w-10 rounded-full border-2 border-lime-500/20 border-t-lime-500 animate-spin" />
+                        <div className="h-10 w-10 rounded-full border-2 border-black/10 border-t-black animate-spin" />
                     </div>
-                    <p className="text-sm text-muted-foreground">Loading properties...</p>
+                    <p className="text-sm text-black/40 font-medium">Loading properties...</p>
                 </div>
             </div>
         )
@@ -122,17 +123,17 @@ export default function HomePage() {
         return (
             <div className="min-h-[80vh] flex items-center justify-center px-4">
                 <div className="text-center max-w-md">
-                    <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-sidebar-accent mb-6">
-                        <Building2 className="h-8 w-8 text-sidebar-foreground/70" />
+                    <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-black/5 mb-6">
+                        <Building2 className="h-8 w-8 text-black/40" />
                     </div>
-                    <h1 className="text-2xl font-bold tracking-tight text-foreground mb-3">
-                        No properties available yet
+                    <h1 className="text-2xl font-bold tracking-tight text-black mb-3 font-[family-name:var(--font-anton)] uppercase">
+                        No properties found
                     </h1>
-                    <p className="text-muted-foreground mb-8 leading-relaxed">
-                        We're currently expanding our exclusive listings. Check back soon for updates.
+                    <p className="text-black/60 mb-8 leading-relaxed">
+                        We couldn't find any properties matching your criteria. Try adjusting your filters or check back later.
                     </p>
                     <Link href="/become-landlord">
-                        <Button className="bg-lime-500 hover:bg-lime-600 text-white shadow-lg shadow-lime-500/20 rounded-xl px-6 h-11 font-medium transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5">
+                        <Button className="bg-black hover:bg-black/80 text-white rounded-xl px-8 h-12 font-medium transition-all duration-300">
                             List Your Property
                         </Button>
                     </Link>
@@ -144,33 +145,38 @@ export default function HomePage() {
     return (
         <div className="min-h-screen">
             {/* Header Section */}
-            <div className="px-6 pt-8 pb-6">
-                <div className="flex flex-wrap items-center gap-4">
-                    <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            <div className="px-6 pt-8 pb-6 space-y-6">
+                <div className="flex flex-col gap-1 items-center text-center md:items-start md:text-left">
+                    <h1 className="font-[family-name:var(--font-anton)] text-4xl tracking-wide text-black uppercase">
                         Properties
                     </h1>
+                    <p className="text-black/40 font-medium text-sm">
+                        Find your next home in Namibia
+                    </p>
+                </div>
 
-                    {/* Filter Chips */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                        {propertyTypes.map((type) => (
-                            <button
-                                key={type.value}
-                                onClick={() => handleFilterChange(type.value)}
-                                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${selectedType === type.value
-                                    ? 'bg-foreground text-background shadow-sm'
-                                    : 'bg-sidebar-accent text-muted-foreground hover:bg-sidebar-accent/80 hover:text-foreground'
-                                    }`}
-                            >
-                                {type.label}
-                            </button>
-                        ))}
-                    </div>
+                {/* Filter Chips - Horizontal Scroll on Mobile */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-6 px-6 md:flex-wrap md:overflow-visible md:pb-0 md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden">
+                    {propertyTypes.map((type) => (
+                        <button
+                            key={type.value}
+                            onClick={() => handleFilterChange(type.value)}
+                            className={cn(
+                                "whitespace-nowrap flex-none px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 border",
+                                selectedType === type.value
+                                    ? "bg-black text-white border-black"
+                                    : "bg-transparent text-black/60 border-transparent hover:bg-black/5 hover:text-black"
+                            )}
+                        >
+                            {type.label}
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            {/* Property Grid - 4x4 */}
+            {/* Property Grid */}
             <div className="px-6 pb-8">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {paginatedProperties.map((property) => (
                         <PropertyCard key={property.id} property={property} />
                     ))}
@@ -179,66 +185,67 @@ export default function HomePage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="px-6 pb-10">
-                    <div className="flex items-center justify-center gap-2">
-                        {/* Previous Button */}
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                            className="h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-sidebar-accent disabled:opacity-40"
-                        >
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
+                <div className="px-6 pb-12">
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="flex items-center justify-center gap-2 bg-black/5 p-1 rounded-full">
+                            {/* Previous Button */}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="h-8 w-8 rounded-full text-black/60 hover:text-black hover:bg-white disabled:opacity-30 disabled:hover:bg-transparent"
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
 
-                        {/* Page Numbers */}
-                        <div className="flex items-center gap-1">
-                            {getPageNumbers().map((page, index) => (
-                                typeof page === 'number' ? (
-                                    <Button
-                                        key={index}
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setCurrentPage(page)}
-                                        className={`h-9 w-9 rounded-lg text-sm font-medium transition-all duration-200 ${currentPage === page
-                                            ? 'bg-foreground text-background shadow-sm'
-                                            : 'text-muted-foreground hover:text-foreground hover:bg-sidebar-accent'
-                                            }`}
-                                    >
-                                        {page}
-                                    </Button>
-                                ) : (
-                                    <span key={index} className="px-1 text-muted-foreground/50">
-                                        {page}
-                                    </span>
-                                )
-                            ))}
+                            {/* Page Numbers */}
+                            <div className="flex items-center gap-1 px-2">
+                                {getPageNumbers().map((page, index) => (
+                                    typeof page === 'number' ? (
+                                        <button
+                                            key={index}
+                                            onClick={() => setCurrentPage(page)}
+                                            className={cn(
+                                                "h-7 w-7 rounded-full text-xs font-bold transition-all duration-200 flex items-center justify-center",
+                                                currentPage === page
+                                                    ? "bg-black text-white shadow-md"
+                                                    : "text-black/40 hover:text-black hover:bg-black/5"
+                                            )}
+                                        >
+                                            {page}
+                                        </button>
+                                    ) : (
+                                        <span key={index} className="px-1 text-black/30 text-xs font-medium">
+                                            {page}
+                                        </span>
+                                    )
+                                ))}
+                            </div>
+
+                            {/* Next Button */}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="h-8 w-8 rounded-full text-black/60 hover:text-black hover:bg-white disabled:opacity-30 disabled:hover:bg-transparent"
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
                         </div>
 
-                        {/* Next Button */}
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages}
-                            className="h-9 w-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-sidebar-accent disabled:opacity-40"
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
+                        <p className="text-center text-[10px] font-medium text-black/30 uppercase tracking-widest">
+                            Viewing {startIndex + 1}-{Math.min(endIndex, normalizedProperties.length)} of {normalizedProperties.length}
+                        </p>
                     </div>
-
-                    {/* Page Info */}
-                    <p className="text-center text-xs text-muted-foreground mt-3">
-                        Showing {startIndex + 1}-{Math.min(endIndex, normalizedProperties.length)} of {normalizedProperties.length} properties
-                    </p>
                 </div>
             )}
         </div>
     )
 }
 
-// Airbnb-style PropertyCard component
+// Clean Minimal PropertyCard
 function PropertyCard({ property }: { property: Property }) {
     const [currentImageIndex, setCurrentImageIndex] = useState(0)
     const images = property.images.length > 0 ? property.images : ['/window.svg']
@@ -256,43 +263,53 @@ function PropertyCard({ property }: { property: Property }) {
     }
 
     return (
-        <Link href={`/properties/${property.id}`} className="group block">
+        <Link href={`/properties/${property.id}`} className="group block select-none">
             {/* Image Container */}
-            <div className="relative aspect-square rounded-xl overflow-hidden bg-muted mb-3">
+            <div className="relative aspect-square rounded-3xl overflow-hidden bg-gray-100 mb-4 cursor-pointer">
                 <Image
                     src={images[currentImageIndex]}
                     alt={property.title}
                     fill
-                    className="object-cover transition-transform duration-500"
+                    className="object-cover transition-transform duration-700 will-change-transform group-hover:scale-110"
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                 />
 
-                {/* Save Button - Heart */}
-                <div className="absolute right-3 top-3 z-10">
+                {/* Gradient protection for white text if needed, but we are using badges */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
+
+                {/* Top Left Badge: Type */}
+                <div className="absolute left-3 top-3 z-10">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-black text-white shadow-xl shadow-black/10">
+                        {property.type}
+                    </span>
+                </div>
+
+                {/* Save Button */}
+                <div className="absolute right-3 top-3 z-10 transition-transform duration-200 active:scale-90">
                     <SavePropertyButton propertyId={property.id} />
                 </div>
 
-                {/* Image Navigation Arrows */}
+                {/* Image Navigation Arrows - Only visible on hover */}
                 {images.length > 1 && (
-                    <>
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         <button
                             onClick={prevImage}
-                            className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:scale-105"
+                            className="absolute left-3 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/90 text-black shadow-lg shadow-black/10 flex items-center justify-center hover:scale-110 active:scale-95 transition-all outline-none"
                         >
-                            <ChevronLeft className="h-4 w-4 text-foreground" />
+                            <ChevronLeft className="h-4 w-4" />
                         </button>
                         <button
                             onClick={nextImage}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:scale-105"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-white/90 text-black shadow-lg shadow-black/10 flex items-center justify-center hover:scale-110 active:scale-95 transition-all outline-none"
                         >
-                            <ChevronRight className="h-4 w-4 text-foreground" />
+                            <ChevronRight className="h-4 w-4" />
                         </button>
-                    </>
+                    </div>
                 )}
 
                 {/* Carousel Dots */}
                 {images.length > 1 && (
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-1.5 rounded-full bg-black/20 backdrop-blur-md">
                         {images.slice(0, 5).map((_, index) => (
                             <button
                                 key={index}
@@ -301,47 +318,47 @@ function PropertyCard({ property }: { property: Property }) {
                                     e.stopPropagation()
                                     setCurrentImageIndex(index)
                                 }}
-                                className={`h-1.5 rounded-full transition-all duration-200 ${currentImageIndex === index
-                                    ? 'w-1.5 bg-white'
-                                    : 'w-1.5 bg-white/60 hover:bg-white/80'
+                                className={`h-1.5 rounded-full transition-all duration-300 ${currentImageIndex === index
+                                    ? 'w-4 bg-white shadow-sm'
+                                    : 'w-1.5 bg-white/50 hover:bg-white/80'
                                     }`}
                             />
                         ))}
                     </div>
                 )}
-
-                {/* Property Type Badge */}
-                {property.type && (
-                    <div className="absolute left-3 top-3">
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white shadow-sm text-foreground capitalize">
-                            {property.type}
-                        </span>
-                    </div>
-                )}
             </div>
 
-            {/* Content - Airbnb style minimal text */}
-            <div className="space-y-1">
-                {/* Location */}
-                <div className="flex items-center justify-between">
-                    <h3 className="font-medium text-foreground truncate pr-2">
-                        {property.city}
+            {/* Content Section */}
+            <div className="flex justify-between items-start gap-4">
+                <div className="space-y-1 flex-1 min-w-0">
+                    <h3 className="font-bold text-black text-lg leading-tight truncate">
+                        {property.title}
                     </h3>
+                    <p className="text-black/50 text-sm truncate">
+                        {property.city}
+                    </p>
+                    {/* Specs Row */}
+                    <div className="flex items-center gap-3 pt-1">
+                        <p className="flex items-center gap-1.5 text-xs font-medium text-black/70 bg-black/5 px-2 py-1 rounded-md">
+                            <span>{property.bedrooms} Beds</span>
+                        </p>
+                        <p className="flex items-center gap-1.5 text-xs font-medium text-black/70 bg-black/5 px-2 py-1 rounded-md">
+                            <span>{property.bathrooms} Baths</span>
+                        </p>
+                        <p className="flex items-center gap-1.5 text-xs font-medium text-black/70 bg-black/5 px-2 py-1 rounded-md">
+                            <span>{property.size}m²</span>
+                        </p>
+                    </div>
                 </div>
 
-                {/* Property Title */}
-                <p className="text-muted-foreground text-sm truncate">
-                    {property.title}
-                </p>
-
-                {/* Property Details & Price */}
-                <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                        {property.bedrooms} bed{property.bedrooms !== 1 ? 's' : ''} · {property.bathrooms} bath{property.bathrooms !== 1 ? 's' : ''} · {property.size} m²
-                    </span>
-                    <span className="font-semibold text-foreground whitespace-nowrap">
-                        N$ {property.price.toLocaleString()}<span className="text-muted-foreground font-normal text-xs">/mo</span>
-                    </span>
+                {/* Price */}
+                <div className="text-right shrink-0">
+                    <p className="font-[family-name:var(--font-anton)] text-xl text-black tracking-wide">
+                        N${property.price.toLocaleString()}
+                    </p>
+                    <p className="text-[10px] text-black/40 font-medium uppercase tracking-wider text-right">
+                        /month
+                    </p>
                 </div>
             </div>
         </Link>
