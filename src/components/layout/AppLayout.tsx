@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Sidebar } from './Sidebar'
+import { BottomNav } from './BottomNav'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Menu } from 'lucide-react'
@@ -48,7 +49,7 @@ function AuthenticatedLayout({ children, sidebarCollapsed, onToggle, mobileMenuO
                     onClick={onMobileClose}
                 >
                     <div
-                        className="fixed left-0 top-0 h-full w-[240px] bg-white"
+                        className="fixed left-0 top-0 h-full w-[280px] bg-white sm:rounded-r-3xl shadow-2xl shadow-black/20 overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <Sidebar
@@ -58,10 +59,12 @@ function AuthenticatedLayout({ children, sidebarCollapsed, onToggle, mobileMenuO
                             user={user}
                             isLoading={isLoading}
                             onItemClick={onMobileClose}
+                            showCollapseToggle={false}
                         />
                     </div>
                 </div>
             )}
+            <BottomNav userRole={userRole} user={user} />
         </>
     )
 }
@@ -94,7 +97,7 @@ function GuestLayout({ sidebarCollapsed, onToggle, mobileMenuOpen, onMobileClose
                     onClick={onMobileClose}
                 >
                     <div
-                        className="fixed left-0 top-0 h-full w-[240px] bg-white"
+                        className="fixed left-0 top-0 h-full w-[280px] bg-white sm:rounded-r-3xl shadow-2xl shadow-black/20 overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <Sidebar
@@ -104,10 +107,12 @@ function GuestLayout({ sidebarCollapsed, onToggle, mobileMenuOpen, onMobileClose
                             user={null}
                             isLoading={isLoading}
                             onItemClick={onMobileClose}
+                            showCollapseToggle={false}
                         />
                     </div>
                 </div>
             )}
+            <BottomNav />
         </>
     )
 }
@@ -122,7 +127,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     const handleMobileToggle = () => setMobileMenuOpen(!mobileMenuOpen)
 
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="min-h-screen bg-[#a9ff3c] dark:bg-black transition-colors duration-300">
             {/* Conditionally render sidebar based on auth state */}
             <Authenticated>
                 <AuthenticatedLayout
@@ -156,38 +161,24 @@ export function AppLayout({ children }: AppLayoutProps) {
                 />
             </AuthLoading>
 
-            {/* Mobile Header - Only shown on mobile for hamburger menu */}
-            <div className="md:hidden sticky top-0 z-30 bg-white border-b border-gray-200">
-                <div className="flex items-center h-14 px-4">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={handleMobileToggle}
-                    >
-                        <Menu className="h-5 w-5" />
-                    </Button>
-                    <Link href="/" className="flex items-center gap-2 ml-3">
-                        <div className="w-7 h-7 rounded-full bg-gray-900 flex items-center justify-center">
-                            <span className="text-white text-xs font-bold">L</span>
-                        </div>
-                        <span className="font-semibold text-gray-900">LINK</span>
-                    </Link>
-                </div>
-            </div>
 
             {/* Main Content Area */}
             <div
                 className={cn(
-                    'transition-all duration-300 ease-in-out min-h-screen p-4 md:p-6',
-                    sidebarCollapsed ? 'md:ml-[68px]' : 'md:ml-[240px]'
+                    'transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] flex flex-col',
+                    'md:p-3 md:h-screen md:overflow-hidden',
+                    'min-h-screen', // Ensure mobile takes full height
+                    sidebarCollapsed ? 'md:ml-[60px]' : 'md:ml-[200px]'
                 )}
             >
-                {/* Detached Content Panel */}
-                <main className="bg-white rounded-2xl shadow-sm border border-gray-200/60 min-h-[calc(100vh-3rem)] md:min-h-[calc(100vh-3rem)] overflow-hidden">
-                    {children}
+                {/* Floating Content Panel (Desktop) / Full Screen (Mobile) */}
+                <main className="flex-1 bg-white md:rounded-3xl md:border md:border-gray-100 overflow-hidden relative shadow-none flex flex-col">
+                    <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300 pb-24 md:pb-0">
+                        {children}
+                    </div>
                 </main>
             </div>
         </div>
     )
 }
+

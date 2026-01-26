@@ -40,9 +40,9 @@ export function DashboardLayout({ children, title = 'Dashboard', user }: Dashboa
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-[#a9ff3c] dark:bg-black transition-colors duration-300 overflow-hidden">
             {/* Sidebar - Hidden on mobile */}
-            <div className="hidden md:block">
+            <div className="hidden md:block fixed z-20 h-full">
                 <Sidebar
                     collapsed={sidebarCollapsed}
                     onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -51,98 +51,92 @@ export function DashboardLayout({ children, title = 'Dashboard', user }: Dashboa
                 />
             </div>
 
-            {/* Main Content */}
+            {/* Main Content Wrapper */}
             <div
                 className={cn(
-                    'transition-all duration-300 ease-in-out',
-                    sidebarCollapsed ? 'md:ml-[68px]' : 'md:ml-[240px]'
+                    'h-screen transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] p-3 flex flex-col',
+                    sidebarCollapsed ? 'md:ml-[60px]' : 'md:ml-[200px]'
                 )}
             >
-                {/* Top Header */}
-                <header className="sticky top-0 z-30 bg-white border-b border-gray-200">
-                    <div className="flex items-center justify-between h-14 px-4 lg:px-6">
-                        <div className="flex items-center gap-4">
-                            {/* Mobile menu button */}
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="md:hidden h-8 w-8"
-                                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                            >
-                                <Menu className="h-5 w-5" />
-                            </Button>
+                {/* Floating Content Card */}
+                <div className="flex-1 flex flex-col bg-white dark:bg-[#09090b] rounded-3xl border border-gray-100 dark:border-white/5 overflow-hidden shadow-sm relative">
+                    {/* Top Header */}
+                    <header className="sticky top-0 z-30 bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-md border-b border-gray-100 dark:border-white/5">
+                        <div className="flex items-center justify-between h-16 px-6">
+                            <div className="flex items-center gap-4">
+                                {/* Mobile menu button */}
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="md:hidden h-8 w-8"
+                                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                                >
+                                    <Menu className="h-5 w-5" />
+                                </Button>
 
-                            {/* Page Icon & Title */}
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
-                                    <PanelLeft className="h-4 w-4 text-gray-600" />
+                                {/* Page Icon & Title */}
+                                <div className="flex items-center gap-3">
+                                    <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100">{title}</h1>
                                 </div>
-                                <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
+                            </div>
+
+                            {/* Right side */}
+                            <div className="flex items-center gap-3">
+                                {user && (
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-2 ring-transparent hover:ring-gray-100 dark:hover:ring-white/10 transition-all">
+                                                <Avatar className="h-9 w-9 cursor-pointer">
+                                                    <AvatarImage src={user.avatarUrl} alt={user.email || ''} />
+                                                    <AvatarFallback className="bg-gradient-to-br from-gray-700 to-black text-white font-medium">
+                                                        {user.email?.charAt(0).toUpperCase()}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="w-56" align="end" forceMount>
+                                            <DropdownMenuLabel className="font-normal">
+                                                <div className="flex flex-col space-y-1">
+                                                    <p className="text-sm font-medium leading-none">
+                                                        {getDisplayName(user)}
+                                                    </p>
+                                                    <p className="text-xs leading-none text-muted-foreground">
+                                                        {user.email}
+                                                    </p>
+                                                </div>
+                                            </DropdownMenuLabel>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem onClick={() => router.push('/profile')}>
+                                                Profile
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem onClick={handleSignOut}>
+                                                Log out
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                )}
                             </div>
                         </div>
+                    </header>
 
-                        {/* Right side */}
-                        <div className="flex items-center gap-3">
-                            <Link
-                                href="https://github.com"
-                                target="_blank"
-                                className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors hidden sm:block"
-                            >
-                                GitHub
-                            </Link>
-
-                            {user && (
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                                            <Avatar className="h-8 w-8">
-                                                <AvatarImage src={user.avatarUrl} alt={user.email || ''} />
-                                                <AvatarFallback className="bg-gray-200 text-gray-600 text-sm">
-                                                    {user.email?.charAt(0).toUpperCase()}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="w-56" align="end" forceMount>
-                                        <DropdownMenuLabel className="font-normal">
-                                            <div className="flex flex-col space-y-1">
-                                                <p className="text-sm font-medium leading-none">
-                                                    {getDisplayName(user)}
-                                                </p>
-                                                <p className="text-xs leading-none text-muted-foreground">
-                                                    {user.email}
-                                                </p>
-                                            </div>
-                                        </DropdownMenuLabel>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem onClick={() => router.push('/profile')}>
-                                            Profile
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem onClick={handleSignOut}>
-                                            Log out
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            )}
+                    {/* Page Content */}
+                    <main className="flex-1 overflow-y-auto p-6 scroll-smooth">
+                        <div className="mx-auto max-w-7xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            {children}
                         </div>
-                    </div>
-                </header>
-
-                {/* Page Content */}
-                <main className="p-4 lg:p-6">
-                    {children}
-                </main>
+                    </main>
+                </div>
             </div>
 
             {/* Mobile Sidebar Overlay */}
             {mobileMenuOpen && (
                 <div
-                    className="fixed inset-0 z-50 bg-black/50 md:hidden"
+                    className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm md:hidden"
                     onClick={() => setMobileMenuOpen(false)}
                 >
                     <div
-                        className="fixed left-0 top-0 h-full w-[240px] bg-white"
+                        className="fixed left-0 top-0 h-full w-[260px] bg-white dark:bg-black shadow-2xl"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <Sidebar
@@ -156,3 +150,4 @@ export function DashboardLayout({ children, title = 'Dashboard', user }: Dashboa
         </div>
     )
 }
+
