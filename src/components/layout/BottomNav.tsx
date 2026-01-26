@@ -74,13 +74,10 @@ export function BottomNav({ userRole, user }: BottomNavProps) {
                                 href={item.href}
                                 className={cn(
                                     "flex flex-col items-center justify-center flex-1 py-1.5 rounded-xl transition-all duration-300 relative group min-w-0",
-                                    active ? "text-black bg-black/5" : "text-black/40 hover:text-black hover:bg-black/5"
+                                    active ? "text-black" : "text-black/40 hover:text-black hover:bg-black/5"
                                 )}
                             >
-                                <item.icon strokeWidth={2.5} className="h-5 w-5 shrink-0" />
-                                {active && (
-                                    <span className="absolute bottom-1 w-1 h-1 rounded-full bg-[#a9ff3c] ring-2 ring-white" />
-                                )}
+                                <item.icon strokeWidth={active ? 3 : 2.5} className="h-6 w-6 shrink-0" />
                             </Link>
                         )
                     })}
