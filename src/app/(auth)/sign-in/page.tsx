@@ -22,14 +22,14 @@ export default function SignInPage() {
         setIsLoading(true)
 
         const formData = new FormData(e.currentTarget)
-        const email = formData.get('email') as string
-        const password = formData.get('password') as string
+        formData.set("flow", "signIn")
 
         try {
-            await signIn("password", { email, password, flow: "signIn" })
+            await signIn("password", formData)
             router.refresh()
             router.push('/')
         } catch (error) {
+            console.error(error)
             toast.error(error instanceof Error ? error.message : 'Sign in failed')
             setIsLoading(false)
         }

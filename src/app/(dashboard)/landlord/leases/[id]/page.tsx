@@ -21,8 +21,8 @@ function LandlordLeaseDetailContent({ id }: { id: string }) {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="h-10 w-10 rounded-full border-2 border-lime-500/20 border-t-lime-500 animate-spin" />
-                    <p className="text-sm text-muted-foreground">Loading lease...</p>
+                    <div className="h-10 w-10 rounded-full border-2 border-black/10 border-t-black animate-spin" />
+                    <p className="text-sm font-medium text-black/40 uppercase tracking-wider">Loading lease...</p>
                 </div>
             </div>
         )

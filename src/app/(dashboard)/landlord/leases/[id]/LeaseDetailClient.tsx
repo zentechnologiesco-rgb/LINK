@@ -30,12 +30,14 @@ import {
     Clock,
     AlertCircle,
     Check,
-    Info
+    Info,
+    ArrowRight
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useMutation } from "convex/react"
 import { api } from "../../../../../../convex/_generated/api"
 import { Id } from "../../../../../../convex/_generated/dataModel"
+import { cn } from '@/lib/utils'
 
 interface LeaseDetailClientProps {
     lease: any
@@ -139,36 +141,36 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
     const signedAt = lease.signed_at || lease.signedAt
 
     return (
-        <div className="px-6 py-6">
+        <div className="px-6 py-8 max-w-7xl mx-auto">
             {/* Header */}
             <div className="mb-8">
                 <Link
                     href="/landlord/leases"
-                    className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-black/40 hover:text-black transition-colors mb-6 group"
                 >
-                    <ChevronLeft className="h-4 w-4" />
+                    <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
                     Back to leases
                 </Link>
-                <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="flex flex-wrap items-start justify-between gap-6">
                     <div>
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-2xl font-semibold text-foreground">
+                        <div className="flex items-center gap-4">
+                            <h1 className="text-4xl font-[family-name:var(--font-anton)] uppercase tracking-wide text-black">
                                 {lease.property?.title}
                             </h1>
                             <LeaseStatusBadge status={lease.status} />
                         </div>
-                        <p className="text-muted-foreground mt-1">{lease.property?.address}</p>
+                        <p className="text-black/60 font-medium mt-1">{lease.property?.address}</p>
                     </div>
                 </div>
             </div>
 
             {/* Action Required Banner */}
             {canApprove && (
-                <div className="flex items-start gap-3 p-4 rounded-xl bg-lime-500/10 border border-lime-500/20 mb-6">
-                    <AlertCircle className="h-5 w-5 text-lime-600 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-4 p-5 rounded-2xl bg-black/5 border border-black/5 mb-8">
+                    <AlertCircle className="h-5 w-5 text-black shrink-0 mt-0.5" />
                     <div>
-                        <p className="font-medium text-foreground">Action Required</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">
+                        <p className="font-bold text-black uppercase tracking-wide text-sm">Action Required</p>
+                        <p className="text-sm text-black/60 mt-0.5 font-medium">
                             The tenant has signed this lease. Please review and approve or request changes.
                         </p>
                     </div>
@@ -176,24 +178,24 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
             )}
 
             {isApproved && (
-                <div className="flex items-start gap-3 p-4 rounded-xl bg-sidebar-accent/50 mb-6">
-                    <CheckCircle2 className="h-5 w-5 text-lime-600 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-4 p-5 rounded-2xl bg-gray-50 border border-black/5 mb-8">
+                    <CheckCircle2 className="h-5 w-5 text-black shrink-0 mt-0.5" />
                     <div>
-                        <p className="font-medium text-foreground">Lease Active</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">
+                        <p className="font-bold text-black uppercase tracking-wide text-sm">Lease Active</p>
+                        <p className="text-sm text-black/60 mt-0.5 font-medium">
                             This lease is approved and active. The property has been unlisted from search.
                         </p>
                     </div>
                 </div>
             )}
 
-            <div className="grid lg:grid-cols-3 gap-6">
+            <div className="grid lg:grid-cols-3 gap-8">
                 {/* Main Content */}
-                <div className="lg:col-span-2 space-y-6">
+                <div className="lg:col-span-2 space-y-8">
                     {/* Tenant Documents */}
                     {(lease.tenant_documents || lease.tenantDocuments)?.length > 0 && (
                         <section>
-                            <h2 className="text-lg font-medium text-foreground mb-4">Tenant Documents</h2>
+                            <h2 className="text-lg font-bold uppercase tracking-wider text-black mb-4">Tenant Documents</h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {(lease.tenant_documents || lease.tenantDocuments).map((doc: any, index: number) => (
                                     <a
@@ -201,18 +203,18 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
                                         href={doc.signedUrl || doc.url || doc.storageId}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center gap-3 p-4 rounded-xl bg-sidebar-accent/50 hover:bg-sidebar-accent transition-colors"
+                                        className="group flex items-center gap-4 p-4 rounded-xl bg-white border border-black/5 hover:border-black hover:bg-black/5 transition-all"
                                     >
-                                        <div className="h-10 w-10 rounded-lg bg-sidebar-accent flex items-center justify-center">
-                                            <FileText className="h-5 w-5 text-muted-foreground" />
+                                        <div className="h-10 w-10 rounded-lg bg-black/5 flex items-center justify-center group-hover:bg-black group-hover:text-white transition-colors">
+                                            <FileText className="h-5 w-5 text-black/40 group-hover:text-white" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-medium text-foreground capitalize">
+                                            <p className="font-medium text-black capitalize">
                                                 {doc.type.replace('_', ' ')}
                                             </p>
-                                            <p className="text-xs text-muted-foreground">Click to view</p>
+                                            <p className="text-xs text-black/40 font-medium">Click to view</p>
                                         </div>
-                                        <Eye className="h-4 w-4 text-muted-foreground" />
+                                        <ArrowRight className="h-4 w-4 text-black/20 group-hover:text-black group-hover:translate-x-1 transition-all" />
                                     </a>
                                 ))}
                             </div>
@@ -222,15 +224,15 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
                     {/* Tenant Signature */}
                     {tenantSignature && (
                         <section>
-                            <h2 className="text-lg font-medium text-foreground mb-4">Tenant Signature</h2>
-                            <div className="p-4 rounded-xl bg-sidebar-accent/30 border border-border">
+                            <h2 className="text-lg font-bold uppercase tracking-wider text-black mb-4">Tenant Signature</h2>
+                            <div className="p-6 rounded-2xl bg-white border border-black/5">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
                                     src={tenantSignature}
                                     alt="Tenant signature"
-                                    className="max-w-[300px] h-auto"
+                                    className="max-w-[300px] h-auto opacity-90"
                                 />
-                                <p className="text-sm text-muted-foreground mt-3">
+                                <p className="text-xs font-bold text-black/40 mt-4 uppercase tracking-wider">
                                     Signed on {format(new Date(signedAt), 'MMM d, yyyy h:mm a')}
                                 </p>
                             </div>
@@ -239,7 +241,7 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
 
                     {/* Lease Document Preview */}
                     <section>
-                        <h2 className="text-lg font-medium text-foreground mb-4">Lease Document</h2>
+                        <h2 className="text-lg font-bold uppercase tracking-wider text-black mb-4">Lease Document</h2>
                         <LeasePreview
                             leaseDocument={leaseDocument}
                             property={{
@@ -273,20 +275,20 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
                     {/* Payments */}
                     {isApproved && payments.length > 0 && (
                         <section>
-                            <h2 className="text-lg font-medium text-foreground mb-4">Payment History</h2>
-                            <div className="space-y-2">
+                            <h2 className="text-lg font-bold uppercase tracking-wider text-black mb-4">Payment History</h2>
+                            <div className="space-y-3">
                                 {payments.map((payment: any) => (
                                     <div
                                         key={payment.id || payment._id}
-                                        className="flex items-center justify-between p-4 rounded-xl bg-sidebar-accent/30"
+                                        className="flex items-center justify-between p-5 rounded-2xl bg-white border border-black/5 hover:border-black/10 transition-colors"
                                     >
                                         <div className="flex items-center gap-4">
-                                            <div className={`h-10 w-10 rounded-full flex items-center justify-center ${payment.status === 'paid'
-                                                    ? 'bg-lime-500/10 text-lime-600'
-                                                    : payment.status === 'overdue'
-                                                        ? 'bg-red-500/10 text-red-600'
-                                                        : 'bg-sidebar-accent text-muted-foreground'
-                                                }`}>
+                                            <div className={cn(
+                                                "h-10 w-10 rounded-full flex items-center justify-center",
+                                                payment.status === 'paid' ? "bg-black text-white" :
+                                                    payment.status === 'overdue' ? "bg-red-50 text-red-600" :
+                                                        "bg-gray-100 text-gray-500"
+                                            )}>
                                                 {payment.status === 'paid' ? (
                                                     <Check className="h-5 w-5" />
                                                 ) : payment.status === 'overdue' ? (
@@ -296,21 +298,21 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
                                                 )}
                                             </div>
                                             <div>
-                                                <p className="font-medium text-foreground capitalize">{payment.type}</p>
-                                                <p className="text-sm text-muted-foreground">
+                                                <p className="font-bold text-black capitalize">{payment.type}</p>
+                                                <p className="text-sm font-medium text-black/40">
                                                     Due: {format(new Date(payment.due_date || payment.dueDate), 'MMM d, yyyy')}
                                                 </p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <div className="text-right">
-                                                <p className="font-semibold text-foreground">N$ {payment.amount?.toLocaleString()}</p>
-                                                <span className={`text-xs font-medium capitalize ${payment.status === 'paid'
-                                                        ? 'text-lime-600'
-                                                        : payment.status === 'overdue'
-                                                            ? 'text-red-600'
-                                                            : 'text-muted-foreground'
-                                                    }`}>
+                                                <p className="font-[family-name:var(--font-anton)] text-xl text-black">N$ {payment.amount?.toLocaleString()}</p>
+                                                <span className={cn(
+                                                    "text-[10px] font-bold uppercase tracking-wider",
+                                                    payment.status === 'paid' ? "text-black" :
+                                                        payment.status === 'overdue' ? "text-red-600" :
+                                                            "text-black/40"
+                                                )}>
                                                     {payment.status}
                                                 </span>
                                             </div>
@@ -318,7 +320,7 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
                                                 <Button
                                                     size="sm"
                                                     onClick={() => handleMarkPaid(payment.id || payment._id)}
-                                                    className="bg-lime-500 hover:bg-lime-600 text-white rounded-lg"
+                                                    className="bg-black hover:bg-black/80 text-white rounded-lg border border-transparent shadow-none"
                                                 >
                                                     Mark Paid
                                                 </Button>
@@ -334,8 +336,8 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
                 {/* Sidebar */}
                 <div className="space-y-6">
                     {/* Status Timeline */}
-                    <div className="p-4 rounded-xl bg-sidebar-accent/30">
-                        <h3 className="text-sm font-medium text-muted-foreground mb-4">Lease Status</h3>
+                    <div className="p-6 rounded-2xl bg-white border border-black/5">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-black/40 mb-6">Lease Status</h3>
                         <LeaseStatusTimeline
                             status={lease.status}
                             createdAt={lease.created_at || lease._creationTime}
@@ -347,26 +349,26 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
 
                     {/* Actions */}
                     {canApprove && (
-                        <div className="p-4 rounded-xl bg-sidebar-accent/30 space-y-3">
-                            <h3 className="font-medium text-foreground">Take Action</h3>
+                        <div className="p-6 rounded-2xl bg-white border border-black/5 space-y-3">
+                            <h3 className="font-bold text-black text-lg mb-2">Take Action</h3>
                             <Button
-                                className="w-full bg-lime-500 hover:bg-lime-600 text-white rounded-lg h-11"
+                                className="w-full bg-black hover:bg-black/90 text-white rounded-xl h-12 font-bold shadow-none"
                                 onClick={() => setApproveDialogOpen(true)}
                             >
-                                <CheckCircle2 className="h-4 w-4 mr-2" />
+                                <CheckCircle2 className="h-5 w-5 mr-3" />
                                 Approve Lease
                             </Button>
                             <Button
                                 variant="outline"
-                                className="w-full rounded-lg h-11"
+                                className="w-full rounded-xl h-12 font-medium border-black/10 hover:bg-gray-50 hover:text-black shadow-none"
                                 onClick={() => setRevisionDialogOpen(true)}
                             >
                                 <RefreshCcw className="h-4 w-4 mr-2" />
                                 Request Revision
                             </Button>
                             <Button
-                                variant="outline"
-                                className="w-full rounded-lg h-11"
+                                variant="destructive"
+                                className="w-full rounded-xl h-12 font-medium bg-white text-red-600 border border-black/5 hover:bg-red-50 hover:text-red-700 hover:border-red-100 shadow-none"
                                 onClick={() => setRejectDialogOpen(true)}
                             >
                                 <XCircle className="h-4 w-4 mr-2" />
@@ -377,10 +379,10 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
 
                     {/* Tenant Info */}
                     {lease.tenant && (
-                        <div className="p-4 rounded-xl bg-sidebar-accent/30">
-                            <h3 className="text-sm font-medium text-muted-foreground mb-3">Tenant</h3>
-                            <div className="flex items-center gap-3">
-                                <div className="h-12 w-12 rounded-full bg-sidebar-accent flex items-center justify-center">
+                        <div className="p-6 rounded-2xl bg-white border border-black/5">
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-black/40 mb-4">Tenant</h3>
+                            <div className="flex items-center gap-4">
+                                <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center border border-black/5 overflow-hidden">
                                     {(lease.tenant.avatar_url || lease.tenant.avatarUrl) ? (
                                         /* eslint-disable-next-line @next/next/no-img-element */
                                         <img
@@ -389,12 +391,12 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
                                             className="h-full w-full rounded-full object-cover"
                                         />
                                     ) : (
-                                        <User className="h-6 w-6 text-muted-foreground" />
+                                        <User className="h-6 w-6 text-black/40" />
                                     )}
                                 </div>
                                 <div>
-                                    <p className="font-medium text-foreground">{lease.tenant.fullName || 'Tenant'}</p>
-                                    <p className="text-sm text-muted-foreground">{lease.tenant.email}</p>
+                                    <p className="font-bold text-black">{lease.tenant.fullName || 'Tenant'}</p>
+                                    <p className="text-xs font-medium text-black/60">{lease.tenant.email}</p>
                                 </div>
                             </div>
                         </div>
@@ -402,22 +404,22 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
 
                     {/* Quick Stats */}
                     <div className="grid grid-cols-2 gap-3">
-                        <div className="p-4 rounded-xl bg-sidebar-accent/50 text-center">
-                            <p className="text-xl font-semibold text-foreground">
+                        <div className="p-5 rounded-2xl bg-white border border-black/5 text-center">
+                            <p className="text-2xl font-[family-name:var(--font-anton)] text-black">
                                 N$ {(lease.monthly_rent || lease.monthlyRent)?.toLocaleString()}
                             </p>
-                            <p className="text-xs text-muted-foreground">Monthly Rent</p>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-black/40">Monthly Rent</p>
                         </div>
-                        <div className="p-4 rounded-xl bg-sidebar-accent/50 text-center">
-                            <p className="text-xl font-semibold text-foreground">
+                        <div className="p-5 rounded-2xl bg-white border border-black/5 text-center">
+                            <p className="text-2xl font-[family-name:var(--font-anton)] text-black">
                                 N$ {lease.deposit?.toLocaleString()}
                             </p>
-                            <p className="text-xs text-muted-foreground">Deposit</p>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-black/40">Deposit</p>
                         </div>
                     </div>
 
                     {/* Download */}
-                    <Button variant="outline" className="w-full rounded-lg h-11" disabled>
+                    <Button variant="outline" className="w-full rounded-xl h-11 border-dashed border-black/20 text-black/40 hover:text-black hover:border-black/40 hover:bg-black/5 shadow-none" disabled>
                         <Download className="h-4 w-4 mr-2" />
                         Download PDF (Coming Soon)
                     </Button>
@@ -426,28 +428,28 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
 
             {/* Approve Dialog */}
             <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md rounded-3xl border border-black/5 shadow-none p-6">
                     <DialogHeader>
-                        <DialogTitle>Approve Lease</DialogTitle>
-                        <DialogDescription>
+                        <DialogTitle className="font-[family-name:var(--font-anton)] text-2xl uppercase tracking-wide">Approve Lease</DialogTitle>
+                        <DialogDescription className="text-black/60 font-medium">
                             By approving this lease, the property will be automatically unlisted.
                             You can optionally add your signature.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="py-4">
+                    <div className="py-6">
                         <SignatureCanvas
                             onSignatureChange={setLandlordSignature}
                             initialSignature={landlordSignature}
                         />
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setApproveDialogOpen(false)} className="rounded-lg">
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button variant="ghost" onClick={() => setApproveDialogOpen(false)} className="rounded-xl font-medium hover:bg-black/5 shadow-none">
                             Cancel
                         </Button>
                         <Button
                             onClick={handleApprove}
                             disabled={isSubmitting}
-                            className="bg-lime-500 hover:bg-lime-600 text-white rounded-lg"
+                            className="bg-black hover:bg-black/90 text-white rounded-xl px-6 font-bold shadow-none"
                         >
                             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                             Approve Lease
@@ -458,10 +460,10 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
 
             {/* Reject Dialog */}
             <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
-                <DialogContent>
+                <DialogContent className="rounded-3xl border border-black/5 shadow-none p-6">
                     <DialogHeader>
-                        <DialogTitle>Reject Lease</DialogTitle>
-                        <DialogDescription>
+                        <DialogTitle className="font-[family-name:var(--font-anton)] text-2xl uppercase tracking-wide">Reject Lease</DialogTitle>
+                        <DialogDescription className="text-black/60 font-medium">
                             Please provide a reason for rejecting this lease. The tenant will be notified.
                         </DialogDescription>
                     </DialogHeader>
@@ -470,17 +472,17 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         rows={4}
-                        className="rounded-lg bg-sidebar-accent border-0 focus-visible:ring-2 focus-visible:ring-lime-500/50"
+                        className="rounded-xl bg-gray-50 border-black/5 focus-visible:ring-black/20 resize-none shadow-none"
                     />
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setRejectDialogOpen(false)} className="rounded-lg">
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button variant="ghost" onClick={() => setRejectDialogOpen(false)} className="rounded-xl font-medium hover:bg-black/5 shadow-none">
                             Cancel
                         </Button>
                         <Button
-                            variant="outline"
+                            variant="destructive"
                             onClick={handleReject}
                             disabled={isSubmitting || !notes.trim()}
-                            className="rounded-lg"
+                            className="rounded-xl px-6 font-bold shadow-none"
                         >
                             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                             Reject Lease
@@ -491,10 +493,10 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
 
             {/* Revision Dialog */}
             <Dialog open={revisionDialogOpen} onOpenChange={setRevisionDialogOpen}>
-                <DialogContent>
+                <DialogContent className="rounded-3xl border border-black/5 shadow-none p-6">
                     <DialogHeader>
-                        <DialogTitle>Request Revision</DialogTitle>
-                        <DialogDescription>
+                        <DialogTitle className="font-[family-name:var(--font-anton)] text-2xl uppercase tracking-wide">Request Revision</DialogTitle>
+                        <DialogDescription className="text-black/60 font-medium">
                             Ask the tenant to revise their submission. They will need to re-upload documents and sign again.
                         </DialogDescription>
                     </DialogHeader>
@@ -503,16 +505,16 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         rows={4}
-                        className="rounded-lg bg-sidebar-accent border-0 focus-visible:ring-2 focus-visible:ring-lime-500/50"
+                        className="rounded-xl bg-gray-50 border-black/5 focus-visible:ring-black/20 resize-none shadow-none"
                     />
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setRevisionDialogOpen(false)} className="rounded-lg">
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button variant="ghost" onClick={() => setRevisionDialogOpen(false)} className="rounded-xl font-medium hover:bg-black/5 shadow-none">
                             Cancel
                         </Button>
                         <Button
                             onClick={handleRequestRevision}
                             disabled={isSubmitting || !notes.trim()}
-                            className="bg-lime-500 hover:bg-lime-600 text-white rounded-lg"
+                            className="bg-black hover:bg-black/90 text-white rounded-xl px-6 font-bold shadow-none"
                         >
                             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                             Request Revision

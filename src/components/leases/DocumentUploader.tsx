@@ -161,7 +161,7 @@ export function DocumentUploader({
                             key={type}
                             className={cn(
                                 "border transition-all duration-200 border-black/5",
-                                uploadedDoc ? "bg-white shadow-sm" : "bg-white hover:bg-gray-50/50"
+                                uploadedDoc ? "bg-white shadow-none" : "bg-white hover:bg-gray-50/50"
                             )}
                         >
                             <CardContent className="p-4">
@@ -232,7 +232,7 @@ export function DocumentUploader({
                                                 "inline-flex items-center justify-center gap-2 h-9 px-4 text-xs font-bold uppercase tracking-wider rounded-full transition-all",
                                                 uploadedDoc
                                                     ? "bg-white border border-black/10 text-black hover:bg-black/5"
-                                                    : "bg-black text-white hover:bg-black/80 shadow-lg shadow-black/5"
+                                                    : "bg-black text-white hover:bg-black/80 shadow-none"
                                             )}>
                                                 {isUploading ? (
                                                     <Loader2 className="h-3 w-3 animate-spin" />

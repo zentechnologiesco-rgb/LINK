@@ -21,6 +21,7 @@ import { LocationPicker } from '@/components/maps/LocationPicker'
 import { useMutation, useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
+import { cn } from '@/lib/utils'
 
 // Hardcoded amenities list
 const AMENITIES = [
@@ -168,28 +169,28 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="h-10 w-10 rounded-full border-2 border-lime-500/20 border-t-lime-500 animate-spin" />
-                    <p className="text-sm text-muted-foreground">Loading...</p>
+                    <div className="h-10 w-10 rounded-full border-2 border-black/10 border-t-black animate-spin" />
+                    <p className="text-sm text-black/40 font-medium">Loading...</p>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-4xl mx-auto pb-20">
             {/* Header */}
-            <div className="mb-8">
+            <div className="mb-10">
                 <Link
                     href="/landlord/properties"
-                    className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+                    className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-black/40 hover:text-black transition-colors mb-6"
                 >
                     <ChevronLeft className="h-4 w-4" />
                     Back to properties
                 </Link>
-                <h1 className="text-2xl font-semibold text-foreground">
+                <h1 className="font-[family-name:var(--font-anton)] text-4xl uppercase tracking-wide text-black mb-2">
                     {mode === 'edit' ? 'Edit Property' : 'List a New Property'}
                 </h1>
-                <p className="text-muted-foreground mt-1">
+                <p className="text-black/60 font-medium">
                     {mode === 'edit'
                         ? 'Update your property details below.'
                         : 'Fill in the details to publish your listing.'}
@@ -198,22 +199,24 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
 
             {/* Info Banner */}
             {mode === 'create' && (
-                <div className="flex items-start gap-3 p-4 rounded-xl bg-lime-500/10 border border-lime-500/20 mb-8">
-                    <Info className="h-5 w-5 text-lime-600 shrink-0 mt-0.5" />
-                    <p className="text-sm text-foreground">
-                        Your property will be submitted for approval. Once approved by our team, it will be listed publicly.
+                <div className="flex items-start gap-4 p-6 rounded-2xl bg-black/5 border border-black/5 mb-10">
+                    <Info className="h-5 w-5 text-black shrink-0 mt-0.5" />
+                    <p className="text-sm font-medium text-black/80 leading-relaxed">
+                        Your property will be submitted for approval. Once approved by our team, it will be listed publicly on the platform.
                     </p>
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-10">
                 {/* Property Images */}
-                <section>
-                    <h2 className="text-lg font-medium text-foreground mb-1">Property Images</h2>
-                    <p className="text-sm text-muted-foreground mb-4">
-                        Upload high-quality photos. The first image will be the main photo.
-                    </p>
-                    <div className="p-6 rounded-xl border border-border bg-sidebar-accent/30">
+                <section className="p-8 bg-white border border-black/5 rounded-3xl">
+                    <div className="mb-6">
+                        <h2 className="font-[family-name:var(--font-anton)] uppercase tracking-wide text-xl text-black mb-1">Property Images</h2>
+                        <p className="text-sm text-black/50 font-medium">
+                            Upload high-quality photos. The first image will be the main photo.
+                        </p>
+                    </div>
+                    <div className="rounded-2xl border-2 border-dashed border-black/10 bg-gray-50/50 p-6 transition-colors hover:border-black/20">
                         <ImageUpload
                             maxImages={6}
                             onImagesChange={setImages}
@@ -223,11 +226,11 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                 </section>
 
                 {/* Basic Information */}
-                <section>
-                    <h2 className="text-lg font-medium text-foreground mb-4">Basic Information</h2>
-                    <div className="space-y-4">
+                <section className="p-8 bg-white border border-black/5 rounded-3xl">
+                    <h2 className="font-[family-name:var(--font-anton)] uppercase tracking-wide text-xl text-black mb-6">Basic Information</h2>
+                    <div className="space-y-6">
                         <div>
-                            <Label htmlFor="title" className="text-foreground">Property Title</Label>
+                            <Label htmlFor="title" className="text-xs font-bold uppercase tracking-wider text-black/40 mb-2 block">Property Title</Label>
                             <Input
                                 id="title"
                                 placeholder="e.g. Modern 2-Bedroom Apartment in CBD"
@@ -235,15 +238,15 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                                 onChange={(e) => setTitle(e.target.value)}
                                 required
                                 minLength={5}
-                                className="mt-1.5 h-11 rounded-lg bg-sidebar-accent border-0 focus-visible:ring-2 focus-visible:ring-lime-500/50"
+                                className="h-12 rounded-xl bg-white border-black/10 focus-visible:ring-black font-medium"
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div>
-                                <Label htmlFor="property_type" className="text-foreground">Property Type</Label>
+                                <Label htmlFor="property_type" className="text-xs font-bold uppercase tracking-wider text-black/40 mb-2 block">Property Type</Label>
                                 <Select value={propertyType} onValueChange={setPropertyType}>
-                                    <SelectTrigger className="mt-1.5 h-11 rounded-lg bg-sidebar-accent border-0">
+                                    <SelectTrigger className="h-12 rounded-xl bg-white border-black/10 focus:ring-black font-medium">
                                         <SelectValue placeholder="Select type" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -258,7 +261,7 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                                 </Select>
                             </div>
                             <div>
-                                <Label htmlFor="price_nad" className="text-foreground">Monthly Rent (N$)</Label>
+                                <Label htmlFor="price_nad" className="text-xs font-bold uppercase tracking-wider text-black/40 mb-2 block">Monthly Rent (N$)</Label>
                                 <Input
                                     id="price_nad"
                                     type="number"
@@ -267,7 +270,7 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                                     onChange={(e) => setPriceNad(e.target.value)}
                                     required
                                     min={0}
-                                    className="mt-1.5 h-11 rounded-lg bg-sidebar-accent border-0 focus-visible:ring-2 focus-visible:ring-lime-500/50"
+                                    className="h-12 rounded-xl bg-white border-black/10 focus-visible:ring-black font-[family-name:var(--font-anton)] tracking-wide text-lg"
                                 />
                             </div>
                         </div>
@@ -275,40 +278,40 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                 </section>
 
                 {/* Location */}
-                <section>
-                    <h2 className="text-lg font-medium text-foreground mb-4">Location</h2>
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <section className="p-8 bg-white border border-black/5 rounded-3xl">
+                    <h2 className="font-[family-name:var(--font-anton)] uppercase tracking-wide text-xl text-black mb-6">Location</h2>
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div>
-                                <Label htmlFor="city" className="text-foreground">City</Label>
+                                <Label htmlFor="city" className="text-xs font-bold uppercase tracking-wider text-black/40 mb-2 block">City</Label>
                                 <Input
                                     id="city"
                                     placeholder="Windhoek"
                                     value={city}
                                     onChange={(e) => setCity(e.target.value)}
                                     required
-                                    className="mt-1.5 h-11 rounded-lg bg-sidebar-accent border-0 focus-visible:ring-2 focus-visible:ring-lime-500/50"
+                                    className="h-12 rounded-xl bg-white border-black/10 focus-visible:ring-black font-medium"
                                 />
                             </div>
                             <div>
-                                <Label htmlFor="address" className="text-foreground">Address</Label>
+                                <Label htmlFor="address" className="text-xs font-bold uppercase tracking-wider text-black/40 mb-2 block">Address</Label>
                                 <Input
                                     id="address"
                                     placeholder="123 Independence Ave"
                                     value={address}
                                     onChange={(e) => setAddress(e.target.value)}
                                     required
-                                    className="mt-1.5 h-11 rounded-lg bg-sidebar-accent border-0 focus-visible:ring-2 focus-visible:ring-lime-500/50"
+                                    className="h-12 rounded-xl bg-white border-black/10 focus-visible:ring-black font-medium"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <Label className="text-foreground">Pin Location on Map</Label>
-                            <p className="text-xs text-muted-foreground mt-0.5 mb-3">
-                                Search or click on the map to set the exact location.
+                            <Label className="text-xs font-bold uppercase tracking-wider text-black/40 mb-1 block">Pin Location</Label>
+                            <p className="text-xs text-black/50 font-medium mb-4">
+                                Search or click on the map to confirm the exact location.
                             </p>
-                            <div className="rounded-xl overflow-hidden border border-border">
+                            <div className="rounded-2xl overflow-hidden border border-black/10">
                                 <LocationPicker
                                     initialCoordinates={coordinates}
                                     onLocationChange={setCoordinates}
@@ -320,11 +323,11 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                 </section>
 
                 {/* Specifications */}
-                <section>
-                    <h2 className="text-lg font-medium text-foreground mb-4">Specifications</h2>
-                    <div className="grid grid-cols-3 gap-4">
+                <section className="p-8 bg-white border border-black/5 rounded-3xl">
+                    <h2 className="font-[family-name:var(--font-anton)] uppercase tracking-wide text-xl text-black mb-6">Specifications</h2>
+                    <div className="grid grid-cols-3 gap-6">
                         <div>
-                            <Label htmlFor="bedrooms" className="text-foreground">Bedrooms</Label>
+                            <Label htmlFor="bedrooms" className="text-xs font-bold uppercase tracking-wider text-black/40 mb-2 block">Bedrooms</Label>
                             <Input
                                 id="bedrooms"
                                 type="number"
@@ -332,11 +335,11 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                                 onChange={(e) => setBedrooms(e.target.value)}
                                 min={0}
                                 required
-                                className="mt-1.5 h-11 rounded-lg bg-sidebar-accent border-0 focus-visible:ring-2 focus-visible:ring-lime-500/50"
+                                className="h-12 rounded-xl bg-white border-black/10 focus-visible:ring-black font-medium text-center"
                             />
                         </div>
                         <div>
-                            <Label htmlFor="bathrooms" className="text-foreground">Bathrooms</Label>
+                            <Label htmlFor="bathrooms" className="text-xs font-bold uppercase tracking-wider text-black/40 mb-2 block">Bathrooms</Label>
                             <Input
                                 id="bathrooms"
                                 type="number"
@@ -344,11 +347,11 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                                 onChange={(e) => setBathrooms(e.target.value)}
                                 min={0}
                                 required
-                                className="mt-1.5 h-11 rounded-lg bg-sidebar-accent border-0 focus-visible:ring-2 focus-visible:ring-lime-500/50"
+                                className="h-12 rounded-xl bg-white border-black/10 focus-visible:ring-black font-medium text-center"
                             />
                         </div>
                         <div>
-                            <Label htmlFor="size_sqm" className="text-foreground">Size (m²)</Label>
+                            <Label htmlFor="size_sqm" className="text-xs font-bold uppercase tracking-wider text-black/40 mb-2 block">Size (m²)</Label>
                             <Input
                                 id="size_sqm"
                                 type="number"
@@ -357,15 +360,15 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                                 onChange={(e) => setSizeSqm(e.target.value)}
                                 min={0}
                                 required
-                                className="mt-1.5 h-11 rounded-lg bg-sidebar-accent border-0 focus-visible:ring-2 focus-visible:ring-lime-500/50"
+                                className="h-12 rounded-xl bg-white border-black/10 focus-visible:ring-black font-medium text-center"
                             />
                         </div>
                     </div>
                 </section>
 
                 {/* Description */}
-                <section>
-                    <h2 className="text-lg font-medium text-foreground mb-4">Description</h2>
+                <section className="p-8 bg-white border border-black/5 rounded-3xl">
+                    <h2 className="font-[family-name:var(--font-anton)] uppercase tracking-wide text-xl text-black mb-6">Description</h2>
                     <Textarea
                         id="description"
                         placeholder="Describe the property features, nearby amenities, transportation, etc."
@@ -373,17 +376,19 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                         onChange={(e) => setDescription(e.target.value)}
                         required
                         minLength={20}
-                        className="min-h-[120px] rounded-lg bg-sidebar-accent border-0 focus-visible:ring-2 focus-visible:ring-lime-500/50 resize-none"
+                        className="min-h-[150px] rounded-xl bg-white border-black/10 focus-visible:ring-black resize-none font-medium leading-relaxed p-4"
                     />
                 </section>
 
                 {/* Amenities */}
-                <section>
-                    <h2 className="text-lg font-medium text-foreground mb-1">Amenities</h2>
-                    <p className="text-sm text-muted-foreground mb-4">
-                        Select all amenities that apply to your property.
-                    </p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                <section className="p-8 bg-white border border-black/5 rounded-3xl">
+                    <div className="mb-6">
+                        <h2 className="font-[family-name:var(--font-anton)] uppercase tracking-wide text-xl text-black mb-1">Amenities</h2>
+                        <p className="text-sm text-black/50 font-medium">
+                            Select all that apply.
+                        </p>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                         {AMENITIES.map((amenity) => {
                             const isSelected = selectedAmenities.includes(amenity.name)
                             return (
@@ -391,12 +396,14 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                                     key={amenity.id}
                                     type="button"
                                     onClick={() => handleAmenityChange(amenity.name)}
-                                    className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-center ${isSelected
-                                            ? 'bg-lime-500 text-white shadow-sm'
-                                            : 'bg-sidebar-accent text-foreground hover:bg-sidebar-accent/80'
-                                        }`}
+                                    className={cn(
+                                        "flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-center border",
+                                        isSelected
+                                            ? 'bg-black text-white border-black'
+                                            : 'bg-white text-black/60 border-black/5 hover:bg-black/5 hover:text-black hover:border-black/20'
+                                    )}
                                 >
-                                    {isSelected && <Check className="h-3.5 w-3.5 shrink-0" />}
+                                    {isSelected && <Check className="h-3 w-3 shrink-0" strokeWidth={3} />}
                                     <span className="truncate">{amenity.name}</span>
                                 </button>
                             )
@@ -405,12 +412,12 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                 </section>
 
                 {/* Action Buttons */}
-                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t border-border">
+                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-4 pt-6">
                     <Link href="/landlord/properties" className="w-full sm:w-auto">
                         <Button
                             type="button"
                             variant="outline"
-                            className="w-full sm:w-auto h-11 rounded-lg"
+                            className="w-full sm:w-auto h-12 rounded-full border-black/10 text-black font-bold uppercase tracking-wider text-xs hover:bg-black/5 hover:text-black shadow-none"
                         >
                             Cancel
                         </Button>
@@ -418,7 +425,7 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                     <Button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full sm:w-auto h-11 bg-lime-500 hover:bg-lime-600 text-white rounded-lg font-medium shadow-lg shadow-lime-500/20"
+                        className="w-full sm:w-auto h-12 bg-black hover:bg-black/90 text-white rounded-full font-bold uppercase tracking-wider text-xs shadow-none hover:scale-105 transition-all"
                     >
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {isLoading

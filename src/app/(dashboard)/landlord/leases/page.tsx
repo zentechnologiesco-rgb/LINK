@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { LeaseStatusBadge } from '@/components/leases/LeaseStatusTimeline'
-import { FileText, Plus, Users, Calendar, MoreHorizontal, Eye } from 'lucide-react'
+import { FileText, Plus, Users, Calendar, MoreHorizontal, Eye, ArrowRight } from 'lucide-react'
 import { format } from 'date-fns'
 import { useQuery } from "convex/react"
 import { api } from "../../../../../convex/_generated/api"
@@ -13,6 +13,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
 
 function LandlordLeasesContent() {
     const leases = useQuery(api.leases.getForLandlord, {})
@@ -21,8 +22,8 @@ function LandlordLeasesContent() {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="h-10 w-10 rounded-full border-2 border-lime-500/20 border-t-lime-500 animate-spin" />
-                    <p className="text-sm text-muted-foreground">Loading leases...</p>
+                    <div className="h-10 w-10 rounded-full border-2 border-black/10 border-t-black animate-spin" />
+                    <p className="text-sm font-medium text-black/40 uppercase tracking-wider">Loading leases...</p>
                 </div>
             </div>
         )
@@ -39,111 +40,115 @@ function LandlordLeasesContent() {
     )
 
     return (
-        <div className="px-6 py-6">
+        <div className="px-8 py-8 max-w-7xl mx-auto space-y-12">
             {/* Header */}
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+            <div className="flex flex-wrap items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-2xl font-semibold text-foreground">Leases</h1>
-                    <p className="text-sm text-muted-foreground mt-1">Manage your rental agreements</p>
+                    <h1 className="text-4xl font-[family-name:var(--font-anton)] uppercase tracking-wide text-black mb-2">Leases</h1>
+                    <p className="text-black/60 font-medium">Manage and track your rental agreements.</p>
                 </div>
-                <Link href="/landlord/leases/new">
-                    <Button className="bg-lime-500 hover:bg-lime-600 text-white rounded-lg h-10 px-4 font-medium shadow-lg shadow-lime-500/20">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create Lease
-                    </Button>
-                </Link>
+                {leases.length > 0 && (
+                    <Link href="/landlord/leases/new">
+                        <Button className="bg-black text-white hover:bg-black/80 rounded-full h-11 px-6 font-bold shadow-none transition-all hover:scale-105 active:scale-95">
+                            <Plus className="mr-2 h-4 w-4" strokeWidth={3} />
+                            Create Lease
+                        </Button>
+                    </Link>
+                )}
             </div>
 
-            {/* Stats */}
-            {leases.length > 0 && (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-                    <StatCard
-                        label="Need Approval"
-                        value={actionRequired.length}
-                        highlight={actionRequired.length > 0}
-                    />
-                    <StatCard label="In Progress" value={pendingLeases.length} />
-                    <StatCard label="Active" value={activeLeases.length} />
-                    <StatCard label="Total" value={leases.length} />
-                </div>
-            )}
-
-            {/* Empty State */}
-            {leases.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
-                    <div className="h-16 w-16 rounded-2xl bg-sidebar-accent flex items-center justify-center mb-4">
-                        <FileText className="h-8 w-8 text-muted-foreground" />
+            {leases.length > 0 ? (
+                <>
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <StatCard
+                            label="Need Approval"
+                            value={actionRequired.length}
+                            highlight={actionRequired.length > 0}
+                        />
+                        <StatCard label="In Progress" value={pendingLeases.length} />
+                        <StatCard label="Active" value={activeLeases.length} />
+                        <StatCard label="Total" value={leases.length} />
                     </div>
-                    <h3 className="text-lg font-medium text-foreground mb-2">No leases yet</h3>
-                    <p className="text-muted-foreground mb-6 max-w-sm">
-                        Create your first lease agreement for one of your properties.
+
+                    <div className="space-y-10">
+                        {/* Action Required */}
+                        {actionRequired.length > 0 && (
+                            <section>
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="h-2 w-2 rounded-full bg-black animate-pulse" />
+                                    <h2 className="text-lg font-bold uppercase tracking-wider text-black">
+                                        Action Required ({actionRequired.length})
+                                    </h2>
+                                </div>
+                                <div className="grid gap-4">
+                                    {actionRequired.map((lease: any) => (
+                                        <LeaseRow key={lease._id} lease={lease} highlight />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {/* In Progress */}
+                        {pendingLeases.length > 0 && (
+                            <section>
+                                <h2 className="text-lg font-bold uppercase tracking-wider text-black/40 mb-6 flex items-center gap-3">
+                                    In Progress <span className="text-black">({pendingLeases.length})</span>
+                                </h2>
+                                <div className="grid gap-4">
+                                    {pendingLeases.map((lease: any) => (
+                                        <LeaseRow key={lease._id} lease={lease} />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {/* Active Leases */}
+                        {activeLeases.length > 0 && (
+                            <section>
+                                <h2 className="text-lg font-bold uppercase tracking-wider text-black/40 mb-6 flex items-center gap-3">
+                                    Active Leases <span className="text-black">({activeLeases.length})</span>
+                                </h2>
+                                <div className="grid gap-4">
+                                    {activeLeases.map((lease: any) => (
+                                        <LeaseRow key={lease._id} lease={lease} />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {/* Past Leases */}
+                        {pastLeases.length > 0 && (
+                            <section>
+                                <h2 className="text-lg font-bold uppercase tracking-wider text-black/40 mb-6">
+                                    Past Leases ({pastLeases.length})
+                                </h2>
+                                <div className="grid gap-4 opacity-60 hover:opacity-100 transition-opacity duration-300">
+                                    {pastLeases.map((lease: any) => (
+                                        <LeaseRow key={lease._id} lease={lease} />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+                    </div>
+                </>
+            ) : (
+                /* Empty State */
+                <div className="flex flex-col items-center justify-center py-20 px-4 text-center border-2 border-dashed border-black/5 rounded-3xl bg-gray-50/50">
+                    <div className="h-20 w-20 rounded-full bg-white shadow-none border border-black/5 flex items-center justify-center mb-6">
+                        <FileText className="h-8 w-8 text-black/40" strokeWidth={1.5} />
+                    </div>
+                    <h3 className="text-xl font-bold text-black mb-2 uppercase tracking-wide">No leases yet</h3>
+                    <p className="text-black/60 mb-8 max-w-sm font-medium">
+                        Create your first lease agreement to start tracking your properties.
                     </p>
                     <Link href="/landlord/leases/new">
-                        <Button className="bg-lime-500 hover:bg-lime-600 text-white rounded-lg h-11 px-5 font-medium">
-                            <Plus className="mr-2 h-4 w-4" />
+                        <Button className="bg-black text-white hover:bg-black/80 rounded-full h-12 px-8 font-bold shadow-none transition-all hover:scale-105 active:scale-95">
+                            <Plus className="mr-2 h-5 w-5" strokeWidth={3} />
                             Create First Lease
                         </Button>
                     </Link>
                 </div>
-            )}
-
-            {/* Action Required */}
-            {actionRequired.length > 0 && (
-                <section className="mb-8">
-                    <div className="flex items-center gap-2 mb-4">
-                        <div className="h-2 w-2 rounded-full bg-lime-500 animate-pulse" />
-                        <h2 className="text-lg font-medium text-foreground">
-                            Action Required ({actionRequired.length})
-                        </h2>
-                    </div>
-                    <div className="space-y-2">
-                        {actionRequired.map((lease: any) => (
-                            <LeaseRow key={lease._id} lease={lease} highlight />
-                        ))}
-                    </div>
-                </section>
-            )}
-
-            {/* In Progress */}
-            {pendingLeases.length > 0 && (
-                <section className="mb-8">
-                    <h2 className="text-lg font-medium text-foreground mb-4">
-                        In Progress ({pendingLeases.length})
-                    </h2>
-                    <div className="space-y-2">
-                        {pendingLeases.map((lease: any) => (
-                            <LeaseRow key={lease._id} lease={lease} />
-                        ))}
-                    </div>
-                </section>
-            )}
-
-            {/* Active Leases */}
-            {activeLeases.length > 0 && (
-                <section className="mb-8">
-                    <h2 className="text-lg font-medium text-foreground mb-4">
-                        Active Leases ({activeLeases.length})
-                    </h2>
-                    <div className="space-y-2">
-                        {activeLeases.map((lease: any) => (
-                            <LeaseRow key={lease._id} lease={lease} />
-                        ))}
-                    </div>
-                </section>
-            )}
-
-            {/* Past Leases */}
-            {pastLeases.length > 0 && (
-                <section>
-                    <h2 className="text-lg font-medium text-muted-foreground mb-4">
-                        Past Leases ({pastLeases.length})
-                    </h2>
-                    <div className="space-y-2 opacity-70">
-                        {pastLeases.map((lease: any) => (
-                            <LeaseRow key={lease._id} lease={lease} />
-                        ))}
-                    </div>
-                </section>
             )}
         </div>
     )
@@ -152,9 +157,17 @@ function LandlordLeasesContent() {
 // Stat Card Component
 function StatCard({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
     return (
-        <div className={`p-4 rounded-xl ${highlight && value > 0 ? 'bg-lime-500/10 border border-lime-500/20' : 'bg-sidebar-accent/50'}`}>
-            <p className="text-xs font-medium text-muted-foreground">{label}</p>
-            <p className={`text-2xl font-semibold mt-1 ${highlight && value > 0 ? 'text-lime-600' : 'text-foreground'}`}>
+        <div className={cn(
+            "p-6 rounded-2xl border transition-all duration-300",
+            highlight && value > 0
+                ? "bg-black text-white border-black shadow-none"
+                : "bg-white border-black/5 text-black hover:border-black/10 shadow-none"
+        )}>
+            <p className={cn(
+                "text-[10px] font-bold uppercase tracking-widest mb-1",
+                highlight && value > 0 ? "text-white/60" : "text-black/40"
+            )}>{label}</p>
+            <p className="text-4xl font-[family-name:var(--font-anton)] tracking-wide">
                 {value}
             </p>
         </div>
@@ -164,58 +177,71 @@ function StatCard({ label, value, highlight }: { label: string; value: number; h
 // Lease Row Component - Clean list style
 function LeaseRow({ lease, highlight }: { lease: any; highlight?: boolean }) {
     return (
-        <Link href={`/landlord/leases/${lease._id}`} className="block">
-            <div className={`flex items-center gap-4 p-4 rounded-xl transition-all ${highlight
-                    ? 'bg-lime-500/5 border border-lime-500/20 hover:bg-lime-500/10'
-                    : 'bg-sidebar-accent/30 hover:bg-sidebar-accent/50'
-                }`}>
+        <Link href={`/landlord/leases/${lease._id}`} className="group block">
+            <div className={cn(
+                "flex items-center gap-6 p-5 rounded-2xl border transition-all duration-300",
+                highlight
+                    ? "bg-white border-black shadow-none scale-[1.01]"
+                    : "bg-white border-black/5 hover:border-black/20 hover:scale-[1.01] shadow-none"
+            )}>
                 {/* Property Info */}
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3">
-                        <h3 className="font-medium text-foreground truncate">
+                    <div className="flex items-center gap-4 mb-2">
+                        <h3 className="font-bold text-lg text-black truncate tracking-tight">
                             {lease.property?.title || 'Untitled Property'}
                         </h3>
                         <LeaseStatusBadge status={lease.status} />
                     </div>
-                    <div className="flex items-center gap-4 mt-1.5 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1.5">
-                            <Users className="h-3.5 w-3.5" />
+                    <div className="flex items-center gap-6 text-xs font-medium text-black/60">
+                        <span className="flex items-center gap-2 bg-gray-50 px-2 py-1 rounded-md border border-black/5">
+                            <Users className="h-3.5 w-3.5 text-black/40" />
                             {lease.tenant?.fullName || 'No tenant'}
                         </span>
-                        <span className="flex items-center gap-1.5">
-                            <Calendar className="h-3.5 w-3.5" />
+                        <span className="flex items-center gap-2 bg-gray-50 px-2 py-1 rounded-md border border-black/5">
+                            <Calendar className="h-3.5 w-3.5 text-black/40" />
                             {format(new Date(lease.startDate), 'MMM d, yyyy')} - {format(new Date(lease.endDate), 'MMM d, yyyy')}
                         </span>
                     </div>
                 </div>
 
                 {/* Rent */}
-                <div className="text-right shrink-0">
-                    <p className="font-semibold text-foreground">
+                <div className="text-right shrink-0 px-4 border-l border-black/5">
+                    <p className="text-xl font-[family-name:var(--font-anton)] text-black">
                         N$ {lease.monthlyRent?.toLocaleString()}
                     </p>
-                    <p className="text-xs text-muted-foreground">per month</p>
+                    <p className="text-[10px] font-bold text-black/40 uppercase tracking-wider">per month</p>
                 </div>
 
                 {/* Actions */}
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <button
-                            className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-sidebar-accent transition-colors shrink-0"
-                            onClick={(e) => e.preventDefault()}
+                <div className="shrink-0 flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-full bg-black/5 flex items-center justify-center text-black/40 group-hover:bg-black group-hover:text-white transition-all duration-300">
+                        <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
+                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button
+                                className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-black/5 transition-colors text-black/40 hover:text-black"
+                                onClick={(e) => e.preventDefault()}
+                            >
+                                <MoreHorizontal className="h-5 w-5" />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                            align="end"
+                            className="w-48 p-2 rounded-2xl border border-black/5 bg-white shadow-none"
                         >
-                            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                        </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                            <Link href={`/landlord/leases/${lease._id}`} className="flex items-center">
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
-                            </Link>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                            <DropdownMenuItem asChild>
+                                <Link
+                                    href={`/landlord/leases/${lease._id}`}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-black/70 focus:text-black focus:bg-black/5 transition-colors cursor-pointer"
+                                >
+                                    <Eye className="h-4 w-4 opacity-70" />
+                                    View Details
+                                </Link>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </div>
         </Link>
     )

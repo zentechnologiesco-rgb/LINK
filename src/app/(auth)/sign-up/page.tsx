@@ -21,8 +21,6 @@ export default function SignUpPage() {
         setIsLoading(true)
 
         const formData = new FormData(e.currentTarget)
-        const email = formData.get('email') as string
-        const password = formData.get('password') as string
         const firstName = formData.get('firstName') as string
         const surname = formData.get('surname') as string
 
@@ -32,19 +30,17 @@ export default function SignUpPage() {
             return
         }
 
+        // Add additional fields expected by the profile function
+        formData.set("name", `${firstName} ${surname}`)
+        formData.set("role", "tenant")
+        formData.set("flow", "signUp")
+
         try {
-            await signIn("password", {
-                email,
-                password,
-                name: `${firstName} ${surname}`,
-                firstName,
-                surname,
-                role: "tenant",
-                flow: "signUp"
-            })
+            await signIn("password", formData)
             router.refresh()
             router.push('/')
         } catch (error) {
+            console.error(error)
             toast.error(error instanceof Error ? error.message : 'Sign up failed')
             setIsLoading(false)
         }

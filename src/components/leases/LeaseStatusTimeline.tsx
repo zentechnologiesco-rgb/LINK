@@ -105,7 +105,7 @@ export function LeaseStatusTimeline({
                                 className={cn(
                                     "relative z-10 flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-300",
                                     isPast ? "bg-black border-black text-white" :
-                                        isActive ? "bg-white border-2 border-black text-black shadow-lg shadow-black/5" :
+                                        isActive ? "bg-white border-2 border-black text-black shadow-none" :
                                             "bg-white border-2 border-black/10 text-black/20"
                                 )}
                             >

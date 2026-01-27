@@ -154,8 +154,8 @@ export function CreateLeaseClient() {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="h-10 w-10 rounded-full border-2 border-lime-500/20 border-t-lime-500 animate-spin" />
-                    <p className="text-sm text-muted-foreground">Loading...</p>
+                    <div className="h-10 w-10 rounded-full border-2 border-black/10 border-t-black animate-spin" />
+                    <p className="text-sm font-medium text-black/40 uppercase tracking-wider">Loading...</p>
                 </div>
             </div>
         )
@@ -170,13 +170,13 @@ export function CreateLeaseClient() {
                 <div className="mb-8">
                     <Link
                         href="/landlord/leases"
-                        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-black/40 hover:text-black transition-colors mb-4 group"
                     >
-                        <ChevronLeft className="h-4 w-4" />
+                        <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
                         Back to leases
                     </Link>
-                    <h1 className="text-2xl font-semibold text-foreground">Create New Lease</h1>
-                    <p className="text-muted-foreground mt-1">Build a professional lease agreement</p>
+                    <h1 className="text-4xl font-[family-name:var(--font-anton)] uppercase tracking-wide text-black">Create New Lease</h1>
+                    <p className="text-black/60 font-medium mt-1">Build a professional lease agreement</p>
                 </div>
 
                 {/* Step Indicator */}
@@ -192,21 +192,21 @@ export function CreateLeaseClient() {
                                     disabled={index > currentStepIndex}
                                     className="flex flex-col items-center gap-2"
                                 >
-                                    <div className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${isCurrent
-                                            ? 'bg-lime-500 text-white'
-                                            : isDone
-                                                ? 'bg-lime-500/20 text-lime-600'
-                                                : 'bg-sidebar-accent text-muted-foreground'
+                                    <div className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${isCurrent
+                                        ? 'bg-black text-white shadow-none'
+                                        : isDone
+                                            ? 'bg-black/10 text-black'
+                                            : 'bg-gray-100 text-gray-400'
                                         }`}>
-                                        {isDone ? <Check className="h-4 w-4" /> : step.number}
+                                        {isDone ? <Check className="h-4 w-4" strokeWidth={3} /> : step.number}
                                     </div>
-                                    <span className={`text-xs font-medium ${isCurrent ? 'text-foreground' : 'text-muted-foreground'
+                                    <span className={`text-[10px] uppercase font-bold tracking-wider ${isCurrent ? 'text-black' : 'text-black/40'
                                         }`}>
                                         {step.label}
                                     </span>
                                 </button>
                                 {index < steps.length - 1 && (
-                                    <div className={`flex-1 h-0.5 mx-3 ${index < currentStepIndex ? 'bg-lime-500/30' : 'bg-sidebar-accent'
+                                    <div className={`flex-1 h-0.5 mx-3 rounded-full ${index < currentStepIndex ? 'bg-black' : 'bg-gray-100'
                                         }`} />
                                 )}
                             </div>
@@ -219,18 +219,18 @@ export function CreateLeaseClient() {
                     {/* Step 1: Select Property */}
                     {currentStep === 'select_property' && (
                         <div>
-                            <h2 className="text-lg font-medium text-foreground mb-4">Select a Property</h2>
+                            <h2 className="text-lg font-bold uppercase tracking-wider text-black mb-4">Select a Property</h2>
                             {availableProperties.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-12 px-8 text-center rounded-xl bg-sidebar-accent/30">
-                                    <div className="h-14 w-14 rounded-2xl bg-sidebar-accent flex items-center justify-center mb-4">
-                                        <Building2 className="h-7 w-7 text-muted-foreground" />
+                                <div className="flex flex-col items-center justify-center py-12 px-8 text-center rounded-2xl bg-gray-50 border border-black/5">
+                                    <div className="h-16 w-16 rounded-full bg-white shadow-none border border-black/5 flex items-center justify-center mb-4">
+                                        <Building2 className="h-7 w-7 text-black/40" />
                                     </div>
-                                    <h3 className="text-lg font-medium text-foreground mb-2">No available properties</h3>
-                                    <p className="text-muted-foreground mb-6 max-w-sm">
+                                    <h3 className="text-lg font-bold text-black mb-2">No available properties</h3>
+                                    <p className="text-black/60 font-medium mb-6 max-w-sm">
                                         Add a property first, then come back to create a lease.
                                     </p>
                                     <Link href="/landlord/properties/new">
-                                        <Button className="bg-lime-500 hover:bg-lime-600 text-white rounded-lg">
+                                        <Button className="bg-black hover:bg-black/80 text-white rounded-full h-11 px-6 font-bold">
                                             Add a Property
                                         </Button>
                                     </Link>
@@ -245,11 +245,11 @@ export function CreateLeaseClient() {
                                                 key={property._id}
                                                 onClick={() => handlePropertySelect(property)}
                                                 className={`flex items-start gap-4 p-4 rounded-xl text-left transition-all ${isSelected
-                                                        ? 'bg-lime-500/10 border-2 border-lime-500'
-                                                        : 'bg-sidebar-accent/50 hover:bg-sidebar-accent border-2 border-transparent'
+                                                    ? 'bg-black/5 border-2 border-black shadow-none'
+                                                    : 'bg-white hover:bg-gray-50 border-2 border-transparent shadow-none border-black/5'
                                                     }`}
                                             >
-                                                <div className="h-16 w-16 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden">
+                                                <div className="h-16 w-16 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden border border-black/5">
                                                     {property.imageUrls?.[0] ? (
                                                         /* eslint-disable-next-line @next/next/no-img-element */
                                                         <img
@@ -258,21 +258,21 @@ export function CreateLeaseClient() {
                                                             className="w-full h-full object-cover"
                                                         />
                                                     ) : (
-                                                        <Building2 className="h-6 w-6 text-muted-foreground" />
+                                                        <Building2 className="h-6 w-6 text-black/20" />
                                                     )}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <h3 className="font-medium text-foreground truncate">{property.title}</h3>
-                                                    <p className="text-sm text-muted-foreground truncate mt-0.5">
+                                                    <h3 className="font-bold text-black truncate">{property.title}</h3>
+                                                    <p className="text-xs text-black/60 font-medium truncate mt-0.5">
                                                         {property.address}, {property.city}
                                                     </p>
-                                                    <p className="text-sm font-semibold text-foreground mt-2">
-                                                        N$ {property.priceNad?.toLocaleString()}<span className="text-muted-foreground font-normal">/mo</span>
+                                                    <p className="text-sm font-bold text-black mt-2 font-[family-name:var(--font-anton)]">
+                                                        N$ {property.priceNad?.toLocaleString()}<span className="text-black/40 font-normal font-sans text-xs ml-1">/mo</span>
                                                     </p>
                                                 </div>
                                                 {isSelected && (
-                                                    <div className="h-6 w-6 rounded-full bg-lime-500 flex items-center justify-center shrink-0">
-                                                        <Check className="h-4 w-4 text-white" />
+                                                    <div className="h-6 w-6 rounded-full bg-black flex items-center justify-center shrink-0">
+                                                        <Check className="h-4 w-4 text-white" strokeWidth={3} />
                                                     </div>
                                                 )}
                                             </button>
@@ -286,20 +286,20 @@ export function CreateLeaseClient() {
                     {/* Step 2: Lease Terms */}
                     {currentStep === 'lease_terms' && (
                         <div className="space-y-6">
-                            <h2 className="text-lg font-medium text-foreground">Lease Terms</h2>
+                            <h2 className="text-lg font-bold uppercase tracking-wider text-black">Lease Terms</h2>
 
                             {/* Tenant Email */}
                             <div>
-                                <Label htmlFor="tenantEmail" className="text-foreground">Tenant Email</Label>
+                                <Label htmlFor="tenantEmail" className="text-black font-bold text-xs uppercase tracking-wide">Tenant Email</Label>
                                 <Input
                                     id="tenantEmail"
                                     type="email"
                                     placeholder="tenant@example.com"
                                     value={tenantEmail}
                                     onChange={(e) => setTenantEmail(e.target.value)}
-                                    className="mt-1.5 h-11 rounded-lg bg-sidebar-accent border-0 focus-visible:ring-2 focus-visible:ring-lime-500/50"
+                                    className="mt-2 h-12 rounded-xl bg-gray-50 border-black/5 focus-visible:ring-black/20 shadow-none"
                                 />
-                                <p className="text-xs text-muted-foreground mt-1.5">
+                                <p className="text-[10px] uppercase font-bold text-black/40 mt-2">
                                     The tenant must have an account on the platform
                                 </p>
                             </div>
@@ -307,23 +307,23 @@ export function CreateLeaseClient() {
                             {/* Dates */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label htmlFor="startDate" className="text-foreground">Start Date</Label>
+                                    <Label htmlFor="startDate" className="text-black font-bold text-xs uppercase tracking-wide">Start Date</Label>
                                     <Input
                                         id="startDate"
                                         type="date"
                                         value={startDate}
                                         onChange={(e) => setStartDate(e.target.value)}
-                                        className="mt-1.5 h-11 rounded-lg bg-sidebar-accent border-0 focus-visible:ring-2 focus-visible:ring-lime-500/50"
+                                        className="mt-2 h-12 rounded-xl bg-gray-50 border-black/5 focus-visible:ring-black/20 shadow-none"
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="endDate" className="text-foreground">End Date</Label>
+                                    <Label htmlFor="endDate" className="text-black font-bold text-xs uppercase tracking-wide">End Date</Label>
                                     <Input
                                         id="endDate"
                                         type="date"
                                         value={endDate}
                                         onChange={(e) => setEndDate(e.target.value)}
-                                        className="mt-1.5 h-11 rounded-lg bg-sidebar-accent border-0 focus-visible:ring-2 focus-visible:ring-lime-500/50"
+                                        className="mt-2 h-12 rounded-xl bg-gray-50 border-black/5 focus-visible:ring-black/20 shadow-none"
                                     />
                                 </div>
                             </div>
@@ -331,25 +331,25 @@ export function CreateLeaseClient() {
                             {/* Financial */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label htmlFor="monthlyRent" className="text-foreground">Monthly Rent (N$)</Label>
+                                    <Label htmlFor="monthlyRent" className="text-black font-bold text-xs uppercase tracking-wide">Monthly Rent (N$)</Label>
                                     <Input
                                         id="monthlyRent"
                                         type="number"
                                         min={0}
                                         value={monthlyRent}
                                         onChange={(e) => setMonthlyRent(Number(e.target.value))}
-                                        className="mt-1.5 h-11 rounded-lg bg-sidebar-accent border-0 focus-visible:ring-2 focus-visible:ring-lime-500/50"
+                                        className="mt-2 h-12 rounded-xl bg-gray-50 border-black/5 focus-visible:ring-black/20 shadow-none"
                                     />
                                 </div>
                                 <div>
-                                    <Label htmlFor="deposit" className="text-foreground">Security Deposit (N$)</Label>
+                                    <Label htmlFor="deposit" className="text-black font-bold text-xs uppercase tracking-wide">Security Deposit (N$)</Label>
                                     <Input
                                         id="deposit"
                                         type="number"
                                         min={0}
                                         value={deposit}
                                         onChange={(e) => setDeposit(Number(e.target.value))}
-                                        className="mt-1.5 h-11 rounded-lg bg-sidebar-accent border-0 focus-visible:ring-2 focus-visible:ring-lime-500/50"
+                                        className="mt-2 h-12 rounded-xl bg-gray-50 border-black/5 focus-visible:ring-black/20 shadow-none"
                                     />
                                 </div>
                             </div>
@@ -369,9 +369,9 @@ export function CreateLeaseClient() {
                     {/* Step 4: Preview & Send */}
                     {currentStep === 'preview' && leaseDocument && (
                         <div className="space-y-6">
-                            <div className="flex items-start gap-3 p-4 rounded-xl bg-lime-500/10 border border-lime-500/20">
-                                <Info className="h-5 w-5 text-lime-600 shrink-0 mt-0.5" />
-                                <p className="text-sm text-foreground">
+                            <div className="flex items-start gap-4 p-5 rounded-2xl bg-black/5 border border-black/5">
+                                <Info className="h-5 w-5 text-black shrink-0 mt-0.5" />
+                                <p className="text-sm font-medium text-black/80">
                                     Review the lease document below. When you're ready, send it to the tenant for signing.
                                 </p>
                             </div>
@@ -401,12 +401,12 @@ export function CreateLeaseClient() {
                 </div>
 
                 {/* Navigation */}
-                <div className="flex items-center justify-between pt-6 mt-6 border-t border-border">
+                <div className="flex items-center justify-between pt-8 mt-8 border-t border-black/5">
                     <Button
-                        variant="outline"
+                        variant="ghost"
                         onClick={() => setCurrentStep(steps[currentStepIndex - 1]?.key)}
                         disabled={currentStepIndex === 0}
-                        className="rounded-lg h-11"
+                        className="rounded-full h-11 px-6 font-medium hover:bg-black/5"
                     >
                         <ChevronLeft className="h-4 w-4 mr-2" />
                         Back
@@ -418,7 +418,7 @@ export function CreateLeaseClient() {
                                 variant="outline"
                                 onClick={handleSaveDraft}
                                 disabled={isSaving}
-                                className="rounded-lg h-11"
+                                className="rounded-full h-11 px-6 font-bold border-black/10 hover:border-black/20 hover:bg-black/5 shadow-none"
                             >
                                 {isSaving ? (
                                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -430,7 +430,7 @@ export function CreateLeaseClient() {
                             <Button
                                 onClick={handleSendToTenant}
                                 disabled={isSending}
-                                className="bg-lime-500 hover:bg-lime-600 text-white rounded-lg h-11 shadow-lg shadow-lime-500/20"
+                                className="bg-black hover:bg-black/90 text-white rounded-full h-11 px-8 font-bold shadow-none"
                             >
                                 {isSending ? (
                                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -444,7 +444,7 @@ export function CreateLeaseClient() {
                         <Button
                             onClick={() => setCurrentStep(steps[currentStepIndex + 1]?.key)}
                             disabled={!canProceed()}
-                            className="bg-lime-500 hover:bg-lime-600 text-white rounded-lg h-11 shadow-lg shadow-lime-500/20"
+                            className="bg-black hover:bg-black/90 text-white rounded-full h-11 px-8 font-bold shadow-none disabled:opacity-50"
                         >
                             Next
                             <ChevronRight className="h-4 w-4 ml-2" />

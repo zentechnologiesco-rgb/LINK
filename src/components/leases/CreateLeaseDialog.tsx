@@ -66,7 +66,7 @@ export function CreateLeaseDialog({ propertyId, tenantId, propertyTitle, monthly
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="w-full gap-2 bg-green-600 hover:bg-green-700">
+                <Button className="w-full gap-2 bg-black hover:bg-black/90 text-white font-bold rounded-full shadow-none">
                     <FileText className="h-4 w-4" />
                     Create Lease
                 </Button>
@@ -126,7 +126,7 @@ export function CreateLeaseDialog({ propertyId, tenantId, propertyTitle, monthly
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button type="submit" disabled={isLoading} className="bg-green-600 hover:bg-green-700">
+                        <Button type="submit" disabled={isLoading} className="bg-black hover:bg-black/90 text-white font-bold rounded-full shadow-none">
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {isLoading ? 'Creating...' : 'Create Lease'}
                         </Button>

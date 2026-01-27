@@ -101,30 +101,47 @@ export function DepositActions({ leaseId, depositAmount, depositStatus }: Deposi
             {/* Release Dialog */}
             <Dialog open={releaseOpen} onOpenChange={setReleaseOpen}>
                 <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-1">
+                    <Button variant="outline" size="sm" className="gap-2 rounded-full border-black/10 hover:bg-black/5 hover:text-black hover:border-black/20 font-bold transition-all">
                         <Banknote className="h-4 w-4" /> Release
                     </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="rounded-3xl border border-black/5 shadow-none p-0 overflow-hidden bg-white max-w-md">
                     <form action={handleRelease}>
-                        <DialogHeader>
-                            <DialogTitle>Release Deposit</DialogTitle>
-                            <DialogDescription>
+                        <DialogHeader className="p-8 pb-4 bg-gray-50/50 border-b border-black/5">
+                            <DialogTitle className="font-[family-name:var(--font-anton)] text-3xl uppercase tracking-wide text-black">Release Deposit</DialogTitle>
+                            <DialogDescription className="text-black/60 font-medium mt-2">
                                 Release the N$ {depositAmount.toLocaleString()} deposit back to the tenant.
                             </DialogDescription>
                         </DialogHeader>
-                        <div className="grid gap-4 py-4">
+                        <div className="grid gap-6 p-8">
                             <div className="space-y-2">
-                                <Label htmlFor="deductions">Deductions (N$)</Label>
-                                <Input id="deductions" name="deductions" type="number" defaultValue={0} min={0} max={depositAmount} />
+                                <Label htmlFor="deductions" className="text-xs font-bold uppercase tracking-wide text-black/60">Deductions (N$)</Label>
+                                <Input
+                                    id="deductions"
+                                    name="deductions"
+                                    type="number"
+                                    defaultValue={0}
+                                    min={0}
+                                    max={depositAmount}
+                                    className="h-12 bg-gray-50 border-black/5 focus-visible:ring-black/20 rounded-xl font-bold text-lg shadow-none"
+                                />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="reason">Reason for Deductions (if any)</Label>
-                                <Textarea id="reason" name="reason" placeholder="e.g. Cleaning fees, damage repairs..." />
+                                <Label htmlFor="reason" className="text-xs font-bold uppercase tracking-wide text-black/60">Reason for Deductions</Label>
+                                <Textarea
+                                    id="reason"
+                                    name="reason"
+                                    placeholder="e.g. Cleaning fees, damage repairs..."
+                                    className="bg-gray-50 border-black/5 focus-visible:ring-black/20 rounded-xl resize-none shadow-none"
+                                />
                             </div>
                         </div>
-                        <DialogFooter>
-                            <Button type="submit" disabled={isReleasing || !depositId}>
+                        <DialogFooter className="p-8 pt-4 bg-gray-50/50 border-t border-black/5">
+                            <Button
+                                type="submit"
+                                disabled={isReleasing || !depositId}
+                                className="w-full bg-black text-white hover:bg-black/90 rounded-full h-12 font-bold shadow-none transition-transform active:scale-95"
+                            >
                                 {isReleasing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Release Deposit
                             </Button>
@@ -136,26 +153,40 @@ export function DepositActions({ leaseId, depositAmount, depositStatus }: Deposi
             {/* Forfeit Dialog */}
             <Dialog open={forfeitOpen} onOpenChange={setForfeitOpen}>
                 <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-1 text-red-600 hover:text-red-700">
+                    <Button variant="outline" size="sm" className="gap-2 rounded-full border-transparent hover:bg-red-50 text-black/40 hover:text-red-600 font-bold transition-all">
                         <AlertTriangle className="h-4 w-4" /> Forfeit
                     </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="rounded-3xl border border-black/5 shadow-none p-0 overflow-hidden bg-white max-w-md">
                     <form action={handleForfeit}>
-                        <DialogHeader>
-                            <DialogTitle className="text-red-600">Forfeit Deposit</DialogTitle>
-                            <DialogDescription>
+                        <DialogHeader className="p-8 pb-4 bg-red-50/30 border-b border-black/5">
+                            <DialogTitle className="font-[family-name:var(--font-anton)] text-3xl uppercase tracking-wide text-black flex items-center gap-2">
+                                <AlertTriangle className="h-6 w-6 text-red-600" />
+                                Forfeit Deposit
+                            </DialogTitle>
+                            <DialogDescription className="text-black/60 font-medium mt-2">
                                 Permanently forfeit the tenant's N$ {depositAmount.toLocaleString()} deposit. This action cannot be undone.
                             </DialogDescription>
                         </DialogHeader>
-                        <div className="grid gap-4 py-4">
+                        <div className="grid gap-6 p-8">
                             <div className="space-y-2">
-                                <Label htmlFor="reason">Reason for Forfeiture *</Label>
-                                <Textarea id="reason" name="reason" placeholder="e.g. Lease violation, property damage beyond repair..." required />
+                                <Label htmlFor="reason" className="text-xs font-bold uppercase tracking-wide text-black/60">Reason for Forfeiture *</Label>
+                                <Textarea
+                                    id="reason"
+                                    name="reason"
+                                    placeholder="e.g. Lease violation, property damage beyond repair..."
+                                    required
+                                    className="bg-gray-50 border-black/5 focus-visible:ring-red-500/20 rounded-xl resize-none shadow-none"
+                                />
                             </div>
                         </div>
-                        <DialogFooter>
-                            <Button type="submit" variant="destructive" disabled={isForfeiting || !depositId}>
+                        <DialogFooter className="p-8 pt-4 bg-gray-50/50 border-t border-black/5">
+                            <Button
+                                type="submit"
+                                variant="destructive"
+                                disabled={isForfeiting || !depositId}
+                                className="w-full bg-red-600 hover:bg-red-700 text-white rounded-full h-12 font-bold shadow-none transition-transform active:scale-95"
+                            >
                                 {isForfeiting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Forfeit Deposit
                             </Button>

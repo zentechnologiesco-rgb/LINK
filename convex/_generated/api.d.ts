@@ -10,8 +10,10 @@
 
 import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
+import type * as debug_auth from "../debug_auth.js";
 import type * as deposits from "../deposits.js";
 import type * as files from "../files.js";
+import type * as fix_auth from "../fix_auth.js";
 import type * as http from "../http.js";
 import type * as inquiries from "../inquiries.js";
 import type * as leases from "../leases.js";
@@ -31,8 +33,10 @@ import type {
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   auth: typeof auth;
+  debug_auth: typeof debug_auth;
   deposits: typeof deposits;
   files: typeof files;
+  fix_auth: typeof fix_auth;
   http: typeof http;
   inquiries: typeof inquiries;
   leases: typeof leases;

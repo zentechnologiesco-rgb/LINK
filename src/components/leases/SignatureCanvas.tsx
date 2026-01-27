@@ -178,18 +178,18 @@ export function SignatureCanvas({ onSignatureChange, initialSignature, disabled 
 
             <Tabs value={mode} onValueChange={(v) => setMode(v as 'draw' | 'type')}>
                 <TabsList className="grid w-full grid-cols-2 rounded-full p-1 bg-black/5">
-                    <TabsTrigger value="draw" disabled={disabled} className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                    <TabsTrigger value="draw" disabled={disabled} className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-none">
                         <PenTool className="h-4 w-4 mr-2" />
                         Draw
                     </TabsTrigger>
-                    <TabsTrigger value="type" disabled={disabled} className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                    <TabsTrigger value="type" disabled={disabled} className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-none">
                         <Type className="h-4 w-4 mr-2" />
                         Type
                     </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="draw" className="mt-4 group relative">
-                    <Card className="p-0 border-0 rounded-2xl overflow-hidden ring-1 ring-black/10 bg-white shadow-sm">
+                    <Card className="p-0 border-0 rounded-2xl overflow-hidden ring-1 ring-black/10 bg-white shadow-none">
                         <canvas
                             ref={canvasRef}
                             className={cn(

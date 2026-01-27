@@ -64,7 +64,7 @@ export function LeasePreview({
     }
 
     return (
-        <div className="bg-white rounded-3xl border border-black/5 shadow-xl shadow-black/5 print:shadow-none print:border-0 overflow-hidden">
+        <div className="bg-white rounded-3xl border border-black/5 shadow-none print:shadow-none print:border-0 overflow-hidden">
             {/* Document Header */}
             <div className="bg-black text-white p-10 print:bg-black">
                 <div className="text-center space-y-2">
@@ -179,19 +179,19 @@ export function LeasePreview({
                 <div>
                     <h2 className="font-[family-name:var(--font-anton)] text-2xl uppercase tracking-wide text-black mb-6">Property Rules & Policies</h2>
                     <div className="grid md:grid-cols-2 gap-4">
-                        <div className="p-5 bg-white border border-black/5 rounded-2xl shadow-sm">
+                        <div className="p-5 bg-white border border-black/5 rounded-2xl shadow-none">
                             <p className="font-bold text-sm text-black mb-1">Pet Policy</p>
                             <p className="text-xs text-black/60 font-medium">
                                 {petPolicyLabels[leaseDocument.petPolicy] || 'Not specified'}
                             </p>
                         </div>
-                        <div className="p-5 bg-white border border-black/5 rounded-2xl shadow-sm">
+                        <div className="p-5 bg-white border border-black/5 rounded-2xl shadow-none">
                             <p className="font-bold text-sm text-black mb-1">Maintenance</p>
                             <p className="text-xs text-black/60 font-medium">
                                 {maintenanceLabels[leaseDocument.maintenanceResponsibility]}
                             </p>
                         </div>
-                        <div className="p-5 bg-white border border-black/5 rounded-2xl shadow-sm">
+                        <div className="p-5 bg-white border border-black/5 rounded-2xl shadow-none">
                             <p className="font-bold text-sm text-black mb-1">Utilities Included</p>
                             {leaseDocument.utilitiesIncluded.length > 0 ? (
                                 <div className="flex flex-wrap gap-1 mt-2">
@@ -207,7 +207,7 @@ export function LeasePreview({
                                 </p>
                             )}
                         </div>
-                        <div className="p-5 bg-white border border-black/5 rounded-2xl shadow-sm">
+                        <div className="p-5 bg-white border border-black/5 rounded-2xl shadow-none">
                             <p className="font-bold text-sm text-black mb-1">Parking</p>
                             <p className="text-xs text-black/60 font-medium">
                                 {leaseDocument.parkingIncluded
