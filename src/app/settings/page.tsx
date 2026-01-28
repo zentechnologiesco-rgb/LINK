@@ -78,7 +78,10 @@ function SettingsContent() {
 
         setUploading(true)
         try {
-            const uploadUrl = await generateUploadUrl()
+            const uploadUrl = await generateUploadUrl({
+                contentType: file.type,
+                fileSize: file.size,
+            })
 
             const response = await fetch(uploadUrl, {
                 method: 'POST',

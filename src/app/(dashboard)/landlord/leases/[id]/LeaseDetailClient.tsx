@@ -15,6 +15,13 @@ import {
 import { LeaseStatusBadge, LeaseStatusTimeline } from '@/components/leases/LeaseStatusTimeline'
 import { LeasePreview } from '@/components/leases/LeasePreview'
 import { SignatureCanvas } from '@/components/leases/SignatureCanvas'
+import { LeasePDF } from '@/components/leases/LeasePDF'
+import dynamic from 'next/dynamic'
+
+const PDFDownloadLink = dynamic(
+    () => import('@react-pdf/renderer').then((mod) => mod.PDFDownloadLink),
+    { ssr: false }
+)
 import { toast } from 'sonner'
 import {
     ChevronLeft,
@@ -419,10 +426,57 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
                     </div>
 
                     {/* Download */}
-                    <Button variant="outline" className="w-full rounded-xl h-11 border-dashed border-black/20 text-black/40 hover:text-black hover:border-black/40 hover:bg-black/5 shadow-none" disabled>
-                        <Download className="h-4 w-4 mr-2" />
-                        Download PDF (Coming Soon)
-                    </Button>
+                    {/* Download */}
+                    <div className="w-full">
+                        <PDFDownloadLink
+                            document={
+                                <LeasePDF
+                                    data={{
+                                        leaseDocument: leaseDocument,
+                                        property: {
+                                            title: lease.property?.title || '',
+                                            address: lease.property?.address || '',
+                                            city: lease.property?.city || '',
+                                            images: lease.property?.images,
+                                        },
+                                        landlord: {
+                                            fullName: lease.landlord?.fullName || '',
+                                            email: lease.landlord?.email || '',
+                                            phone: lease.landlord?.phone,
+                                        },
+                                        tenant: lease.tenant ? {
+                                            fullName: lease.tenant?.fullName || '',
+                                            email: lease.tenant.email || '',
+                                            phone: lease.tenant.phone,
+                                        } : { fullName: '', email: '' },
+                                        leaseTerms: {
+                                            startDate: lease.start_date || lease.startDate,
+                                            endDate: lease.end_date || lease.endDate,
+                                            monthlyRent: lease.monthly_rent || lease.monthlyRent,
+                                            deposit: lease.deposit,
+                                        },
+                                        tenantSignature: tenantSignature,
+                                        landlordSignature: landlordSignature,
+                                        signedAt: signedAt,
+                                    }}
+                                />
+                            }
+                            fileName={`Lease_${lease.property?.title}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
+                            className="w-full block"
+                        >
+                            {/* @ts-ignore - render prop type mismatch in some versions */}
+                            {({ loading, error }: any) => (
+                                <Button
+                                    variant="outline"
+                                    className="w-full rounded-xl h-11 border-dashed border-black/20 text-black/40 hover:text-black hover:border-black/40 hover:bg-black/5 shadow-none"
+                                    disabled={loading}
+                                >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    {loading ? 'Generating PDF...' : 'Download PDF'}
+                                </Button>
+                            )}
+                        </PDFDownloadLink>
+                    </div>
                 </div>
             </div>
 

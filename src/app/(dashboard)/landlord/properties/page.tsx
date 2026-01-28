@@ -38,6 +38,8 @@ interface Property {
     isAvailable: boolean
     imageUrls?: string[]
     status?: string
+    approvalStatus?: string
+    adminNotes?: string
 }
 
 function LandlordPropertiesContent() {
@@ -190,6 +192,12 @@ function PropertyCard({ property, hasLease }: { property: Property; hasLease: bo
     const getStatusBadge = () => {
         if (hasLease) {
             return { label: 'Leased', className: 'bg-black text-white border-black' }
+        }
+        if (property.approvalStatus === 'rejected') {
+            return { label: 'Rejected', className: 'bg-red-500 text-white border-red-500' }
+        }
+        if (property.approvalStatus === 'pending') {
+            return { label: 'Pending', className: 'bg-yellow-500 text-white border-yellow-500' }
         }
         if (property.isAvailable) {
             return { label: 'Listed', className: 'bg-white text-black border-black/10' }

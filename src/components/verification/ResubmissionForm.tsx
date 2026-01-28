@@ -27,6 +27,19 @@ export function ResubmissionForm({ previousRequestId, previousData, rejectionRea
     const generateUploadUrl = useMutation(api.files.generateUploadUrl)
     const resubmitVerification = useMutation(api.verification.resubmit)
 
+    // File validation constants
+    const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif', 'application/pdf']
+
+    function validateFile(file: File, fieldName: string): void {
+        if (!ALLOWED_TYPES.includes(file.type)) {
+            throw new Error(`${fieldName}: File type '${file.type}' is not allowed. Please upload an image (JPEG, PNG, GIF, WebP, HEIC) or PDF.`)
+        }
+        if (file.size > MAX_FILE_SIZE) {
+            throw new Error(`${fieldName}: File size exceeds the maximum limit of 10MB.`)
+        }
+    }
+
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
         setIsLoading(true)
@@ -36,8 +49,15 @@ export function ResubmissionForm({ previousRequestId, previousData, rejectionRea
         const idBackFile = formData.get('id_back') as File
 
         try {
+            // Validate files before uploading
+            validateFile(idFrontFile, 'ID Front')
+            validateFile(idBackFile, 'ID Back')
+
             // 1. Upload ID Front
-            const postUrl1 = await generateUploadUrl()
+            const postUrl1 = await generateUploadUrl({
+                contentType: idFrontFile.type,
+                fileSize: idFrontFile.size,
+            })
             const result1 = await fetch(postUrl1, {
                 method: "POST",
                 headers: { "Content-Type": idFrontFile.type },
@@ -47,7 +67,10 @@ export function ResubmissionForm({ previousRequestId, previousData, rejectionRea
             const { storageId: idFrontStorageId } = await result1.json()
 
             // 2. Upload ID Back
-            const postUrl2 = await generateUploadUrl()
+            const postUrl2 = await generateUploadUrl({
+                contentType: idBackFile.type,
+                fileSize: idBackFile.size,
+            })
             const result2 = await fetch(postUrl2, {
                 method: "POST",
                 headers: { "Content-Type": idBackFile.type },

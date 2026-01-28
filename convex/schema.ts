@@ -35,6 +35,7 @@ export default defineSchema({
     }),
     adminNotes: v.optional(v.string()),
     reviewedAt: v.optional(v.number()),
+    reviewedBy: v.optional(v.id("users")),
   })
     .index("by_userId", ["userId"])
     .index("by_status", ["status"]),
@@ -256,4 +257,17 @@ export default defineSchema({
     .index("by_revieweeId", ["revieweeId"])
     .index("by_propertyId", ["propertyId"])
     .index("by_type", ["type"]),
+
+  // Audit Logs
+  auditLogs: defineTable({
+    adminId: v.id("users"),
+    action: v.string(), // "approve_landlord", "reject_property", etc.
+    targetId: v.string(), // ID of the object being acted upon
+    targetType: v.string(), // "landlord_request", "property", etc.
+    details: v.optional(v.any()),
+    timestamp: v.number(),
+  })
+    .index("by_adminId", ["adminId"])
+    .index("by_targetId", ["targetId"])
+    .index("by_action", ["action"]),
 });

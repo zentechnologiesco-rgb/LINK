@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
+import { validateFile, ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES } from "./files";
 
 // Create a new property
 export const create = mutation({
@@ -10,7 +11,7 @@ export const create = mutation({
         propertyType: v.string(),
         address: v.string(),
         city: v.string(),
-        coordinates: v.optional(v.object({ lat: v.number(), lng: v.number() })),
+        coordinates: v.object({ lat: v.number(), lng: v.number() }),
         priceNad: v.number(),
         bedrooms: v.optional(v.number()),
         bathrooms: v.optional(v.number()),
@@ -29,6 +30,18 @@ export const create = mutation({
         const user = await ctx.db.get(userId);
         if (user?.role !== "landlord" && user?.role !== "admin") {
             throw new Error("Only landlords can create properties");
+        }
+
+        // Validate images and videos
+        if (args.images) {
+            for (const imageId of args.images) {
+                await validateFile(ctx, imageId, ALLOWED_IMAGE_TYPES);
+            }
+        }
+        if (args.videos) {
+            for (const videoId of args.videos) {
+                await validateFile(ctx, videoId, ALLOWED_VIDEO_TYPES);
+            }
         }
 
         const propertyId = await ctx.db.insert("properties", {
@@ -285,11 +298,29 @@ export const update = mutation({
         }
 
         const { propertyId, ...updateData } = args;
+
+        // Validate images and videos
+        if (updateData.images) {
+            for (const imageId of updateData.images) {
+                await validateFile(ctx, imageId, ALLOWED_IMAGE_TYPES);
+            }
+        }
+        if (updateData.videos) {
+            for (const videoId of updateData.videos) {
+                await validateFile(ctx, videoId, ALLOWED_VIDEO_TYPES);
+            }
+        }
+
         const cleanedData = Object.fromEntries(
             Object.entries(updateData).filter(([_, v]) => v !== undefined)
         );
 
-        await ctx.db.patch(propertyId, cleanedData);
+        await ctx.db.patch(propertyId, {
+            ...cleanedData,
+            approvalStatus: "pending",
+            approvalRequestedAt: Date.now(),
+            adminNotes: undefined, // Clear rejection reason
+        });
         return { success: true };
     },
 });

@@ -1,6 +1,8 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+
 import { auth } from "./auth";
+import { logAdminAction } from "./audit";
 
 // Helper to check admin role
 async function requireAdmin(ctx: any) {
@@ -243,11 +245,15 @@ export const getPropertyRequestById = query({
 export const approveProperty = mutation({
     args: { propertyId: v.id("properties") },
     handler: async (ctx, args) => {
-        await requireAdmin(ctx);
+        const userId = await requireAdmin(ctx);
         await ctx.db.patch(args.propertyId, {
             approvalStatus: "approved",
             isAvailable: true
         });
+
+        // Log action
+        await logAdminAction(ctx, userId, "approve_property", args.propertyId, "property");
+
         return { success: true };
     },
 });
@@ -259,12 +265,16 @@ export const rejectProperty = mutation({
         reason: v.string()
     },
     handler: async (ctx, args) => {
-        await requireAdmin(ctx);
+        const userId = await requireAdmin(ctx);
         await ctx.db.patch(args.propertyId, {
             approvalStatus: "rejected",
             isAvailable: false,
             adminNotes: args.reason
         });
+
+        // Log action
+        await logAdminAction(ctx, userId, "reject_property", args.propertyId, "property", { reason: args.reason });
+
         return { success: true };
     },
 });

@@ -15,7 +15,7 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { ChevronLeft, Loader2, Info, Check } from 'lucide-react'
+import { ChevronLeft, Loader2, Info, Check, XCircle } from 'lucide-react'
 import { ImageUpload } from './ImageUpload'
 import { LocationPicker } from '@/components/maps/LocationPicker'
 import { useMutation, useQuery } from "convex/react"
@@ -77,7 +77,10 @@ interface PropertyFormProps {
         sizeSqm?: number
         amenityNames?: string[]
         images?: Id<"_storage">[]
+
         coordinates?: { lat: number; lng: number } | null
+        approvalStatus?: string
+        adminNotes?: string
     }
 }
 
@@ -118,6 +121,11 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
             return
         }
 
+        if (!coordinates) {
+            toast.error('Please select a location on the map')
+            return
+        }
+
         setIsLoading(true)
 
         try {
@@ -127,7 +135,7 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                 propertyType,
                 address,
                 city,
-                coordinates: coordinates || undefined,
+                coordinates: coordinates!,
                 priceNad: Number(priceNad),
                 bedrooms: bedrooms ? Number(bedrooms) : undefined,
                 bathrooms: bathrooms ? Number(bathrooms) : undefined,
@@ -196,6 +204,26 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                         : 'Fill in the details to publish your listing.'}
                 </p>
             </div>
+
+            {/* Info Banner */}
+            {/* Rejection Banner */}
+            {mode === 'edit' && initialData?.approvalStatus === 'rejected' && (
+                <div className="flex items-start gap-4 p-6 rounded-2xl bg-red-50 border border-red-100 mb-10">
+                    <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center shrink-0 mt-1">
+                        <XCircle className="h-5 w-5 text-red-600" />
+                    </div>
+                    <div>
+                        <h3 className="font-[family-name:var(--font-anton)] text-xl uppercase tracking-wide text-red-900 mb-2">Submission Rejected</h3>
+                        <p className="text-sm font-medium text-red-700 leading-relaxed mb-4 p-4 bg-white/50 rounded-xl border border-red-200/50">
+                            "{initialData.adminNotes || "This property was rejected by the admin team."}"
+                        </p>
+                        <p className="text-xs font-bold uppercase tracking-wider text-red-800 flex items-center gap-2">
+                            <Info className="h-4 w-4" />
+                            Update the details below and save to resubmit for approval.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* Info Banner */}
             {mode === 'create' && (

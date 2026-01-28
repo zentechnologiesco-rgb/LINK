@@ -89,7 +89,10 @@ export function DocumentUploader({
         setUploadProgress(0)
 
         try {
-            const postUrl = await generateUploadUrl()
+            const postUrl = await generateUploadUrl({
+                contentType: file.type,
+                fileSize: file.size,
+            })
             const result = await fetch(postUrl, {
                 method: "POST",
                 headers: { "Content-Type": file.type },

@@ -194,6 +194,12 @@ function RequestDetailContent({ id }: { id: string }) {
                                         <p>{format(new Date(request.reviewedAt), 'PPP p')}</p>
                                     </div>
                                 )}
+                                {(request as any).reviewer && (
+                                    <div>
+                                        <p className="text-sm font-medium text-muted-foreground">Reviewed By</p>
+                                        <p>{(request as any).reviewer.fullName || (request as any).reviewer.email}</p>
+                                    </div>
+                                )}
                                 {request.adminNotes && request.status === 'rejected' && (
                                     <div>
                                         <p className="text-sm font-medium text-muted-foreground flex items-center gap-1">
@@ -204,6 +210,42 @@ function RequestDetailContent({ id }: { id: string }) {
                                         </p>
                                     </div>
                                 )}
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Previous Requests History */}
+                    {(request as any).previousRequests && (request as any).previousRequests.length > 0 && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Clock className="h-5 w-5" /> History
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {(request as any).previousRequests.map((prev: any, index: number) => (
+                                    <div key={prev._id} className="relative pl-4 border-l-2 border-muted pb-1 last:pb-0">
+                                        <div className="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full bg-muted" />
+                                        <div className="mb-1">
+                                            <Badge variant="outline" className="mb-1 bg-red-50 text-red-700 border-red-200">
+                                                Rejected
+                                            </Badge>
+                                            <span className="text-xs text-muted-foreground ml-2">
+                                                {format(new Date(prev.submittedAt), 'MMM d, yyyy')}
+                                            </span>
+                                        </div>
+                                        {prev.adminNotes && (
+                                            <p className="text-sm bg-muted/50 p-2 rounded text-muted-foreground">
+                                                "{prev.adminNotes}"
+                                            </p>
+                                        )}
+                                        {prev.reviewerName && (
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                Reviewed by {prev.reviewerName}
+                                            </p>
+                                        )}
+                                    </div>
+                                ))}
                             </CardContent>
                         </Card>
                     )}

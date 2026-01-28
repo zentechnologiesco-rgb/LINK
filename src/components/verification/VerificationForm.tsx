@@ -17,6 +17,19 @@ export function VerificationForm() {
     const generateUploadUrl = useMutation(api.files.generateUploadUrl)
     const submitVerification = useMutation(api.verification.submit)
 
+    // File validation constants
+    const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif', 'application/pdf']
+
+    function validateFile(file: File, fieldName: string): void {
+        if (!ALLOWED_TYPES.includes(file.type)) {
+            throw new Error(`${fieldName}: File type '${file.type}' is not allowed. Please upload an image (JPEG, PNG, GIF, WebP, HEIC) or PDF.`)
+        }
+        if (file.size > MAX_FILE_SIZE) {
+            throw new Error(`${fieldName}: File size exceeds the maximum limit of 10MB.`)
+        }
+    }
+
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
         setIsLoading(true)
@@ -26,8 +39,15 @@ export function VerificationForm() {
         const idBackFile = formData.get('id_back') as File
 
         try {
-            // 1. Upload ID Front
-            const postUrl1 = await generateUploadUrl()
+            // Validate files before uploading
+            validateFile(idFrontFile, 'ID Front')
+            validateFile(idBackFile, 'ID Back')
+
+            // 1. Upload ID Front (with server-side validation)
+            const postUrl1 = await generateUploadUrl({
+                contentType: idFrontFile.type,
+                fileSize: idFrontFile.size,
+            })
             const result1 = await fetch(postUrl1, {
                 method: "POST",
                 headers: { "Content-Type": idFrontFile.type },
@@ -36,8 +56,11 @@ export function VerificationForm() {
             if (!result1.ok) throw new Error("Failed to upload ID front")
             const { storageId: idFrontStorageId } = await result1.json()
 
-            // 2. Upload ID Back
-            const postUrl2 = await generateUploadUrl()
+            // 2. Upload ID Back (with server-side validation)
+            const postUrl2 = await generateUploadUrl({
+                contentType: idBackFile.type,
+                fileSize: idBackFile.size,
+            })
             const result2 = await fetch(postUrl2, {
                 method: "POST",
                 headers: { "Content-Type": idBackFile.type },
@@ -64,6 +87,7 @@ export function VerificationForm() {
             setIsLoading(false)
         }
     }
+
 
     return (
         <div className="space-y-8">

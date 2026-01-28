@@ -64,7 +64,10 @@ export function ImageUpload({
 
             try {
                 // Get upload URL from Convex
-                const uploadUrl = await generateUploadUrl()
+                const uploadUrl = await generateUploadUrl({
+                    contentType: file.type,
+                    fileSize: file.size,
+                })
 
                 // Upload file to Convex storage
                 const response = await fetch(uploadUrl, {

@@ -1,6 +1,11 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
+import { api } from "./_generated/api";
+import { TEMPLATES } from "./emailTemplates";
+import { validateFile, ALLOWED_IMAGE_TYPES, ALLOWED_DOCUMENT_TYPES } from "./files";
+
+const BASE_URL = "http://localhost:3000";
 
 // Create a new lease
 export const create = mutation({
@@ -112,6 +117,22 @@ export const sendToTenant = mutation({
             sentAt: Date.now(),
         });
 
+        // Notify Tenant
+        const tenant = await ctx.db.get(lease.tenantId);
+        const property = await ctx.db.get(lease.propertyId);
+
+        if (tenant?.email && property) {
+            const emailData = TEMPLATES.LEASE_CREATED(
+                `${BASE_URL}/tenant/leases/${args.leaseId}`,
+                property.address
+            );
+            await ctx.scheduler.runAfter(0, api.emails.send, {
+                to: tenant.email,
+                subject: emailData.subject,
+                html: emailData.html
+            });
+        }
+
         return { success: true };
     },
 });
@@ -136,12 +157,37 @@ export const tenantSign = mutation({
         if (lease.tenantId !== userId) throw new Error("Only the tenant can sign");
         if (lease.status !== "sent_to_tenant" && lease.status !== "revision_requested") throw new Error("Lease not ready for signing");
 
+
+        // Validate documents
+        const ALLOWED_LEASE_DOCS = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_DOCUMENT_TYPES];
+        for (const doc of args.tenantDocuments) {
+            await validateFile(ctx, doc.storageId, ALLOWED_LEASE_DOCS);
+        }
+
         await ctx.db.patch(args.leaseId, {
             status: "tenant_signed",
             tenantSignatureData: args.signatureData,
             tenantDocuments: args.tenantDocuments,
             signedAt: Date.now(),
         });
+
+        // Notify Landlord
+        const landlord = await ctx.db.get(lease.landlordId);
+        const tenant = await ctx.db.get(lease.tenantId);
+        const property = await ctx.db.get(lease.propertyId);
+
+        if (landlord?.email && tenant && property) {
+            const emailData = TEMPLATES.TENANT_SIGNED(
+                `${BASE_URL}/landlord/leases/${args.leaseId}`,
+                tenant.fullName || "Tenant",
+                property.address
+            );
+            await ctx.scheduler.runAfter(0, api.emails.send, {
+                to: landlord.email,
+                subject: emailData.subject,
+                html: emailData.html
+            });
+        }
 
         return { success: true };
     },
@@ -181,6 +227,31 @@ export const landlordDecision = mutation({
             });
         }
 
+        // Notify Tenant
+        const tenant = await ctx.db.get(lease.tenantId);
+        const property = await ctx.db.get(lease.propertyId);
+
+        if (tenant?.email && property) {
+            let emailData;
+            if (args.approved) {
+                emailData = TEMPLATES.LEASE_APPROVED(
+                    `${BASE_URL}/tenant/leases/${args.leaseId}`,
+                    property.address
+                );
+            } else {
+                emailData = TEMPLATES.LEASE_REJECTED(
+                    property.address,
+                    args.notes || "No reason provided"
+                );
+            }
+
+            await ctx.scheduler.runAfter(0, api.emails.send, {
+                to: tenant.email,
+                subject: emailData.subject,
+                html: emailData.html
+            });
+        }
+
         return { success: true };
     },
 });
@@ -206,6 +277,23 @@ export const requestRevision = mutation({
             landlordNotes: args.notes,
         });
 
+        // Notify Tenant
+        const tenant = await ctx.db.get(lease.tenantId);
+        const property = await ctx.db.get(lease.propertyId);
+
+        if (tenant?.email && property) {
+            const emailData = TEMPLATES.REVISION_REQUESTED(
+                `${BASE_URL}/tenant/leases/${args.leaseId}`,
+                property.address,
+                args.notes
+            );
+            await ctx.scheduler.runAfter(0, api.emails.send, {
+                to: tenant.email,
+                subject: emailData.subject,
+                html: emailData.html
+            });
+        }
+
         return { success: true };
     },
 });
@@ -214,8 +302,21 @@ export const requestRevision = mutation({
 export const getById = query({
     args: { leaseId: v.id("leases") },
     handler: async (ctx, args) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) return null;
+
         const lease = await ctx.db.get(args.leaseId);
         if (!lease) return null;
+
+        // Only landlord, tenant, or admin can view lease details
+        const user = await ctx.db.get(userId);
+        const isLandlord = lease.landlordId === userId;
+        const isTenant = lease.tenantId === userId;
+        const isAdmin = user?.role === "admin";
+
+        if (!isLandlord && !isTenant && !isAdmin) {
+            return null;
+        }
 
         const property = await ctx.db.get(lease.propertyId);
         const tenant = await ctx.db.get(lease.tenantId);
@@ -336,3 +437,32 @@ export const terminate = mutation({
         return { success: true };
     },
 });
+
+// Check for expired leases (cron job)
+export const checkExpired = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const today = new Date().toISOString().split("T")[0];
+
+        // Get all active leases
+        const approvedLeases = await ctx.db
+            .query("leases")
+            .withIndex("by_status", (q) => q.eq("status", "approved"))
+            .collect();
+
+        let count = 0;
+        for (const lease of approvedLeases) {
+            if (lease.endDate < today) {
+                await ctx.db.patch(lease._id, { status: "expired" });
+
+                // Mark property available again
+                await ctx.db.patch(lease.propertyId, { isAvailable: true });
+
+                count++;
+            }
+        }
+
+        return { success: true, expiredCount: count };
+    },
+});
+

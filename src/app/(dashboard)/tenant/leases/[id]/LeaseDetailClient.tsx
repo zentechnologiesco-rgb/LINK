@@ -17,7 +17,16 @@ import {
     CheckCircle2,
     AlertTriangle,
     Send,
+    Download
 } from 'lucide-react'
+import { LeasePDF } from '@/components/leases/LeasePDF'
+import dynamic from 'next/dynamic'
+import { format } from 'date-fns'
+
+const PDFDownloadLink = dynamic(
+    () => import('@react-pdf/renderer').then((mod) => mod.PDFDownloadLink),
+    { ssr: false }
+)
 import { useMutation } from "convex/react"
 import { api } from "../../../../../../convex/_generated/api"
 import { cn } from '@/lib/utils'
@@ -320,6 +329,58 @@ export function LeaseDetailClient({ lease }: LeaseDetailClientProps) {
                             </p>
                             <p className="text-[10px] font-bold uppercase tracking-widest text-black/40 mt-1">Deposit</p>
                         </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="w-full">
+                        <PDFDownloadLink
+                            document={
+                                <LeasePDF
+                                    data={{
+                                        leaseDocument: leaseDocument,
+                                        property: {
+                                            title: lease.property?.title || '',
+                                            address: lease.property?.address || '',
+                                            city: lease.property?.city || '',
+                                            images: lease.property?.images,
+                                        },
+                                        landlord: {
+                                            fullName: lease.landlord?.fullName || '',
+                                            email: lease.landlord?.email || '',
+                                            phone: lease.landlord?.phone,
+                                        },
+                                        tenant: {
+                                            fullName: lease.tenant?.fullName || '',
+                                            email: lease.tenant?.email || '',
+                                            phone: lease.tenant?.phone,
+                                        },
+                                        leaseTerms: {
+                                            startDate: lease.startDate,
+                                            endDate: lease.endDate,
+                                            monthlyRent: lease.monthlyRent,
+                                            deposit: lease.deposit,
+                                        },
+                                        tenantSignature: lease.tenantSignatureData,
+                                        landlordSignature: lease.landlordSignatureData,
+                                        signedAt: lease.signedAt,
+                                    }}
+                                />
+                            }
+                            fileName={`Lease_${lease.property?.title}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
+                            className="w-full block"
+                        >
+                            {/* @ts-ignore - render prop type mismatch in some versions */}
+                            {({ loading, error }: any) => (
+                                <Button
+                                    variant="outline"
+                                    className="w-full rounded-2xl h-12 border-dashed border-black/20 text-black/40 hover:text-black hover:border-black/40 hover:bg-black/5 shadow-none"
+                                    disabled={loading}
+                                >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    {loading ? 'Generating PDF...' : 'Download PDF'}
+                                </Button>
+                            )}
+                        </PDFDownloadLink>
                     </div>
                 </div>
             </div>

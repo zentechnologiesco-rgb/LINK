@@ -1,6 +1,11 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+
 import { auth } from "./auth";
+import { logAdminAction } from "./audit";
+import { validateFile, ALLOWED_IMAGE_TYPES, ALLOWED_DOCUMENT_TYPES } from "./files";
+
+const ALLOWED_ID_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_DOCUMENT_TYPES];
 
 // Submit verification request
 export const submit = mutation({
@@ -26,6 +31,10 @@ export const submit = mutation({
         if (existingPending) {
             throw new Error("You already have a pending verification request");
         }
+
+        // Validate documents
+        await validateFile(ctx, args.idFrontStorageId, ALLOWED_ID_TYPES);
+        await validateFile(ctx, args.idBackStorageId, ALLOWED_ID_TYPES);
 
         const requestId = await ctx.db.insert("landlordRequests", {
             userId,
@@ -77,6 +86,10 @@ export const resubmit = mutation({
         if (existingPending) {
             throw new Error("You already have a pending verification request");
         }
+
+        // Validate documents
+        await validateFile(ctx, args.idFrontStorageId, ALLOWED_ID_TYPES);
+        await validateFile(ctx, args.idBackStorageId, ALLOWED_ID_TYPES);
 
         const requestId = await ctx.db.insert("landlordRequests", {
             userId,
@@ -131,6 +144,7 @@ export const approve = mutation({
         await ctx.db.patch(args.requestId, {
             status: "approved",
             reviewedAt: Date.now(),
+            reviewedBy: userId,
         });
 
         // Upgrade user to landlord
@@ -138,6 +152,9 @@ export const approve = mutation({
             role: "landlord",
             isVerified: true,
         });
+
+        // Log action
+        await logAdminAction(ctx, userId, "approve_landlord", args.requestId, "landlord_request");
 
         return { success: true };
     },
@@ -160,7 +177,11 @@ export const reject = mutation({
             status: "rejected",
             adminNotes: args.reason,
             reviewedAt: Date.now(),
+            reviewedBy: userId,
         });
+
+        // Log action
+        await logAdminAction(ctx, userId, "reject_landlord", args.requestId, "landlord_request", { reason: args.reason });
 
         return { success: true };
     },
@@ -256,7 +277,7 @@ export const getStats = query({
     },
 });
 
-// Admin: Get request by ID with storage URLs
+// Admin: Get request by ID with storage URLs, reviewer info, and history
 export const getByIdAdmin = query({
     args: { requestId: v.id("landlordRequests") },
     handler: async (ctx, args) => {
@@ -282,6 +303,53 @@ export const getByIdAdmin = query({
             idBackUrl = await ctx.storage.getUrl(request.documents.idBackStorageId);
         }
 
+        // Get reviewer info if reviewed
+        let reviewer = null;
+        if (request.reviewedBy) {
+            const reviewerUser = await ctx.db.get(request.reviewedBy);
+            if (reviewerUser) {
+                reviewer = {
+                    fullName: reviewerUser.fullName,
+                    email: reviewerUser.email,
+                };
+            }
+        }
+
+        // Build history of previous requests (for resubmissions)
+        const previousRequests: Array<{
+            _id: string;
+            status: string;
+            adminNotes: string | null;
+            reviewedAt: number | null;
+            submittedAt: string;
+            reviewerName: string | null;
+        }> = [];
+
+        // Walk back through the chain of previous requests
+        let currentPreviousId = request.documents.previousRequestId;
+        while (currentPreviousId) {
+            const previousRequest = await ctx.db.get(currentPreviousId);
+            if (!previousRequest) break;
+
+            // Get reviewer name for this previous request
+            let prevReviewerName = null;
+            if (previousRequest.reviewedBy) {
+                const prevReviewer = await ctx.db.get(previousRequest.reviewedBy);
+                prevReviewerName = prevReviewer?.fullName || prevReviewer?.email || null;
+            }
+
+            previousRequests.push({
+                _id: previousRequest._id,
+                status: previousRequest.status,
+                adminNotes: previousRequest.adminNotes || null,
+                reviewedAt: previousRequest.reviewedAt || null,
+                submittedAt: previousRequest.documents.submittedAt,
+                reviewerName: prevReviewerName,
+            });
+
+            currentPreviousId = previousRequest.documents.previousRequestId;
+        }
+
         return {
             ...request,
             user: requestUser
@@ -297,6 +365,8 @@ export const getByIdAdmin = query({
                 idFrontUrl,
                 idBackUrl,
             },
+            reviewer,
+            previousRequests,
         };
     },
 });
