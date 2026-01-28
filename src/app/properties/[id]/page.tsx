@@ -51,6 +51,7 @@ interface PropertyDetails {
         name: string | null
         email: string
         phone: string | null
+        avatarUrl?: string | null
     } | null
 }
 
@@ -290,8 +291,17 @@ function PropertyDetailContent({ id }: { id: string }) {
                                 {property.isFromDatabase ? 'Verified Landlord' : 'Listing Agent'}
                             </p>
                         </div>
-                        <div className="h-14 w-14 rounded-full bg-black flex items-center justify-center text-white">
-                            <User className="h-6 w-6" />
+                        <div className="h-14 w-14 rounded-full bg-black flex items-center justify-center text-white overflow-hidden relative border border-black/5">
+                            {property.landlord?.avatarUrl ? (
+                                <Image
+                                    src={property.landlord.avatarUrl}
+                                    alt={property.landlord.name || 'Landlord'}
+                                    fill
+                                    className="object-cover"
+                                />
+                            ) : (
+                                <User className="h-6 w-6" />
+                            )}
                         </div>
                     </div>
 
@@ -349,7 +359,7 @@ function PropertyDetailContent({ id }: { id: string }) {
                 {/* Sidebar Booking Card */}
                 <div className="lg:col-span-4 relative">
                     <div className="sticky top-8 space-y-6">
-                        <div className="p-8 rounded-3xl border border-black/5 bg-white shadow-2xl shadow-black/5">
+                        <div className="p-8 rounded-3xl border border-black/5 bg-white">
                             <div className="space-y-6">
                                 <div>
                                     <p className="text-black/40 text-xs font-bold uppercase tracking-widest mb-2">Monthly Rent</p>

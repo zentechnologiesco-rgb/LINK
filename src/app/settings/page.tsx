@@ -91,9 +91,9 @@ function SettingsContent() {
             }
 
             const { storageId } = await response.json()
-            const avatarUrl = `${process.env.NEXT_PUBLIC_CONVEX_URL?.replace('.cloud', '.site')}/api/storage/${storageId}`
 
-            await updateProfile({ avatarUrl })
+            // Save the storageId directly. The backend will resolve this to a URL.
+            await updateProfile({ avatarUrl: storageId })
             toast.success('Profile picture updated!')
         } catch (error: any) {
             toast.error(error.message || 'Failed to upload avatar')
@@ -118,9 +118,9 @@ function SettingsContent() {
 
     return (
         <div className="min-h-screen bg-white">
-            <div className="max-w-6xl mx-auto px-6 py-12">
+            <div className="max-w-6xl mx-auto px-4 md:px-6 py-12">
                 {/* Header */}
-                <div className="mb-12">
+                <div className="mb-12 hidden md:block">
                     <h1 className="font-[family-name:var(--font-anton)] text-4xl mb-2 text-black tracking-wide">SETTINGS</h1>
                     <p className="text-black/60 font-medium">Manage your account preferences and profile</p>
                 </div>
@@ -159,7 +159,7 @@ function SettingsContent() {
                                     <h2 className="font-[family-name:var(--font-anton)] text-2xl text-black mb-6 uppercase tracking-wide">
                                         Profile Picture
                                     </h2>
-                                    <div className="flex items-center gap-8">
+                                    <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
                                         <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                                             <div className="h-32 w-32 rounded-full overflow-hidden bg-gray-100 border-4 border-white shadow-xl shadow-black/5 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
                                                 {user?.avatarUrl ? (
@@ -191,8 +191,8 @@ function SettingsContent() {
                                             )}
                                         </div>
 
-                                        <div className="flex-1">
-                                            <div className="flex gap-3 mb-3">
+                                        <div className="flex-1 w-full md:w-auto text-center md:text-left">
+                                            <div className="flex flex-col sm:flex-row gap-3 mb-3 justify-center md:justify-start">
                                                 <Button
                                                     variant="outline"
                                                     className="rounded-xl border-black/10 hover:bg-black hover:text-white transition-colors h-11 px-6 font-medium"
@@ -231,7 +231,7 @@ function SettingsContent() {
                                         Personal Information
                                     </h2>
                                     <div className="grid gap-6">
-                                        <div className="grid grid-cols-2 gap-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="space-y-2">
                                                 <Label htmlFor="firstName" className="text-sm font-bold text-black/80 ml-1">First Name</Label>
                                                 <Input

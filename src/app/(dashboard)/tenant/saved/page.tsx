@@ -24,7 +24,7 @@ export default function SavedPropertiesPage() {
     if (!savedProperties || savedProperties.length === 0) {
         return (
             <div className="px-8 py-8 md:px-12 md:py-12 max-w-7xl mx-auto">
-                <div className="mb-12">
+                <div className="mb-12 hidden md:block">
                     <h1 className="font-[family-name:var(--font-anton)] text-4xl md:text-5xl tracking-wide text-black mb-3">
                         Saved Properties
                     </h1>
@@ -58,7 +58,7 @@ export default function SavedPropertiesPage() {
         <div className="px-8 py-8 md:px-12 md:py-12 max-w-7xl mx-auto">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-                <div>
+                <div className="hidden md:block">
                     <h1 className="font-[family-name:var(--font-anton)] text-4xl md:text-5xl tracking-wide text-black mb-3">
                         Saved Properties
                     </h1>

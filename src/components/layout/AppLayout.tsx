@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
+import { MobileHeader } from './MobileHeader'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Menu } from 'lucide-react'
@@ -41,6 +42,8 @@ function AuthenticatedLayout({ children, sidebarCollapsed, onToggle, mobileMenuO
                     isLoading={isLoading}
                 />
             </div>
+
+            <MobileHeader user={user} userRole={userRole} />
 
             {/* Mobile Sidebar Overlay */}
             {mobileMenuOpen && (
@@ -89,6 +92,8 @@ function GuestLayout({ sidebarCollapsed, onToggle, mobileMenuOpen, onMobileClose
                     isLoading={isLoading}
                 />
             </div>
+
+            <MobileHeader />
 
             {/* Mobile Sidebar Overlay */}
             {mobileMenuOpen && (
@@ -172,7 +177,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 )}
             >
                 {/* Floating Content Panel (Desktop) / Full Screen (Mobile) */}
-                <main className="flex-1 bg-white md:rounded-3xl md:border md:border-gray-100 overflow-hidden relative shadow-none flex flex-col">
+                <main className="flex-1 bg-white md:rounded-3xl md:border md:border-gray-100 overflow-hidden relative shadow-none flex flex-col pt-16 md:pt-0">
                     <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300 pb-24 md:pb-0">
                         {children}
                     </div>

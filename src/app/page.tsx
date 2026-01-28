@@ -146,7 +146,7 @@ export default function HomePage() {
         <div className="min-h-screen">
             {/* Header Section */}
             <div className="px-6 pt-8 pb-6 space-y-6">
-                <div className="flex flex-col gap-1 items-center text-center md:items-start md:text-left">
+                <div className="flex flex-col gap-1 items-center text-center md:items-start md:text-left hidden md:flex">
                     <h1 className="font-[family-name:var(--font-anton)] text-4xl tracking-wide text-black uppercase">
                         Properties
                     </h1>

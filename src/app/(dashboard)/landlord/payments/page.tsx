@@ -63,7 +63,7 @@ export default function LandlordPaymentsPage() {
             <div className="px-8 py-10 max-w-[1600px] mx-auto pb-24 opacity-40 pointer-events-none filter blur-[2px] UserSelect-none">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-                    <div className="space-y-2">
+                    <div className="space-y-2 hidden md:block">
                         <h1 className="font-[family-name:var(--font-anton)] text-4xl uppercase tracking-wide text-black leading-none">
                             Payments
                         </h1>

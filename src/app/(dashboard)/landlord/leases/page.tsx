@@ -43,7 +43,7 @@ function LandlordLeasesContent() {
         <div className="px-8 py-8 max-w-7xl mx-auto space-y-12">
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-6">
-                <div>
+                <div className="hidden md:block">
                     <h1 className="text-4xl font-[family-name:var(--font-anton)] uppercase tracking-wide text-black mb-2">Leases</h1>
                     <p className="text-black/60 font-medium">Manage and track your rental agreements.</p>
                 </div>

@@ -118,10 +118,24 @@ export const getById = query({
 
         // Fetch landlord info
         const landlord = await ctx.db.get(property.landlordId);
+        let landlordAvatarUrl = null;
+        if (landlord && landlord.avatarUrl) {
+            if (landlord.avatarUrl.startsWith("http")) {
+                landlordAvatarUrl = landlord.avatarUrl;
+            } else {
+                try {
+                    landlordAvatarUrl = await ctx.storage.getUrl(landlord.avatarUrl);
+                } catch (e) {
+                    console.error("Failed to resolve landlord avatar:", e);
+                }
+            }
+        }
+
         const landlordInfo = landlord ? {
             name: landlord.fullName || null,
             email: landlord.email,
             phone: landlord.phone || null,
+            avatarUrl: landlordAvatarUrl,
         } : null;
 
         // Resolve amenities

@@ -299,76 +299,77 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading, onItem
                         )}
                     </div>
                 ) : user ? (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <button
-                                className={cn(
-                                    'group flex items-center gap-3 w-full p-2 rounded-lg transition-all duration-200',
-                                    'hover:bg-black/5',
-                                    collapsed ? 'justify-center px-0' : 'text-left'
-                                )}
+                    <div className={cn("flex items-center gap-2 w-full", collapsed && "justify-center")}>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <button
+                                    className={cn(
+                                        'group flex items-center gap-3 p-2 rounded-lg transition-all duration-200 hover:bg-black/5',
+                                        collapsed ? 'justify-center px-0 w-full' : 'flex-1 text-left min-w-0'
+                                    )}
+                                >
+                                    <div className="relative shrink-0">
+                                        <Avatar className="h-8 w-8 border-none opacity-90 group-hover:opacity-100 transition-opacity">
+                                            <AvatarImage src={user.avatarUrl} alt={user.email || ''} className="object-cover" />
+                                            <AvatarFallback className="bg-gray-100 text-gray-600 font-medium text-xs">
+                                                {getInitials(user) || user.email?.charAt(0).toUpperCase()}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                    </div>
+
+                                    {!collapsed && (
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-black/90 truncate group-hover:text-black">
+                                                {getDisplayName(user) || 'User'}
+                                            </p>
+                                            <p className="text-[11px] text-black/40 truncate capitalize">
+                                                {currentRole || 'Guest'}
+                                            </p>
+                                        </div>
+                                    )}
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                                className="w-60 p-2 rounded-2xl border border-black/5 bg-white shadow-xl shadow-black/5 z-50"
+                                align="start"
+                                side="right"
+                                sideOffset={12}
                             >
-                                <div className="relative shrink-0">
-                                    <Avatar className="h-8 w-8 border-none opacity-90 group-hover:opacity-100 transition-opacity">
-                                        <AvatarImage src={user.avatarUrl} alt={user.email || ''} />
-                                        <AvatarFallback className="bg-gray-100 text-gray-600 font-medium text-xs">
-                                            {getInitials(user) || user.email?.charAt(0).toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                <div className="px-3 py-2 mb-1">
+                                    <p className="text-sm font-semibold text-black/90">
+                                        {getDisplayName(user)}
+                                    </p>
+                                    <p className="text-[11px] text-black/40 font-medium truncate mt-0.5">
+                                        {user.email}
+                                    </p>
                                 </div>
 
-                                {!collapsed && (
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-black/90 truncate group-hover:text-black">
-                                            {getDisplayName(user) || 'User'}
-                                        </p>
-                                        <p className="text-[11px] text-black/40 truncate capitalize">
-                                            {currentRole || 'Guest'}
-                                        </p>
-                                    </div>
-                                )}
+                                <div className="space-y-0.5">
+                                    <DropdownMenuItem className="cursor-pointer rounded-xl px-3 py-2 text-xs font-medium text-black/70 focus:text-black focus:bg-black/5 transition-colors" onClick={() => router.push('/settings')}>
+                                        <Settings className="mr-2 h-3.5 w-3.5 opacity-70" />
+                                        Account Settings
+                                    </DropdownMenuItem>
 
-                                {!collapsed && (
-                                    <div onClick={(e) => {
-                                        e.stopPropagation();
-                                        onToggle();
-                                    }} className="p-1 rounded-md text-black/20 hover:text-black hover:bg-black/5 transition-all">
-                                        <ChevronLeft className="h-4 w-4" />
-                                    </div>
-                                )}
+                                    <DropdownMenuItem
+                                        onClick={handleSignOut}
+                                        className="cursor-pointer rounded-xl px-3 py-2 text-xs font-medium text-red-600/80 focus:text-red-600 focus:bg-red-50/50 transition-colors"
+                                    >
+                                        <LogOut className="mr-2 h-3.5 w-3.5 opacity-70" />
+                                        Sign Out
+                                    </DropdownMenuItem>
+                                </div>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        {!collapsed && (
+                            <button
+                                onClick={onToggle}
+                                className="p-2 rounded-lg text-black/20 hover:text-black hover:bg-black/5 transition-all shrink-0"
+                            >
+                                <ChevronLeft className="h-4 w-4" />
                             </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                            className="w-60 p-2 rounded-2xl border border-black/5 bg-white shadow-xl shadow-black/5"
-                            align="start"
-                            side="right"
-                            sideOffset={12}
-                        >
-                            <div className="px-3 py-2 mb-1">
-                                <p className="text-sm font-semibold text-black/90">
-                                    {getDisplayName(user)}
-                                </p>
-                                <p className="text-[11px] text-black/40 font-medium truncate mt-0.5">
-                                    {user.email}
-                                </p>
-                            </div>
-
-                            <div className="space-y-0.5">
-                                <DropdownMenuItem className="cursor-pointer rounded-xl px-3 py-2 text-xs font-medium text-black/70 focus:text-black focus:bg-black/5 transition-colors" onClick={() => router.push('/settings')}>
-                                    <Settings className="mr-2 h-3.5 w-3.5 opacity-70" />
-                                    Account Settings
-                                </DropdownMenuItem>
-
-                                <DropdownMenuItem
-                                    onClick={handleSignOut}
-                                    className="cursor-pointer rounded-xl px-3 py-2 text-xs font-medium text-red-600/80 focus:text-red-600 focus:bg-red-50/50 transition-colors"
-                                >
-                                    <LogOut className="mr-2 h-3.5 w-3.5 opacity-70" />
-                                    Sign Out
-                                </DropdownMenuItem>
-                            </div>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                        )}
+                    </div>
                 ) : (
                     <div className="flex flex-col gap-2">
                         <Link href="/sign-in" onClick={() => onItemClick?.()}>

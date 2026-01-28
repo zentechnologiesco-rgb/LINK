@@ -2,13 +2,32 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
 
+// Helper to resolve avatar URL
+async function getUserWithAvatarUrl(ctx: any, user: any) {
+    if (!user) return null;
+
+    if (user.avatarUrl && !user.avatarUrl.startsWith("http")) {
+        try {
+            const url = await ctx.storage.getUrl(user.avatarUrl);
+            // If URL is valid, use it. If null (file not found), set avatarUrl to null to trigger fallback
+            return { ...user, avatarUrl: url || null };
+        } catch (error) {
+            console.error("Failed to generate storage URL for avatar:", error);
+            // On error, also clear the invalid ID to trigger fallback
+            return { ...user, avatarUrl: null };
+        }
+    }
+    return user;
+}
+
 // Get current authenticated user
 export const currentUser = query({
     args: {},
     handler: async (ctx) => {
         const userId = await auth.getUserId(ctx);
         if (!userId) return null;
-        return await ctx.db.get(userId);
+        const user = await ctx.db.get(userId);
+        return await getUserWithAvatarUrl(ctx, user);
     },
 });
 
@@ -16,7 +35,8 @@ export const currentUser = query({
 export const getById = query({
     args: { userId: v.id("users") },
     handler: async (ctx, args) => {
-        return await ctx.db.get(args.userId);
+        const user = await ctx.db.get(args.userId);
+        return await getUserWithAvatarUrl(ctx, user);
     },
 });
 
@@ -24,10 +44,11 @@ export const getById = query({
 export const getByEmail = query({
     args: { email: v.string() },
     handler: async (ctx, args) => {
-        return await ctx.db
+        const user = await ctx.db
             .query("users")
             .withIndex("by_email", (q) => q.eq("email", args.email))
             .first();
+        return await getUserWithAvatarUrl(ctx, user);
     },
 });
 
