@@ -122,11 +122,7 @@ function SettingsContent() {
     return (
         <div className="min-h-screen bg-white">
             <div className="max-w-6xl mx-auto px-4 md:px-6 py-12">
-                {/* Header */}
-                <div className="mb-12 hidden md:block">
-                    <h1 className="font-[family-name:var(--font-anton)] text-4xl mb-2 text-black tracking-wide">SETTINGS</h1>
-                    <p className="text-black/60 font-medium">Manage your account preferences and profile</p>
-                </div>
+
 
                 <div className="flex flex-col md:flex-row gap-12">
                     {/* Sidebar Tabs */}

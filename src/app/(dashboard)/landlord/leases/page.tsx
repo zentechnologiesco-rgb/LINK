@@ -42,11 +42,7 @@ function LandlordLeasesContent() {
     return (
         <div className="px-8 py-8 max-w-7xl mx-auto space-y-12">
             {/* Header */}
-            <div className="flex flex-wrap items-center justify-between gap-6">
-                <div className="hidden md:block">
-                    <h1 className="text-4xl font-[family-name:var(--font-anton)] uppercase tracking-wide text-black mb-2">Leases</h1>
-                    <p className="text-black/60 font-medium">Manage and track your rental agreements.</p>
-                </div>
+            <div className="flex justify-end">
                 {leases.length > 0 && (
                     <Link href="/landlord/leases/new">
                         <Button className="bg-black text-white hover:bg-black/80 rounded-full h-11 px-6 font-bold shadow-none transition-all hover:scale-105 active:scale-95">

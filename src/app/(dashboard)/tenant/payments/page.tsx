@@ -56,15 +56,7 @@ export default function TenantPaymentsPage() {
             {/* Existing Content (Blurred & Disabled) */}
             <div className="px-8 py-10 max-w-[1600px] mx-auto pb-24 opacity-40 pointer-events-none filter blur-[2px] UserSelect-none">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-                    <div className="space-y-2 hidden md:block">
-                        <h1 className="font-[family-name:var(--font-anton)] text-4xl uppercase tracking-wide text-black leading-none">
-                            Payments
-                        </h1>
-                        <p className="text-black/60 font-medium text-base">
-                            View your payment history, track rent due dates, and manage deposits.
-                        </p>
-                    </div>
+                <div className="flex justify-end mb-12">
                     <div className="flex items-center gap-3">
                         <Button variant="outline" className="rounded-full h-12 px-6 font-bold uppercase tracking-wider text-xs border-black/10 hover:bg-black/5 hover:text-black transition-all">
                             <Filter className="mr-2 h-4 w-4" />

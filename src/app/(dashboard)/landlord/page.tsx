@@ -42,7 +42,6 @@ function LandlordDashboardContent() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div>
                     <h2 className="text-2xl font-bold tracking-tight text-gray-900">Overview</h2>
-                    <p className="text-sm text-gray-500">Manage your listings and tenant requests.</p>
                 </div>
                 <div className="flex gap-2">
                     <Link href="/landlord/inquiries">

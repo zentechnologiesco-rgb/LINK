@@ -41,15 +41,7 @@ function TenantLeasesContent() {
 
     return (
         <div className="px-6 py-8 max-w-5xl mx-auto space-y-12 pb-24">
-            {/* Header */}
-            <div className="space-y-2 hidden md:block">
-                <h1 className="font-[family-name:var(--font-anton)] text-4xl uppercase tracking-wide text-black">
-                    My Leases
-                </h1>
-                <p className="text-black/60 font-medium max-w-lg">
-                    Manage your rental agreements, view status updates, and access lease documents.
-                </p>
-            </div>
+
 
             {/* Stats */}
             {leases.length > 0 && (

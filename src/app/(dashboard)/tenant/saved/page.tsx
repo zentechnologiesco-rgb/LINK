@@ -24,14 +24,7 @@ export default function SavedPropertiesPage() {
     if (!savedProperties || savedProperties.length === 0) {
         return (
             <div className="px-8 py-8 md:px-12 md:py-12 max-w-7xl mx-auto">
-                <div className="mb-12 hidden md:block">
-                    <h1 className="font-[family-name:var(--font-anton)] text-4xl md:text-5xl tracking-wide text-black mb-3">
-                        Saved Properties
-                    </h1>
-                    <p className="text-black/60 text-lg font-medium">
-                        Your collection of favorite homes
-                    </p>
-                </div>
+
 
                 <div className="flex flex-col items-center justify-center py-24 px-8 text-center rounded-3xl border border-dashed border-black/10 bg-gray-50/50">
                     <div className="h-20 w-20 rounded-2xl bg-white border border-black/5 flex items-center justify-center mb-6 shadow-xl shadow-black/5">
@@ -57,15 +50,7 @@ export default function SavedPropertiesPage() {
     return (
         <div className="px-8 py-8 md:px-12 md:py-12 max-w-7xl mx-auto">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-                <div className="hidden md:block">
-                    <h1 className="font-[family-name:var(--font-anton)] text-4xl md:text-5xl tracking-wide text-black mb-3">
-                        Saved Properties
-                    </h1>
-                    <p className="text-black/60 text-lg font-medium">
-                        {savedProperties.length} {savedProperties.length === 1 ? 'property' : 'properties'} saved
-                    </p>
-                </div>
+            <div className="flex justify-end mb-12">
                 <Link href="/search">
                     <Button variant="outline" className="rounded-full h-12 px-6 border-black/10 hover:bg-black/5 text-black font-medium text-base transition-all hover:border-black/20">
                         <Search className="mr-2 h-4 w-4" />
