@@ -110,7 +110,7 @@ export function Sidebar({ collapsed, onToggle, userRole, user, isLoading, onItem
         >
             {/* Brand Header */}
             <div className={cn(
-                "flex items-center h-12 px-6 transition-all duration-300",
+                "flex items-center h-20 pt-6 pb-4 px-6 transition-all duration-300",
                 collapsed ? "justify-center px-0" : "justify-start"
             )}>
                 <Link
