@@ -219,4 +219,14 @@ export default defineSchema({
     .index("by_adminId", ["adminId"])
     .index("by_targetId", ["targetId"])
     .index("by_action", ["action"]),
+
+  // Recently Viewed Properties
+  recentlyViewed: defineTable({
+    userId: v.id("users"),
+    propertyId: v.id("properties"),
+    viewedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_user_property", ["userId", "propertyId"])
+    .index("by_viewedAt", ["viewedAt"]),
 });

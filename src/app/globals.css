@@ -440,3 +440,42 @@ html {
   mask-image: linear-gradient(to right, black 85%, transparent 100%);
   -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
 }
+
+/* Mapbox Popup Styles */
+.mapboxgl-popup {
+  z-index: 100;
+}
+
+.mapboxgl-popup-content {
+  padding: 0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
+  overflow: hidden;
+  border: none !important;
+}
+
+.mapboxgl-popup-tip {
+  border-top-color: white !important;
+}
+
+.property-map-popup .mapboxgl-popup-content {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.property-map-popup .mapboxgl-popup-tip {
+  display: none;
+}
+
+/* Cluster hover effect */
+@keyframes cluster-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}

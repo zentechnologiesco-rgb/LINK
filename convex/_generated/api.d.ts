@@ -22,6 +22,7 @@ import type * as leases from "../leases.js";
 import type * as messages from "../messages.js";
 import type * as payments from "../payments.js";
 import type * as properties from "../properties.js";
+import type * as recentlyViewed from "../recentlyViewed.js";
 import type * as savedProperties from "../savedProperties.js";
 import type * as users from "../users.js";
 import type * as verification from "../verification.js";
@@ -47,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   messages: typeof messages;
   payments: typeof payments;
   properties: typeof properties;
+  recentlyViewed: typeof recentlyViewed;
   savedProperties: typeof savedProperties;
   users: typeof users;
   verification: typeof verification;

@@ -27,7 +27,7 @@ import {
 import { SavePropertyButton } from "@/components/properties/SavePropertyButton"
 import { ContactLandlordButton } from "@/components/properties/ContactLandlordButton"
 import { PropertyDetailMap } from "@/components/maps/PropertyDetailMap"
-import { useQuery } from "convex/react"
+import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../../convex/_generated/api"
 import { Id } from "../../../../convex/_generated/dataModel"
 import { cn } from "@/lib/utils"
@@ -85,6 +85,10 @@ function PropertyDetailContent({ id }: { id: string }) {
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
     const [isScrolled, setIsScrolled] = useState(false)
 
+    // Track view mutation
+    const trackView = useMutation(api.recentlyViewed.trackView)
+    const hasTracked = useRef(false)
+
     // Sticky Nav Logic
     useEffect(() => {
         const handleScroll = () => setIsScrolled(window.scrollY > 400)
@@ -93,6 +97,16 @@ function PropertyDetailContent({ id }: { id: string }) {
     }, [])
 
     const convexProperty = useQuery(api.properties.getById, { propertyId: id as Id<"properties"> })
+
+    // Track property view when page loads (only once)
+    useEffect(() => {
+        if (convexProperty && !hasTracked.current) {
+            hasTracked.current = true
+            trackView({ propertyId: id as Id<"properties"> }).catch(() => {
+                // Silently fail - user might not be logged in
+            })
+        }
+    }, [convexProperty, id, trackView])
 
     // Loading State
     if (convexProperty === undefined) {

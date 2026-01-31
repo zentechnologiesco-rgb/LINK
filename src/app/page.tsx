@@ -41,6 +41,7 @@ import { cn } from "@/lib/utils"
 import Image from "next/image"
 import { SavePropertyButton } from "@/components/properties/SavePropertyButton"
 import { TrustCard } from "@/components/properties/TrustCard"
+import { RecentlyViewedSection } from "@/components/properties/RecentlyViewedSection"
 
 // --- Types ---
 interface Property {
@@ -200,13 +201,7 @@ export default function HomePage() {
                 {/* Minimal Hero Section */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-10 mb-6 md:mb-12 border-b border-neutral-100 pb-6 md:pb-12">
                     <div className="max-w-2xl w-full">
-                        <div className="inline-flex items-center gap-2 mb-3 sm:mb-6 px-2.5 sm:px-3 py-1 rounded-full bg-neutral-100/80 border border-neutral-200/60">
-                            <div className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                            </div>
-                            <span className="text-[10px] sm:text-[11px] font-mono text-neutral-600 uppercase tracking-widest font-medium">Live Feed</span>
-                        </div>
+
                         <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold tracking-tight text-neutral-900 mb-3 sm:mb-6 leading-[1.1]">
                             Verified Properties.
                         </h1>
@@ -229,6 +224,9 @@ export default function HomePage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Recently Viewed Properties Section */}
+                <RecentlyViewedSection />
 
                 {/* Refined Feed Controls */}
                 <div className="sticky top-[64px] md:top-[80px] z-30 bg-[#fafafa]/95 backdrop-blur-md py-3 sm:py-4 mb-4 md:mb-8 -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0 border-b border-transparent transition-all">
