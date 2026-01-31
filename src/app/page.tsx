@@ -101,56 +101,70 @@ function TrustCard({ property }: { property: Property }) {
             href={`/properties/${property.id}`}
             className="group block"
         >
-            <div className="h-full bg-white rounded-xl border border-neutral-200 overflow-hidden transition-all duration-200 hover:border-blue-500/50 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col">
-                {/* Visual Header */}
-                <div className="relative aspect-[16/10] bg-neutral-100 overflow-hidden border-b border-neutral-100">
+            <div className={cn(
+                "h-full bg-white rounded-xl sm:rounded-2xl border border-neutral-200/80 overflow-hidden flex flex-col",
+                "transition-all duration-300 ease-out",
+                "hover:-translate-y-1.5 hover:shadow-xl hover:shadow-neutral-900/[0.08] hover:border-neutral-300"
+            )}>
+                {/* Image Section */}
+                <div className="relative aspect-[4/3] bg-neutral-100 overflow-hidden">
                     <Image
                         src={images[0]}
                         alt={property.title}
                         fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
 
-                    {/* Floating Badges */}
-                    <div className="absolute top-3 left-3 flex gap-2">
-                        <span className="px-2 py-1 rounded-md bg-white/95 backdrop-blur shadow-sm text-[10px] font-bold uppercase tracking-wide text-neutral-900">
+                    {/* Top Row: Type Badge & Save */}
+                    <div className="absolute top-2 sm:top-3 left-2 sm:left-3 right-2 sm:right-3 flex justify-between items-start">
+                        <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-black/70 backdrop-blur-sm text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-white">
                             {property.type}
                         </span>
-                    </div>
-
-                    <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end">
-                        <div className="text-white drop-shadow-md">
-                            <div className="text-xs font-medium opacity-90 flex items-center gap-1">
-                                <MapPin className="w-3 h-3" /> {property.city}
-                            </div>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 transform translate-y-1 group-hover:translate-y-0">
+                            <SavePropertyButton
+                                propertyId={property.id}
+                                className="h-7 w-7 sm:h-8 sm:w-8 bg-white/90 hover:bg-white text-neutral-700 rounded-full shadow-lg border-0"
+                            />
                         </div>
                     </div>
                 </div>
 
-                {/* Data Body */}
-                <div className="p-4 flex flex-col gap-4 flex-1">
-                    <div>
-                        <h3 className="font-semibold text-neutral-900 text-base leading-tight group-hover:text-blue-600 transition-colors mb-1 truncate">
-                            {property.title}
-                        </h3>
-                        <p className="text-xs text-neutral-500 truncate">{property.address}</p>
+                {/* Content Section */}
+                <div className="p-3 sm:p-4 flex flex-col gap-2 sm:gap-3 flex-1">
+                    {/* Title */}
+                    <h3 className="font-semibold text-neutral-900 text-[13px] sm:text-[15px] leading-snug group-hover:text-neutral-700 transition-colors line-clamp-1">
+                        {property.title}
+                    </h3>
+
+                    {/* Location & Stats Row */}
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-neutral-500 flex-wrap">
+                        <span className="flex items-center gap-0.5 sm:gap-1 text-neutral-400">
+                            <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
+                            <span className="truncate max-w-[60px] sm:max-w-[80px]">{property.city}</span>
+                        </span>
+                        <span className="text-neutral-300">·</span>
+                        <span className="flex items-center gap-0.5 sm:gap-1">
+                            <BedDouble className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> {property.bedrooms}
+                        </span>
+                        <span className="flex items-center gap-0.5 sm:gap-1">
+                            <Bath className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> {property.bathrooms}
+                        </span>
+                        <span className="flex items-center gap-0.5 sm:gap-1">
+                            <Maximize className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> {property.size}m²
+                        </span>
                     </div>
 
-                    {/* Tech-Forward Data Grid */}
-                    <div className="grid grid-cols-3 gap-2 p-3 rounded-lg bg-neutral-50/50 border border-neutral-100">
-                        <Metric label="Price" value={`N$${(property.price / 1000).toFixed(1)}k`} highlight />
-                        <Metric label="Layout" value={`${property.bedrooms}b / ${property.bathrooms}b`} />
-                        <Metric label="Size" value={`${property.size}m²`} />
-                    </div>
-
-                    <div className="mt-auto flex items-center justify-between pt-2">
-                        <div className="flex items-center gap-1 text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">
-                            <Zap className="w-3 h-3 fill-current" />
-                            <span>Verified Listing</span>
+                    {/* Price & Footer */}
+                    <div className="mt-auto pt-2 sm:pt-3 border-t border-neutral-100 flex items-center justify-between">
+                        <div>
+                            <span className="text-base sm:text-xl font-bold text-neutral-900 tracking-tight">
+                                N${property.price.toLocaleString()}
+                            </span>
+                            <span className="text-neutral-400 text-[10px] sm:text-xs ml-0.5 sm:ml-1">/mo</span>
                         </div>
-                        <div className="text-[11px] text-neutral-400 font-medium">
-                            Added recently
+                        <div className="flex items-center gap-0.5 sm:gap-1 text-[9px] sm:text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 sm:px-2 py-0.5 rounded-full">
+                            <Zap className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
+                            Verified
                         </div>
                     </div>
                 </div>
@@ -255,82 +269,85 @@ export default function HomePage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#fafafa] font-sans text-neutral-900">
+        <div className="min-h-screen bg-[#fafafa] font-sans text-neutral-900 overflow-x-hidden">
             <Header user={currentUser} userRole={currentUser?.role} isLoading={currentUser === undefined} />
 
-            <main className="max-w-[1400px] mx-auto pt-8 pb-24 px-6 md:px-12">
+            <main className="max-w-[1400px] mx-auto pt-4 sm:pt-6 md:pt-8 pb-24 px-4 sm:px-6 md:px-12">
 
                 {/* Minimal Hero Section */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-10 mb-12 border-b border-neutral-100 pb-12">
-                    <div className="max-w-2xl">
-                        <div className="inline-flex items-center gap-2 mb-6 px-3 py-1 rounded-full bg-neutral-100/80 border border-neutral-200/60">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-10 mb-6 md:mb-12 border-b border-neutral-100 pb-6 md:pb-12">
+                    <div className="max-w-2xl w-full">
+                        <div className="inline-flex items-center gap-2 mb-3 sm:mb-6 px-2.5 sm:px-3 py-1 rounded-full bg-neutral-100/80 border border-neutral-200/60">
                             <div className="relative flex h-2 w-2">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                             </div>
-                            <span className="text-[11px] font-mono text-neutral-600 uppercase tracking-widest font-medium">Live Feed</span>
+                            <span className="text-[10px] sm:text-[11px] font-mono text-neutral-600 uppercase tracking-widest font-medium">Live Feed</span>
                         </div>
-                        <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-neutral-900 mb-6 leading-[1.1]">
+                        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold tracking-tight text-neutral-900 mb-3 sm:mb-6 leading-[1.1]">
                             Verified Properties.
                         </h1>
-                        <p className="text-lg md:text-xl text-neutral-500 leading-relaxed font-light max-w-lg">
+                        <p className="text-sm sm:text-base md:text-lg lg:text-xl text-neutral-500 leading-relaxed font-light max-w-lg">
                             Direct access to Namibia's most trusted real estate database. Updated in real-time.
                         </p>
                     </div>
 
                     {/* Search Component - Aligned right */}
-                    <div className="w-full md:w-[420px]">
+                    <div className="w-full md:max-w-[420px] shrink-0">
                         <div className="relative group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 group-focus-within:text-neutral-900 transition-colors" />
+                            <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 group-focus-within:text-neutral-900 transition-colors" />
                             <input
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Search database..."
-                                className="w-full h-14 pl-11 pr-4 bg-neutral-50 hover:bg-white border border-transparent hover:border-neutral-200 rounded-xl text-base transition-all focus:outline-none focus:bg-white focus:border-neutral-300 focus:ring-4 focus:ring-neutral-100 placeholder:text-neutral-400 shadow-sm font-medium"
+                                className="w-full h-12 sm:h-14 pl-10 sm:pl-11 pr-3 sm:pr-4 bg-neutral-50 hover:bg-white border border-transparent hover:border-neutral-200 rounded-xl text-sm sm:text-base transition-all focus:outline-none focus:bg-white focus:border-neutral-300 focus:ring-4 focus:ring-neutral-100 placeholder:text-neutral-400 shadow-sm font-medium"
                             />
                         </div>
                     </div>
                 </div>
 
                 {/* Refined Feed Controls */}
-                <div className="sticky top-[80px] z-30 bg-[#fafafa]/95 backdrop-blur-md py-4 mb-8 -mx-4 px-4 md:px-0 border-b border-transparent transition-all">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-2">
-                            <div className="flex bg-neutral-100/80 p-1 rounded-full border border-neutral-200/60">
+                <div className="sticky top-[64px] md:top-[80px] z-30 bg-[#fafafa]/95 backdrop-blur-md py-3 sm:py-4 mb-4 md:mb-8 -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0 border-b border-transparent transition-all">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
+                        {/* View Toggle and Categories Row */}
+                        <div className="flex items-center gap-2 w-full md:w-auto overflow-hidden">
+                            {/* List/Map Toggle */}
+                            <div className="flex bg-neutral-100/80 p-0.5 sm:p-1 rounded-full border border-neutral-200/60 shrink-0">
                                 <button
                                     onClick={() => setViewMode('grid')}
                                     className={cn(
-                                        "px-4 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-2",
+                                        "px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-semibold transition-all flex items-center gap-1.5 sm:gap-2",
                                         viewMode === 'grid'
                                             ? "bg-white text-neutral-900 shadow-sm"
                                             : "text-neutral-500 hover:text-neutral-700"
                                     )}
                                 >
-                                    <List className="w-3.5 h-3.5" />
-                                    List
+                                    <List className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                    <span className="hidden xs:inline">List</span>
                                 </button>
                                 <button
                                     onClick={() => setViewMode('map')}
                                     className={cn(
-                                        "px-4 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-2",
+                                        "px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-semibold transition-all flex items-center gap-1.5 sm:gap-2",
                                         viewMode === 'map'
                                             ? "bg-white text-neutral-900 shadow-sm"
                                             : "text-neutral-500 hover:text-neutral-700"
                                     )}
                                 >
-                                    <MapIcon className="w-3.5 h-3.5" />
-                                    Map
+                                    <MapIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                    <span className="hidden xs:inline">Map</span>
                                 </button>
                             </div>
-                            <div className="w-px h-6 bg-neutral-200 mx-2 hidden md:block" />
-                            <div className="flex overflow-x-auto no-scrollbar gap-2 items-center pb-2 md:pb-0">
+                            <div className="w-px h-4 sm:h-6 bg-neutral-200 mx-1 sm:mx-2 hidden sm:block" />
+                            {/* Categories - Horizontal scroll on mobile */}
+                            <div className="flex overflow-x-auto no-scrollbar gap-1.5 sm:gap-2 items-center flex-1 min-w-0">
                                 {CATEGORIES.map((cat) => (
                                     <button
                                         key={cat.id}
                                         onClick={() => setActiveCategory(cat.id)}
                                         className={cn(
-                                            "h-9 px-4 rounded-full text-xs font-semibold transition-all whitespace-nowrap border",
+                                            "h-7 sm:h-9 px-2.5 sm:px-4 rounded-full text-[10px] sm:text-xs font-semibold transition-all whitespace-nowrap border shrink-0",
                                             activeCategory === cat.id
                                                 ? "bg-neutral-900 text-white border-neutral-900"
                                                 : "bg-white text-neutral-500 border-neutral-200 hover:border-neutral-300 hover:text-neutral-900"
@@ -342,11 +359,12 @@ export default function HomePage() {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        {/* Filter and Results Count Row */}
+                        <div className="flex items-center justify-between gap-2 sm:gap-3">
                             <Sheet>
                                 <SheetTrigger asChild>
                                     <button className={cn(
-                                        "flex items-center gap-2 h-9 px-4 rounded-full text-xs font-semibold border transition-all",
+                                        "flex items-center gap-1.5 sm:gap-2 h-7 sm:h-9 px-2.5 sm:px-4 rounded-full text-[10px] sm:text-xs font-semibold border transition-all",
                                         activeFilterCount > 0
                                             ? "bg-neutral-900 text-white border-neutral-900"
                                             : "bg-white border-neutral-200 text-neutral-600 hover:border-neutral-300 hover:text-neutral-900"
@@ -354,59 +372,84 @@ export default function HomePage() {
                                         <Filter className="w-3 h-3" />
                                         <span>Filters</span>
                                         {activeFilterCount > 0 && (
-                                            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-white/20 text-[10px]">
+                                            <span className="ml-0.5 sm:ml-1 px-1 sm:px-1.5 py-0.5 rounded-full bg-white/20 text-[9px] sm:text-[10px]">
                                                 {activeFilterCount}
                                             </span>
                                         )}
                                     </button>
                                 </SheetTrigger>
-                                <SheetContent className="overflow-y-auto w-full sm:w-[500px]">
-                                    <SheetHeader className="mb-8">
-                                        <SheetTitle className="text-2xl font-bold">Filters</SheetTitle>
-                                        <SheetDescription>
-                                            Refine your search to find the perfect property.
-                                        </SheetDescription>
+                                <SheetContent className="overflow-y-auto w-full sm:max-w-[400px] md:max-w-[500px]">
+                                    <SheetHeader className="border-b border-neutral-100 pb-4 sm:pb-6">
+                                        <div className="flex items-center justify-between">
+                                            <SheetTitle className="text-lg sm:text-xl font-bold font-[family-name:var(--font-anton)] tracking-wide">
+                                                FILTER FEED
+                                            </SheetTitle>
+                                            <button
+                                                onClick={clearFilters}
+                                                className="text-[10px] sm:text-xs font-medium text-neutral-500 hover:text-neutral-900 underline decoration-neutral-300 underline-offset-4"
+                                            >
+                                                Reset All
+                                            </button>
+                                        </div>
                                     </SheetHeader>
 
-                                    <div className="space-y-8">
+                                    <div className="py-4 sm:py-6 space-y-6 sm:space-y-8 pb-28 sm:pb-32">
                                         {/* Price Range */}
-                                        <div className="space-y-4">
-                                            <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-widest">Price Range (N$)</h3>
-                                            <div className="flex items-center gap-4">
-                                                <div className="space-y-1.5 flex-1">
-                                                    <Label htmlFor="min-price" className="text-xs text-neutral-500">Min Price</Label>
-                                                    <Input
-                                                        id="min-price"
+                                        <div className="space-y-3 sm:space-y-4">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <h3 className="text-[10px] sm:text-xs font-bold text-neutral-900 uppercase tracking-widest font-mono">Price Range</h3>
+                                                <span className="text-[9px] sm:text-[10px] bg-neutral-100 text-neutral-500 px-1.5 sm:px-2 py-0.5 rounded-full font-mono shrink-0">NAD</span>
+                                            </div>
+
+                                            <div className="flex items-center gap-2 sm:gap-4">
+                                                <div className="relative flex-1 group">
+                                                    <span className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 text-neutral-400 font-mono text-xs sm:text-sm">N$</span>
+                                                    <input
                                                         type="number"
-                                                        placeholder="0"
+                                                        placeholder="Min"
                                                         value={priceRange.min}
                                                         onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value })}
+                                                        className="w-full h-10 sm:h-12 pl-8 sm:pl-10 pr-2 sm:pr-4 bg-neutral-50 border border-neutral-200 rounded-lg sm:rounded-xl outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 transition-all font-medium text-xs sm:text-sm"
                                                     />
                                                 </div>
-                                                <div className="space-y-1.5 flex-1">
-                                                    <Label htmlFor="max-price" className="text-xs text-neutral-500">Max Price</Label>
-                                                    <Input
-                                                        id="max-price"
+                                                <div className="w-3 sm:w-4 h-[1px] bg-neutral-300 shrink-0" />
+                                                <div className="relative flex-1 group">
+                                                    <span className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 text-neutral-400 font-mono text-xs sm:text-sm">N$</span>
+                                                    <input
                                                         type="number"
-                                                        placeholder="Any"
+                                                        placeholder="Max"
                                                         value={priceRange.max}
                                                         onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value })}
+                                                        className="w-full h-10 sm:h-12 pl-8 sm:pl-10 pr-2 sm:pr-4 bg-neutral-50 border border-neutral-200 rounded-lg sm:rounded-xl outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 transition-all font-medium text-xs sm:text-sm"
                                                     />
                                                 </div>
+                                            </div>
+
+                                            {/* Quick Chips */}
+                                            <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 no-scrollbar -mx-1 px-1">
+                                                {["5000", "15000", "30000", "50000"].map((price) => (
+                                                    <button
+                                                        key={price}
+                                                        onClick={() => setPriceRange({ ...priceRange, max: price })}
+                                                        className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg border border-neutral-200 bg-white text-[10px] sm:text-xs font-medium text-neutral-600 hover:border-neutral-400 hover:text-neutral-900 transition-all whitespace-nowrap shrink-0"
+                                                    >
+                                                        Under {parseInt(price) / 1000}k
+                                                    </button>
+                                                ))}
                                             </div>
                                         </div>
 
                                         {/* Bedrooms */}
-                                        <div className="space-y-4">
-                                            <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-widest">Bedrooms</h3>
-                                            <div className="flex gap-2">
+                                        <div className="space-y-3 sm:space-y-4">
+                                            <h3 className="text-[10px] sm:text-xs font-bold text-neutral-900 uppercase tracking-widest font-mono">Bedrooms</h3>
+                                            <div className="flex bg-neutral-100 p-0.5 sm:p-1 rounded-lg sm:rounded-xl">
                                                 <button
                                                     onClick={() => setMinBedrooms(null)}
                                                     className={cn(
-                                                        "h-10 px-4 rounded-lg text-sm font-medium border transition-all flex-1",
+                                                        "flex-1 h-8 sm:h-9 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-semibold transition-all shadow-sm",
                                                         minBedrooms === null
-                                                            ? "bg-neutral-900 text-white border-neutral-900"
-                                                            : "bg-white text-neutral-600 border-neutral-200 hover:border-neutral-900"
+                                                            ? "bg-white text-neutral-900 shadow-sm"
+                                                            : "bg-transparent text-neutral-500 hover:text-neutral-900 shadow-none"
                                                     )}
                                                 >
                                                     Any
@@ -416,10 +459,10 @@ export default function HomePage() {
                                                         key={num}
                                                         onClick={() => setMinBedrooms(num)}
                                                         className={cn(
-                                                            "h-10 w-12 rounded-lg text-sm font-medium border transition-all",
+                                                            "flex-1 h-8 sm:h-9 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-semibold transition-all",
                                                             minBedrooms === num
-                                                                ? "bg-neutral-900 text-white border-neutral-900"
-                                                                : "bg-white text-neutral-600 border-neutral-200 hover:border-neutral-900"
+                                                                ? "bg-white text-neutral-900 shadow-sm"
+                                                                : "bg-transparent text-neutral-500 hover:text-neutral-900"
                                                         )}
                                                     >
                                                         {num}+
@@ -429,15 +472,26 @@ export default function HomePage() {
                                         </div>
 
                                         {/* Amenities */}
-                                        <div className="space-y-4">
-                                            <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-widest">Amenities</h3>
-                                            <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-3 sm:space-y-4">
+                                            <h3 className="text-[10px] sm:text-xs font-bold text-neutral-900 uppercase tracking-widest font-mono">Amenities</h3>
+                                            <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
                                                 {AMENITIES_LIST.map((amenity) => (
                                                     <label
                                                         key={amenity}
-                                                        className="flex items-center gap-3 p-3 rounded-lg border border-neutral-200 hover:border-neutral-400 cursor-pointer transition-colors bg-white hover:bg-neutral-50"
+                                                        className={cn(
+                                                            "flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl border cursor-pointer transition-all",
+                                                            selectedAmenities.includes(amenity)
+                                                                ? "bg-neutral-900 border-neutral-900 text-white"
+                                                                : "bg-white border-neutral-200 text-neutral-600 hover:border-neutral-300"
+                                                        )}
                                                     >
                                                         <Checkbox
+                                                            className={cn(
+                                                                "border-2 h-3.5 w-3.5 sm:h-4 sm:w-4",
+                                                                selectedAmenities.includes(amenity)
+                                                                    ? "border-white data-[state=checked]:bg-white data-[state=checked]:text-neutral-900"
+                                                                    : "border-neutral-300"
+                                                            )}
                                                             checked={selectedAmenities.includes(amenity)}
                                                             onCheckedChange={(checked) => {
                                                                 if (checked) {
@@ -447,60 +501,51 @@ export default function HomePage() {
                                                                 }
                                                             }}
                                                         />
-                                                        <span className="text-sm font-medium text-neutral-700">{amenity}</span>
+                                                        <span className="text-[10px] sm:text-xs font-medium leading-tight">{amenity}</span>
                                                     </label>
                                                 ))}
                                             </div>
                                         </div>
                                     </div>
 
-                                    <SheetFooter className="mt-12">
-                                        <div className="flex w-full gap-4">
-                                            <Button
-                                                variant="outline"
-                                                className="flex-1 h-12 rounded-xl"
-                                                onClick={clearFilters}
-                                            >
-                                                Clear All
+                                    <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-white/80 backdrop-blur-xl border-t border-neutral-100 safe-area-bottom">
+                                        <SheetClose asChild>
+                                            <Button className="w-full h-11 sm:h-12 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg sm:rounded-xl font-bold text-sm sm:text-base tracking-wide shadow-lg shadow-neutral-900/10 transition-all hover:scale-[1.01]">
+                                                View {filtered.length} Properties
                                             </Button>
-                                            <SheetClose asChild>
-                                                <Button className="flex-1 h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white">
-                                                    Show Results
-                                                </Button>
-                                            </SheetClose>
-                                        </div>
-                                    </SheetFooter>
+                                        </SheetClose>
+                                    </div>
 
                                 </SheetContent>
                             </Sheet>
 
-                            <span className="hidden md:inline-block w-px h-4 bg-neutral-200" />
-                            <div className="hidden md:flex items-center gap-2 text-xs font-mono text-neutral-400">
-                                <span>{filtered.length} RESULTS</span>
+                            <span className="hidden sm:inline-block w-px h-4 bg-neutral-200" />
+                            <div className="flex items-center gap-2 text-[10px] sm:text-xs font-mono text-neutral-400">
+                                <span>{filtered.length} <span className="hidden xs:inline">RESULTS</span></span>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Content Area */}
-                <div className="min-h-[500px]">
+                <div className="min-h-[300px] sm:min-h-[500px]">
                     {viewMode === 'map' ? (
-                        <div className="h-[600px] w-full rounded-3xl overflow-hidden border border-neutral-200 shadow-sm relative">
+                        <div className="h-[400px] sm:h-[500px] md:h-[600px] w-full rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden border border-neutral-200 shadow-sm relative">
                             <PropertyMap properties={mapData} onPropertyClick={() => { }} />
                         </div>
                     ) : (
                         filtered.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+                            <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
                                 {filtered.map((property) => (
                                     <TrustCard key={property.id} property={property} />
                                 ))}
                             </div>
                         ) : (
-                            <div className="py-32 flex flex-col items-center justify-center text-center opacity-60">
-                                <Search className="w-12 h-12 text-neutral-300 mb-4" />
-                                <h3 className="text-lg font-medium text-neutral-900">No properties found</h3>
-                                <p className="text-sm text-neutral-500">Adjust your filters to see more results</p>
-                                <Button variant="link" onClick={clearFilters} className="text-blue-600">
+                            <div className="py-16 sm:py-24 md:py-32 flex flex-col items-center justify-center text-center opacity-60 px-4">
+                                <Search className="w-10 h-10 sm:w-12 sm:h-12 text-neutral-300 mb-3 sm:mb-4" />
+                                <h3 className="text-base sm:text-lg font-medium text-neutral-900">No properties found</h3>
+                                <p className="text-xs sm:text-sm text-neutral-500">Adjust your filters to see more results</p>
+                                <Button variant="link" onClick={clearFilters} className="text-blue-600 text-sm">
                                     Clear filters
                                 </Button>
                             </div>
