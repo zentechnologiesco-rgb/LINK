@@ -55,7 +55,6 @@ export const TrustCard = memo(function TrustCard({ property }: TrustCardProps) {
                         aspectRatio="4/3"
                         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                         className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
-                        fallbackSrc="/window.svg"
                     />
 
                     {/* Top Row: Type Badge & Save */}

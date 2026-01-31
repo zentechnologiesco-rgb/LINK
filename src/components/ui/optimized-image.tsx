@@ -1,15 +1,11 @@
 "use client"
 
 import Image, { ImageProps } from "next/image"
-import { useState, useCallback, useEffect } from "react"
 import { cn } from "@/lib/utils"
-import { Skeleton } from "./skeleton"
 
 interface OptimizedImageProps extends Omit<ImageProps, 'onLoad' | 'onError'> {
-    fallbackSrc?: string
-    showSkeleton?: boolean
-    aspectRatio?: 'video' | 'square' | '4/3' | '3/2' | '16/9'
     containerClassName?: string
+    aspectRatio?: 'video' | 'square' | '4/3' | '3/2' | '16/9'
 }
 
 const aspectRatioClasses = {
@@ -23,96 +19,57 @@ const aspectRatioClasses = {
 export function OptimizedImage({
     src,
     alt,
-    fallbackSrc = '/window.svg',
-    showSkeleton = true,
-    aspectRatio,
     className,
     containerClassName,
     fill,
+    aspectRatio,
     sizes,
     priority,
     ...props
 }: OptimizedImageProps) {
-    const [isLoading, setIsLoading] = useState(true)
-    const [hasError, setHasError] = useState(false)
-    const [imageSrc, setImageSrc] = useState(src)
-
-    // Sync imageSrc when src prop changes (important for Convex dynamic URLs)
-    useEffect(() => {
-        if (src && src !== imageSrc && !hasError) {
-            setImageSrc(src)
-            setIsLoading(true)
-        }
-    }, [src, imageSrc, hasError])
-
-    const handleLoad = useCallback(() => {
-        setIsLoading(false)
-    }, [])
-
-    const handleError = useCallback(() => {
-        setHasError(true)
-        setIsLoading(false)
-        setImageSrc(fallbackSrc)
-    }, [fallbackSrc])
-
-    // Optimized sizes for different contexts
-    const optimizedSizes = sizes || (fill
-        ? "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-        : undefined
+    // For Convex storage images, skip Next.js optimization to avoid issues
+    const isConvexImage = typeof src === 'string' && (
+        src.includes('convex.cloud') || src.includes('convex.site')
     )
 
-    // When fill is used, container needs explicit dimensions
-    // If aspectRatio is provided, use that for self-sizing (relative position)
-    // If no aspectRatio, use absolute inset-0 to fill positioned parent
-    // Note: We still need 'relative' for the nested Image with fill to work correctly
-    const usesAbsoluteFill = fill && !aspectRatio
-
-    const containerStyles = cn(
-        "relative overflow-hidden bg-neutral-100",
-        // Minimum height to avoid "height 0" warnings from Next.js when parent collapses
-        // Use a larger minimum for fill mode since parent may not have dimensions during initial render
-        usesAbsoluteFill ? "min-h-[100px]" : "min-h-[1px]",
-        // Additional absolute positioning to fill parent when no aspectRatio
-        usesAbsoluteFill && "absolute inset-0 h-full w-full",
-        aspectRatio && aspectRatioClasses[aspectRatio],
-        containerClassName
-    )
-
-    return (
-        <div className={containerStyles}>
-            {/* Skeleton loader */}
-            {showSkeleton && isLoading && (
-                <Skeleton
-                    className="absolute inset-0 z-10"
-                    animation="shimmer"
+    // If using fill with aspectRatio, wrap in a container
+    if (fill && aspectRatio) {
+        return (
+            <div className={cn(
+                "relative overflow-hidden",
+                aspectRatioClasses[aspectRatio],
+                containerClassName
+            )}>
+                <Image
+                    src={src}
+                    alt={alt}
+                    fill
+                    sizes={sizes}
+                    priority={priority}
+                    unoptimized={isConvexImage}
+                    className={cn("object-cover", className)}
+                    {...props}
                 />
-            )}
+            </div>
+        )
+    }
 
-            <Image
-                src={hasError ? fallbackSrc : imageSrc}
-                alt={alt}
-                fill={fill}
-                sizes={optimizedSizes}
-                priority={priority}
-                className={cn(
-                    "transition-opacity duration-300",
-                    isLoading ? "opacity-0" : "opacity-100",
-                    className
-                )}
-                onLoad={handleLoad}
-                onError={handleError}
-                // Performance optimizations
-                loading={priority ? undefined : "lazy"}
-                decoding="async"
-                // Skip optimization for Convex storage images to avoid timeouts
-                unoptimized={typeof imageSrc === 'string' && (imageSrc.includes('convex.cloud') || imageSrc.includes('convex.site'))}
-                {...props}
-            />
-        </div>
+    // Simple pass-through for all other cases
+    return (
+        <Image
+            src={src}
+            alt={alt}
+            fill={fill}
+            sizes={sizes}
+            priority={priority}
+            unoptimized={isConvexImage}
+            className={className}
+            {...props}
+        />
     )
 }
 
-// Thumbnail variant for property cards - smaller size hints
+// Thumbnail variant for property cards
 export function PropertyThumbnail({
     src,
     alt,
@@ -172,7 +129,6 @@ export function AvatarImage({
                 width={size}
                 height={size}
                 className="object-cover"
-                loading="lazy"
                 {...props}
             />
         </div>

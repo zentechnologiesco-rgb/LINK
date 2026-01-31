@@ -121,7 +121,6 @@ function RecentPropertyCard({
                     aspectRatio="4/3"
                     sizes="(max-width: 640px) 160px, (max-width: 768px) 200px, 220px"
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
-                    fallbackSrc="/window.svg"
                 />
 
                 {/* Remove Button */}
