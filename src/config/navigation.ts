@@ -23,7 +23,6 @@ export interface NavItem {
 
 export const publicNavItems: NavItem[] = [
     { label: 'Home', href: '/', icon: Home },
-    { label: 'Search', href: '/search', icon: Search },
 ]
 
 export const authenticatedNavItems: NavItem[] = [

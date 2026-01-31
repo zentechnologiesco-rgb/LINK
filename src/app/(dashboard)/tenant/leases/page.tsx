@@ -73,7 +73,7 @@ function TenantLeasesContent() {
                     <p className="text-neutral-500 mb-8 max-w-sm text-sm leading-relaxed">
                         When a landlord sends you a lease agreement, it will appear here for you to review and sign.
                     </p>
-                    <Link href="/search">
+                    <Link href="/">
                         <Button className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl h-11 px-8 font-medium shadow-sm transition-all hover:scale-[1.01]">
                             <Search className="mr-2 h-4 w-4" />
                             Find a Home
