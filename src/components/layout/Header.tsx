@@ -63,7 +63,7 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
     const getDashboardLink = () => {
         if (currentRole === 'landlord') return '/landlord/properties'
         if (currentRole === 'admin') return '/admin'
-        return '/tenant'
+        return '/tenant/saved'
     }
 
     return (
@@ -133,8 +133,8 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
 
                                         <DropdownMenuSeparator className="bg-black/5" />
 
-                                        {/* Dashboard - Tenant and Admin only (landlords go directly to My Properties) */}
-                                        {currentRole !== 'landlord' && (
+                                        {/* Dashboard - Admin only (landlords/tenants go directly to their first page) */}
+                                        {currentRole === 'admin' && (
                                             <DropdownMenuItem
                                                 className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
                                                 onClick={() => router.push(getDashboardLink())}

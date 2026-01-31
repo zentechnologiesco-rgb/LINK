@@ -57,7 +57,6 @@ const landlordNavItems: NavItem[] = [
 ]
 
 const tenantNavItems: NavItem[] = [
-    { label: 'Overview', href: '/tenant', icon: LayoutDashboard },
     { label: 'My Favorites', href: '/tenant/saved', icon: Heart },
     { label: 'My Leases', href: '/tenant/leases', icon: FileCheck },
     { label: 'Payments', href: '/tenant/payments', icon: Wallet, tag: 'Soon' },
@@ -97,7 +96,7 @@ export function DashboardLayout({ children, title = 'Dashboard', user }: Dashboa
     const navItems = getNavItems()
 
     const isActive = (href: string) => {
-        if (href === '/tenant' || href === '/admin') {
+        if (href === '/admin') {
             return pathname === href
         }
         return pathname?.startsWith(href)
