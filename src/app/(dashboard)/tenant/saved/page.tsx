@@ -32,7 +32,7 @@ export default function SavedPropertiesPage() {
         size: p.sizeSqm ?? 0,
         type: p.propertyType,
         images: p.mainImage ? [p.mainImage] : [],
-        amenities: p.amenities || [],
+        amenities: p.amenityNames || [],
         description: p.description,
         coordinates: null
     }))

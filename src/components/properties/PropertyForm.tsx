@@ -22,45 +22,7 @@ import { useMutation, useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 import { cn } from '@/lib/utils'
-
-// Hardcoded amenities list
-const AMENITIES = [
-    // Security
-    { id: 'security-247', name: '24/7 Security', category: 'security' },
-    { id: 'security-gate', name: 'Security Gate', category: 'security' },
-    { id: 'cctv', name: 'CCTV Cameras', category: 'security' },
-    { id: 'electric-fence', name: 'Electric Fence', category: 'security' },
-    { id: 'alarm', name: 'Alarm System', category: 'security' },
-
-    // Utilities
-    { id: 'borehole', name: 'Borehole Water', category: 'utilities' },
-    { id: 'solar', name: 'Solar Panels', category: 'utilities' },
-    { id: 'generator', name: 'Backup Generator', category: 'utilities' },
-    { id: 'fiber', name: 'Fiber Internet', category: 'utilities' },
-
-    // Outdoor
-    { id: 'pool', name: 'Swimming Pool', category: 'outdoor' },
-    { id: 'garden', name: 'Garden', category: 'outdoor' },
-    { id: 'braai', name: 'Braai Area', category: 'outdoor' },
-    { id: 'parking', name: 'Covered Parking', category: 'outdoor' },
-    { id: 'garage', name: 'Garage', category: 'outdoor' },
-    { id: 'balcony', name: 'Balcony', category: 'outdoor' },
-
-    // Indoor
-    { id: 'aircon', name: 'Air Conditioning', category: 'indoor' },
-    { id: 'wardrobes', name: 'Built-in Wardrobes', category: 'indoor' },
-    { id: 'kitchen', name: 'Kitchen Appliances', category: 'indoor' },
-    { id: 'washing', name: 'Washing Machine', category: 'indoor' },
-    { id: 'furnished', name: 'Furnished', category: 'indoor' },
-    { id: 'fireplace', name: 'Fireplace', category: 'indoor' },
-
-    // Community
-    { id: 'pets', name: 'Pet Friendly', category: 'community' },
-    { id: 'gym', name: 'Gym Access', category: 'community' },
-    { id: 'schools', name: 'Near Schools', category: 'community' },
-    { id: 'shopping', name: 'Near Shopping', category: 'community' },
-    { id: 'transport', name: 'Near Public Transport', category: 'community' },
-]
+import { AMENITIES, PROPERTY_TYPES, PROPERTY_TYPE_LABELS, PropertyType } from '@/constants/property'
 
 interface PropertyFormProps {
     mode?: 'create' | 'edit'
@@ -268,13 +230,11 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                                         <SelectValue placeholder="Select type" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="apartment">Apartment</SelectItem>
-                                        <SelectItem value="house">House</SelectItem>
-                                        <SelectItem value="room">Room</SelectItem>
-                                        <SelectItem value="studio">Studio</SelectItem>
-                                        <SelectItem value="penthouse">Penthouse</SelectItem>
-                                        <SelectItem value="townhouse">Townhouse</SelectItem>
-                                        <SelectItem value="commercial">Commercial</SelectItem>
+                                        {PROPERTY_TYPES.map((type) => (
+                                            <SelectItem key={type} value={type}>
+                                                {PROPERTY_TYPE_LABELS[type]}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>

@@ -56,8 +56,7 @@ export default defineSchema({
     bedrooms: v.optional(v.number()),
     bathrooms: v.optional(v.number()),
     sizeSqm: v.optional(v.number()),
-    amenities: v.optional(v.array(v.id("amenities"))),
-    amenityNames: v.optional(v.array(v.string())), // Hardcoded amenity names
+    amenityNames: v.optional(v.array(v.string())), // Amenity names as strings
     petPolicy: v.optional(v.string()),
     utilitiesIncluded: v.optional(v.array(v.string())),
     images: v.optional(v.array(v.id("_storage"))),
@@ -74,12 +73,6 @@ export default defineSchema({
     .index("by_available", ["isAvailable"])
     .index("by_approvalStatus", ["approvalStatus"]),
 
-  // Namibia-specific Amenities
-  amenities: defineTable({
-    name: v.string(),
-    icon: v.optional(v.string()),
-    category: v.optional(v.string()), // security, outdoor, utilities, etc.
-  }),
 
   // Saved Properties (Favorites)
   savedProperties: defineTable({
@@ -213,50 +206,6 @@ export default defineSchema({
     .index("by_tenantId", ["tenantId"])
     .index("by_landlordId", ["landlordId"])
     .index("by_status", ["status"]),
-
-  // Maintenance Requests
-  maintenanceRequests: defineTable({
-    propertyId: v.id("properties"),
-    tenantId: v.id("users"),
-    title: v.string(),
-    description: v.optional(v.string()),
-    priority: v.union(
-      v.literal("low"),
-      v.literal("medium"),
-      v.literal("high"),
-      v.literal("urgent")
-    ),
-    status: v.union(
-      v.literal("open"),
-      v.literal("in_progress"),
-      v.literal("resolved"),
-      v.literal("closed")
-    ),
-    images: v.optional(v.array(v.id("_storage"))),
-    resolvedAt: v.optional(v.number()),
-  })
-    .index("by_propertyId", ["propertyId"])
-    .index("by_tenantId", ["tenantId"])
-    .index("by_status", ["status"])
-    .index("by_priority", ["priority"]),
-
-  // Reviews
-  reviews: defineTable({
-    reviewerId: v.id("users"),
-    revieweeId: v.id("users"),
-    propertyId: v.optional(v.id("properties")),
-    rating: v.number(), // 1-5
-    comment: v.optional(v.string()),
-    type: v.union(
-      v.literal("tenant_review"),
-      v.literal("landlord_review"),
-      v.literal("property_review")
-    ),
-  })
-    .index("by_reviewerId", ["reviewerId"])
-    .index("by_revieweeId", ["revieweeId"])
-    .index("by_propertyId", ["propertyId"])
-    .index("by_type", ["type"]),
 
   // Audit Logs
   auditLogs: defineTable({

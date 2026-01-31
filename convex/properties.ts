@@ -16,7 +16,6 @@ export const create = mutation({
         bedrooms: v.optional(v.number()),
         bathrooms: v.optional(v.number()),
         sizeSqm: v.optional(v.number()),
-        amenities: v.optional(v.array(v.id("amenities"))),
         amenityNames: v.optional(v.array(v.string())),
         petPolicy: v.optional(v.string()),
         utilitiesIncluded: v.optional(v.array(v.string())),
@@ -151,24 +150,11 @@ export const getById = query({
             avatarUrl: landlordAvatarUrl,
         } : null;
 
-        // Resolve amenities
-        let amenityNames: string[] = [];
-        if (property.amenities && property.amenities.length > 0) {
-            const amenityDocs = await Promise.all(
-                property.amenities.map(async (amenityId) => {
-                    return await ctx.db.get(amenityId);
-                })
-            );
-            amenityNames = amenityDocs
-                .filter((a): a is NonNullable<typeof a> => a !== null)
-                .map((a) => a.name);
-        }
-
         return {
             ...property,
             imageUrls,
             landlordInfo,
-            amenityNames,
+            amenityNames: property.amenityNames || [],
         };
     },
 });
@@ -276,7 +262,6 @@ export const update = mutation({
         bedrooms: v.optional(v.number()),
         bathrooms: v.optional(v.number()),
         sizeSqm: v.optional(v.number()),
-        amenities: v.optional(v.array(v.id("amenities"))),
         amenityNames: v.optional(v.array(v.string())),
         petPolicy: v.optional(v.string()),
         utilitiesIncluded: v.optional(v.array(v.string())),

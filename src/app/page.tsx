@@ -128,7 +128,7 @@ export default function HomePage() {
             size: p.sizeSqm ?? 0,
             type: p.propertyType,
             images: p.imageUrls ?? [],
-            amenities: p.amenities || [],
+            amenities: p.amenityNames || [],
             coordinates: p.coordinates ?? null,
         }))
     }, [properties])

@@ -92,23 +92,3 @@ export const updateRole = mutation({
         return { success: true };
     },
 });
-
-// Verify user (admin only)
-export const verifyUser = mutation({
-    args: {
-        userId: v.id("users"),
-        isVerified: v.boolean(),
-    },
-    handler: async (ctx, args) => {
-        const currentUserId = await auth.getUserId(ctx);
-        if (!currentUserId) throw new Error("Not authenticated");
-
-        const currentUser = await ctx.db.get(currentUserId);
-        if (currentUser?.role !== "admin") {
-            throw new Error("Only admins can verify users");
-        }
-
-        await ctx.db.patch(args.userId, { isVerified: args.isVerified });
-        return { success: true };
-    },
-});
