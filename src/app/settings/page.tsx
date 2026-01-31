@@ -5,10 +5,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { User, Bell, Shield, CreditCard, Loader2, Camera, Check } from 'lucide-react'
+import { User, Bell, Shield, CreditCard, Loader2, Camera, Check, ChevronLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
+import Link from 'next/link'
+import { Header } from '@/components/layout/Header'
+import { MobileNav } from '@/components/layout/MobileNav'
 
 const settingsTabs = [
     { id: 'profile', label: 'Profile', icon: User },
@@ -121,8 +124,17 @@ function SettingsContent() {
 
     return (
         <div className="min-h-screen bg-white">
-            <div className="max-w-6xl mx-auto px-4 md:px-6 py-12">
+            <Header user={user} userRole={user?.role} />
 
+            <div className="max-w-[2000px] mx-auto px-4 md:px-6 py-8 pt-24">
+                {/* Back Link */}
+                <Link
+                    href="/"
+                    className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-black/40 hover:text-black transition-colors mb-8"
+                >
+                    <ChevronLeft className="h-4 w-4" />
+                    Back
+                </Link>
 
                 <div className="flex flex-col md:flex-row gap-12">
                     {/* Sidebar Tabs */}
@@ -362,6 +374,8 @@ function SettingsContent() {
                     </div>
                 </div>
             </div>
+
+            <MobileNav user={user} />
         </div>
     )
 }

@@ -83,7 +83,7 @@ export function LeaseDetailClient({ lease }: LeaseDetailClientProps) {
     }
 
     return (
-        <div className="px-6 py-8 max-w-7xl mx-auto">
+        <div className="px-4 py-8 md:px-6 max-w-[2000px] mx-auto">
             {/* Header */}
             <div className="mb-10">
                 <Link

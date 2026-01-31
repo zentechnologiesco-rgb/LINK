@@ -40,7 +40,7 @@ function LandlordLeasesContent() {
     )
 
     return (
-        <div className="px-8 py-8 max-w-7xl mx-auto space-y-12">
+        <div className="px-4 py-8 md:px-6 max-w-[2000px] mx-auto space-y-12">
             {/* Header */}
             <div className="flex justify-end">
                 {leases.length > 0 && (

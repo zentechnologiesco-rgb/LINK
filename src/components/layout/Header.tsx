@@ -1,135 +1,259 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Menu, Search, User } from 'lucide-react'
-import { toast } from 'sonner'
-import { Input } from '@/components/ui/input'
-import { getDisplayName, getInitials } from '@/lib/user-name'
-import { useQuery } from "convex/react"
 import { useAuthActions } from "@convex-dev/auth/react"
-import { api } from "../../../convex/_generated/api"
+import { toast } from 'sonner'
+import { getDisplayName, getInitials } from '@/lib/user-name'
+import {
+    Menu,
+    User,
+    Settings,
+    LogOut,
+    Building2,
+    Heart,
+    MessageSquare,
+    LayoutDashboard,
+} from 'lucide-react'
 
-export function Header() {
-    const user = useQuery(api.users.currentUser)
+interface HeaderProps {
+    user?: any
+    userRole?: 'tenant' | 'landlord' | 'admin' | null
+    isLoading?: boolean
+}
+
+export function Header({ user, userRole, isLoading }: HeaderProps) {
     const router = useRouter()
     const { signOut } = useAuthActions()
+    const [isScrolled, setIsScrolled] = useState(false)
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 10)
+        }
+        window.addEventListener('scroll', handleScroll)
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [])
 
     const handleSignOut = async () => {
-        await signOut()
-        router.push('/')
-        router.refresh()
-        toast.success('Signed out successfully')
+        try {
+            await signOut()
+            router.push('/')
+            router.refresh()
+            toast.success('Signed out successfully')
+        } catch (error) {
+            toast.error('Failed to sign out')
+        }
+    }
+
+    const currentRole = userRole || user?.role
+
+    // Get dashboard link based on role
+    const getDashboardLink = () => {
+        if (currentRole === 'landlord') return '/landlord'
+        if (currentRole === 'admin') return '/admin'
+        return '/tenant'
     }
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4">
-                <div className="flex items-center gap-6">
-                    <Link href="/" className="flex items-center space-x-2">
-                        <span className="text-xl font-bold tracking-tight">LINK</span>
-                    </Link>
+        <>
+            <header
+                className={cn(
+                    'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+                    isScrolled
+                        ? 'bg-white/80 backdrop-blur-md border-b border-neutral-200/60'
+                        : 'bg-transparent border-b border-transparent'
+                )}
+            >
+                <div className="max-w-[2000px] mx-auto px-4 md:px-6">
+                    <div className="flex items-center justify-between h-16 md:h-20">
+                        {/* Logo */}
+                        <Link
+                            href="/"
+                            className="flex items-center gap-2 shrink-0"
+                        >
+                            <span className="font-[family-name:var(--font-anton)] text-2xl md:text-3xl tracking-wide text-black">
+                                LINK
+                            </span>
+                        </Link>
 
-                    {/* Desktop Nav */}
-                    <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-                        <Link href="/" className="transition-colors hover:text-foreground/80 text-foreground/60">
-                            Rent
-                        </Link>
-                        <Link href="#" className="transition-colors hover:text-foreground/80 text-foreground/60">
-                            Buy
-                        </Link>
-                        <Link href="#" className="transition-colors hover:text-foreground/80 text-foreground/60">
-                            Sell
-                        </Link>
-                        <Link href="#" className="transition-colors hover:text-foreground/80 text-foreground/60">
-                            Manage Property
-                        </Link>
-                    </nav>
-                </div>
+                        {/* Right Side */}
+                        <div className="flex items-center gap-2 md:gap-3">
+                            {/* Become a Host - Desktop */}
+                            {user && currentRole === 'tenant' && (
+                                <Link href="/become-landlord" className="hidden md:block">
+                                    <Button
+                                        variant="ghost"
+                                        className="rounded-full text-sm font-medium hover:bg-gray-100"
+                                    >
+                                        Become a Host
+                                    </Button>
+                                </Link>
+                            )}
 
-                <div className="flex items-center gap-2 md:gap-4">
-                    {/* Mobile Menu */}
-                    <Sheet>
-                        <SheetTrigger asChild>
-                            <Button variant="ghost" className="md:hidden h-8 w-8 px-0">
-                                <Menu className="h-5 w-5" />
-                                <span className="sr-only">Toggle menu</span>
-                            </Button>
-                        </SheetTrigger>
-                        <SheetContent side="left">
-                            <div className="grid gap-4 py-4">
-                                <Link href="/" className="text-lg font-semibold">
-                                    Rent
-                                </Link>
-                                <Link href="#" className="text-lg font-semibold">
-                                    Buy
-                                </Link>
-                                <Link href="#" className="text-lg font-semibold">
-                                    Manage Property
-                                </Link>
-                            </div>
-                        </SheetContent>
-                    </Sheet>
+                            {/* User Menu */}
+                            {isLoading ? (
+                                <div className="h-10 w-10 rounded-full bg-gray-100 animate-pulse" />
+                            ) : user ? (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button className="flex items-center gap-2 p-1 pr-2 md:pr-3 rounded-full hover:bg-neutral-100 transition-all border border-transparent hover:border-neutral-200">
+                                            <Menu className="h-4 w-4 ml-2 text-neutral-600" />
+                                            <Avatar className="h-8 w-8 border-none">
+                                                <AvatarImage src={user.avatarUrl} alt={user.email || ''} className="object-cover" />
+                                                <AvatarFallback className="bg-gray-900 text-white font-medium text-xs">
+                                                    {getInitials(user) || user.email?.charAt(0).toUpperCase()}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                        className="w-64 p-2 rounded-2xl border border-black/5 bg-white shadow-xl shadow-black/10 mt-2"
+                                        align="end"
+                                    >
+                                        <div className="px-3 py-2 mb-1">
+                                            <p className="text-sm font-semibold text-black">
+                                                {getDisplayName(user)}
+                                            </p>
+                                            <p className="text-xs text-black/50 truncate">
+                                                {user.email}
+                                            </p>
+                                        </div>
 
-                    {user === undefined ? (
-                        // Auth Loading State
-                        <div className="h-9 w-9 bg-gray-100 rounded-full animate-pulse" />
-                    ) : user ? (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                                    <Avatar className="h-9 w-9">
-                                        <AvatarImage src={user.avatarUrl} alt={user.email || ''} />
-                                        <AvatarFallback>{getInitials(user) || user.email?.charAt(0).toUpperCase()}</AvatarFallback>
-                                    </Avatar>
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-56" align="end" forceMount>
-                                <DropdownMenuLabel className="font-normal">
-                                    <div className="flex flex-col space-y-1">
-                                        <p className="text-sm font-medium leading-none">{getDisplayName(user)}</p>
-                                        <p className="text-xs leading-none text-muted-foreground">
-                                            {user.email}
-                                        </p>
-                                    </div>
-                                </DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => router.push(`/dashboard/${user.role || 'tenant'}`)}>
-                                    Dashboard
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => router.push('/profile')}>
-                                    Profile
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={handleSignOut}>
-                                    Log out
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    ) : (
-                        <div className="flex items-center gap-2">
-                            <Link href="/sign-in">
-                                <Button variant="ghost" size="sm">Log in</Button>
-                            </Link>
-                            <Link href="/sign-up">
-                                <Button size="sm" className="bg-black hover:bg-zinc-800 text-white">Sign up</Button>
-                            </Link>
+                                        <DropdownMenuSeparator className="bg-black/5" />
+
+                                        {/* Dashboard - All Roles */}
+                                        <DropdownMenuItem
+                                            className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
+                                            onClick={() => router.push(getDashboardLink())}
+                                        >
+                                            <LayoutDashboard className="mr-3 h-4 w-4 opacity-70" />
+                                            Dashboard
+                                        </DropdownMenuItem>
+
+                                        {/* Tenant-specific links */}
+                                        {currentRole === 'tenant' && (
+                                            <>
+                                                <DropdownMenuItem
+                                                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
+                                                    onClick={() => router.push('/tenant/saved')}
+                                                >
+                                                    <Heart className="mr-3 h-4 w-4 opacity-70" />
+                                                    Saved Properties
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
+                                                    onClick={() => router.push('/tenant/applications')}
+                                                >
+                                                    <Building2 className="mr-3 h-4 w-4 opacity-70" />
+                                                    My Applications
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
+
+                                        {/* Landlord-specific links */}
+                                        {currentRole === 'landlord' && (
+                                            <>
+                                                <DropdownMenuItem
+                                                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
+                                                    onClick={() => router.push('/landlord/properties')}
+                                                >
+                                                    <Building2 className="mr-3 h-4 w-4 opacity-70" />
+                                                    My Properties
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
+                                                    onClick={() => router.push('/landlord/leases')}
+                                                >
+                                                    <Heart className="mr-3 h-4 w-4 opacity-70" />
+                                                    Leases
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
+
+                                        {/* Admin-specific links */}
+                                        {currentRole === 'admin' && (
+                                            <>
+                                                <DropdownMenuItem
+                                                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
+                                                    onClick={() => router.push('/admin/properties')}
+                                                >
+                                                    <Building2 className="mr-3 h-4 w-4 opacity-70" />
+                                                    Manage Properties
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
+                                                    onClick={() => router.push('/admin/landlord-requests')}
+                                                >
+                                                    <User className="mr-3 h-4 w-4 opacity-70" />
+                                                    Verification Queue
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
+
+                                        {/* Messages - All Roles */}
+                                        <DropdownMenuItem
+                                            className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
+                                            onClick={() => router.push('/chat')}
+                                        >
+                                            <MessageSquare className="mr-3 h-4 w-4 opacity-70" />
+                                            Messages
+                                        </DropdownMenuItem>
+
+                                        <DropdownMenuSeparator className="bg-black/5" />
+
+                                        <DropdownMenuItem
+                                            className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
+                                            onClick={() => router.push('/settings')}
+                                        >
+                                            <Settings className="mr-3 h-4 w-4 opacity-70" />
+                                            Settings
+                                        </DropdownMenuItem>
+
+                                        <DropdownMenuItem
+                                            onClick={handleSignOut}
+                                            className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-red-600 focus:bg-red-50 transition-colors"
+                                        >
+                                            <LogOut className="mr-3 h-4 w-4 opacity-70" />
+                                            Sign Out
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            ) : (
+                                <div className="flex items-center gap-2">
+                                    <Link href="/sign-in">
+                                        <Button
+                                            variant="ghost"
+                                            className="rounded-full text-sm font-medium hover:bg-gray-100"
+                                        >
+                                            Sign In
+                                        </Button>
+                                    </Link>
+                                    <Link href="/sign-up" className="hidden md:block">
+                                        <Button className="rounded-full bg-black hover:bg-gray-800 text-white text-sm font-medium px-5">
+                                            Sign Up
+                                        </Button>
+                                    </Link>
+                                </div>
+                            )}
                         </div>
-                    )}
+                    </div>
                 </div>
-            </div>
-        </header>
+            </header>
+
+            {/* Spacer for fixed header */}
+            <div className="h-16 md:h-20" />
+        </>
     )
 }

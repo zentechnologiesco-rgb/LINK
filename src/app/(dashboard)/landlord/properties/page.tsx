@@ -69,7 +69,7 @@ function LandlordPropertiesContent() {
     }
 
     return (
-        <div className="px-8 py-10 max-w-[1600px] mx-auto pb-24">
+        <div className="px-4 py-8 md:px-6 md:py-10 max-w-[2000px] mx-auto pb-24">
             {/* Header */}
             <div className="flex justify-end mb-12">
                 <Link href="/landlord/properties/new">

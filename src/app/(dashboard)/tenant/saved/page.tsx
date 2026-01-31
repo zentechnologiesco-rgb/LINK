@@ -23,7 +23,7 @@ export default function SavedPropertiesPage() {
 
     if (!savedProperties || savedProperties.length === 0) {
         return (
-            <div className="px-8 py-8 md:px-12 md:py-12 max-w-7xl mx-auto">
+            <div className="px-4 py-8 md:px-6 md:py-12 max-w-[2000px] mx-auto">
 
 
                 <div className="flex flex-col items-center justify-center py-24 px-8 text-center rounded-3xl border border-dashed border-black/10 bg-gray-50/50">
@@ -48,7 +48,7 @@ export default function SavedPropertiesPage() {
     }
 
     return (
-        <div className="px-8 py-8 md:px-12 md:py-12 max-w-7xl mx-auto">
+        <div className="px-4 py-8 md:px-6 md:py-12 max-w-[2000px] mx-auto">
             {/* Header */}
             <div className="flex justify-end mb-12">
                 <Link href="/search">

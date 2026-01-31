@@ -60,7 +60,7 @@ export default function LandlordPaymentsPage() {
             </div>
 
             {/* Existing Content (Blurred & Disabled) */}
-            <div className="px-8 py-10 max-w-[1600px] mx-auto pb-24 opacity-40 pointer-events-none filter blur-[2px] UserSelect-none">
+            <div className="px-4 py-8 md:px-6 md:py-10 max-w-[2000px] mx-auto pb-24 opacity-40 pointer-events-none filter blur-[2px] UserSelect-none">
                 {/* Header */}
                 <div className="flex justify-end mb-12">
                     <div className="flex items-center gap-3">

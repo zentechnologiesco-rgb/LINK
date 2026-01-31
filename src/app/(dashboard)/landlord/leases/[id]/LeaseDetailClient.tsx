@@ -148,7 +148,7 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
     const signedAt = lease.signed_at || lease.signedAt
 
     return (
-        <div className="px-6 py-8 max-w-7xl mx-auto">
+        <div className="px-4 py-8 md:px-6 max-w-[2000px] mx-auto">
             {/* Header */}
             <div className="mb-8">
                 <Link

@@ -40,7 +40,7 @@ function TenantLeasesContent() {
     )
 
     return (
-        <div className="px-6 py-8 max-w-5xl mx-auto space-y-12 pb-24">
+        <div className="px-4 py-8 md:px-6 max-w-[2000px] mx-auto space-y-12 pb-24">
 
 
             {/* Stats */}
