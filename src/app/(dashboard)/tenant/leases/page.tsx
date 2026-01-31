@@ -22,8 +22,8 @@ function TenantLeasesContent() {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="h-5 w-32 bg-black/5 rounded animate-pulse" />
-                    <div className="h-4 w-24 bg-black/5 rounded animate-pulse" />
+                    <div className="h-6 w-32 bg-neutral-100 rounded animate-pulse" />
+                    <div className="h-4 w-24 bg-neutral-100 rounded animate-pulse" />
                 </div>
             </div>
         )
@@ -40,8 +40,12 @@ function TenantLeasesContent() {
     )
 
     return (
-        <div className="px-4 py-8 md:px-6 max-w-[2000px] mx-auto space-y-12 pb-24">
+        <div className="px-4 py-8 md:px-6 max-w-[1400px] mx-auto space-y-12 pb-24">
 
+            <div className="flex flex-col gap-2">
+                <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Lease Agreements</h1>
+                <p className="text-neutral-500">Manage your active and pending lease agreements.</p>
+            </div>
 
             {/* Stats */}
             {leases.length > 0 && (
@@ -59,18 +63,18 @@ function TenantLeasesContent() {
 
             {/* Empty State */}
             {leases.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20 px-8 text-center rounded-3xl border border-black/5 bg-gray-50/50">
-                    <div className="h-16 w-16 rounded-full bg-white shadow-sm flex items-center justify-center mb-6">
-                        <FileText className="h-8 w-8 text-black/20" />
+                <div className="flex flex-col items-center justify-center py-20 px-8 text-center rounded-2xl border border-neutral-200 bg-neutral-50/50">
+                    <div className="h-16 w-16 rounded-full bg-white border border-neutral-100 flex items-center justify-center mb-6">
+                        <FileText className="h-8 w-8 text-neutral-300" />
                     </div>
-                    <h3 className="font-[family-name:var(--font-anton)] text-xl uppercase tracking-wide text-black mb-2">
+                    <h3 className="text-xl font-bold text-neutral-900 mb-2">
                         No leases yet
                     </h3>
-                    <p className="text-black/50 mb-8 max-w-sm">
-                        When a landlord sends you a lease agreement, it will appear here.
+                    <p className="text-neutral-500 mb-8 max-w-sm text-sm leading-relaxed">
+                        When a landlord sends you a lease agreement, it will appear here for you to review and sign.
                     </p>
                     <Link href="/search">
-                        <Button className="bg-black hover:bg-black/80 text-white rounded-full h-12 px-8 font-bold uppercase tracking-wider text-xs shadow-lg shadow-black/5 transition-all hover:scale-105">
+                        <Button className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl h-11 px-8 font-medium shadow-sm transition-all hover:scale-[1.01]">
                             <Search className="mr-2 h-4 w-4" />
                             Find a Home
                         </Button>
@@ -82,8 +86,8 @@ function TenantLeasesContent() {
             {pendingLeases.length > 0 && (
                 <section className="space-y-6">
                     <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-black animate-pulse" />
-                        <h2 className="font-[family-name:var(--font-anton)] text-xl uppercase tracking-wide text-black">
+                        <div className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
+                        <h2 className="text-lg font-bold text-neutral-900 uppercase tracking-wide">
                             Action Required
                         </h2>
                     </div>
@@ -98,7 +102,7 @@ function TenantLeasesContent() {
             {/* Awaiting Landlord Approval */}
             {signedLeases.length > 0 && (
                 <section className="space-y-6">
-                    <h2 className="font-[family-name:var(--font-anton)] text-xl uppercase tracking-wide text-black/40">
+                    <h2 className="text-lg font-bold text-neutral-400 uppercase tracking-wide">
                         Awaiting Approval
                     </h2>
                     <div className="space-y-3">
@@ -112,7 +116,7 @@ function TenantLeasesContent() {
             {/* Active Leases */}
             {activeLeases.length > 0 && (
                 <section className="space-y-6">
-                    <h2 className="font-[family-name:var(--font-anton)] text-xl uppercase tracking-wide text-black">
+                    <h2 className="text-lg font-bold text-neutral-900 uppercase tracking-wide">
                         Active Leases
                     </h2>
                     <div className="space-y-3">
@@ -126,7 +130,7 @@ function TenantLeasesContent() {
             {/* Past Leases */}
             {otherLeases.length > 0 && (
                 <section className="space-y-6">
-                    <h2 className="font-[family-name:var(--font-anton)] text-xl uppercase tracking-wide text-black/20">
+                    <h2 className="text-lg font-bold text-neutral-400 uppercase tracking-wide">
                         Archive
                     </h2>
                     <div className="space-y-3 opacity-60 hover:opacity-100 transition-opacity">
@@ -144,20 +148,20 @@ function TenantLeasesContent() {
 function StatCard({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
     return (
         <div className={cn(
-            "p-5 rounded-2xl border transition-all duration-300",
+            "p-5 rounded-xl border transition-all duration-300",
             highlight && value > 0
-                ? "bg-black border-black text-white shadow-xl shadow-black/10 scale-105"
-                : "bg-white border-black/5 text-black hover:border-black/10"
+                ? "bg-neutral-900 border-neutral-900 text-white shadow-lg shadow-neutral-900/10"
+                : "bg-white border-neutral-200 text-neutral-900 hover:border-neutral-300"
         )}>
             <p className={cn(
                 "text-[10px] font-bold uppercase tracking-widest mb-1",
-                highlight && value > 0 ? "text-white/60" : "text-black/40"
+                highlight && value > 0 ? "text-neutral-400" : "text-neutral-400"
             )}>
                 {label}
             </p>
             <p className={cn(
-                "font-[family-name:var(--font-anton)] text-3xl",
-                highlight && value > 0 ? "text-white" : "text-black"
+                "text-3xl font-bold tracking-tight",
+                highlight && value > 0 ? "text-white" : "text-neutral-900"
             )}>
                 {value}
             </p>
@@ -170,15 +174,15 @@ function LeaseRow({ lease, actionLabel, highlight }: { lease: any; actionLabel: 
     return (
         <Link href={`/tenant/leases/${lease._id}`} className="block group">
             <div className={cn(
-                "flex items-center gap-5 p-5 rounded-3xl border transition-all duration-300",
+                "flex items-center gap-5 p-4 sm:p-5 rounded-xl border transition-all duration-300",
                 highlight
-                    ? "bg-white border-black ring-1 ring-black shadow-lg"
-                    : "bg-white border-black/5 hover:border-black/20 hover:shadow-md"
+                    ? "bg-white border-neutral-300 shadow-md shadow-neutral-100"
+                    : "bg-white border-neutral-200 hover:border-neutral-300 hover:shadow-sm"
             )}>
                 {/* Icon/Image Placeholder */}
                 <div className={cn(
-                    "h-12 w-12 rounded-full flex items-center justify-center shrink-0 transition-colors",
-                    highlight ? "bg-black text-white" : "bg-black/5 text-black/40 group-hover:bg-black group-hover:text-white"
+                    "h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center shrink-0 transition-colors",
+                    highlight ? "bg-neutral-900 text-white" : "bg-neutral-100 text-neutral-400 group-hover:bg-neutral-200 group-hover:text-neutral-600"
                 )}>
                     <FileText className="h-5 w-5" />
                 </div>
@@ -186,14 +190,14 @@ function LeaseRow({ lease, actionLabel, highlight }: { lease: any; actionLabel: 
                 {/* Property Info */}
                 <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center gap-3">
-                        <h3 className="font-bold text-black text-base truncate">
+                        <h3 className="font-bold text-neutral-900 text-sm sm:text-base truncate">
                             {lease.property?.title || 'Untitled Property'}
                         </h3>
                         <div className="scale-90 origin-left">
                             <LeaseStatusBadge status={lease.status} />
                         </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-black/50">
+                    <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-neutral-500">
                         <span className="flex items-center gap-1.5">
                             <Users className="h-3.5 w-3.5" />
                             {lease.landlord?.fullName || 'Landlord'}
@@ -207,24 +211,24 @@ function LeaseRow({ lease, actionLabel, highlight }: { lease: any; actionLabel: 
 
                 {/* Rent */}
                 <div className="text-right shrink-0 hidden sm:block">
-                    <p className="font-[family-name:var(--font-anton)] text-xl text-black">
+                    <p className="font-bold text-lg text-neutral-900">
                         N$ {lease.monthlyRent?.toLocaleString()}
                     </p>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-black/40">per month</p>
+                    <p className="text-[10px] font-medium text-neutral-400">per month</p>
                 </div>
 
                 {/* Actions */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <button
-                            className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-black/5 transition-colors shrink-0"
+                            className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-neutral-100 transition-colors shrink-0"
                             onClick={(e) => e.preventDefault()}
                         >
-                            <MoreHorizontal className="h-4 w-4 text-black/40" />
+                            <MoreHorizontal className="h-4 w-4 text-neutral-400" />
                         </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="rounded-xl border-black/5 shadow-xl">
-                        <DropdownMenuItem asChild className="rounded-lg focus:bg-black/5 cursor-pointer">
+                    <DropdownMenuContent align="end" className="rounded-xl border-neutral-200 shadow-xl">
+                        <DropdownMenuItem asChild className="rounded-lg focus:bg-neutral-50 cursor-pointer">
                             <Link href={`/tenant/leases/${lease._id}`} className="flex items-center font-medium">
                                 <Eye className="mr-2 h-4 w-4" />
                                 {actionLabel}

@@ -26,6 +26,7 @@ import {
     MessageSquare,
     LayoutDashboard,
     Wallet,
+    FileText,
 } from 'lucide-react'
 
 interface HeaderProps {
@@ -157,10 +158,10 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
                                                     className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
-                                                    onClick={() => router.push('/tenant/applications')}
+                                                    onClick={() => router.push('/tenant/leases')}
                                                 >
-                                                    <Building2 className="mr-3 h-4 w-4 opacity-70" />
-                                                    My Applications
+                                                    <FileText className="mr-3 h-4 w-4 opacity-70" />
+                                                    My Leases
                                                 </DropdownMenuItem>
                                             </>
                                         )}

@@ -83,31 +83,31 @@ export function LeaseDetailClient({ lease }: LeaseDetailClientProps) {
     }
 
     return (
-        <div className="px-4 py-8 md:px-6 max-w-[2000px] mx-auto">
+        <div className="px-4 py-8 md:px-6 max-w-[1400px] mx-auto pb-24">
             {/* Header */}
-            <div className="mb-10">
+            <div className="mb-8 sm:mb-10">
                 <Link
                     href="/tenant/leases"
-                    className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-black/40 hover:text-black transition-colors mb-6 group"
+                    className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors mb-6 group"
                 >
                     <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
                     Back to leases
                 </Link>
-                <h1 className="font-[family-name:var(--font-anton)] text-4xl uppercase tracking-wide text-black mb-2">
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-neutral-900 mb-2">
                     {lease.property?.title}
                 </h1>
-                <p className="text-black/60 font-medium">{lease.property?.address}</p>
+                <p className="text-neutral-500 font-medium text-lg">{lease.property?.address}</p>
             </div>
 
             {/* Status Alerts */}
             {needsRevision && (
-                <div className="flex items-start gap-4 p-6 rounded-3xl bg-red-50 border border-red-100 mb-8">
+                <div className="flex items-start gap-4 p-5 rounded-xl bg-red-50 border border-red-100 mb-8">
                     <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
                         <AlertTriangle className="h-5 w-5 text-red-600" />
                     </div>
                     <div>
-                        <p className="font-bold text-red-900 uppercase tracking-wide text-sm">Revision Requested</p>
-                        <p className="text-sm text-red-700 mt-1 font-medium">
+                        <p className="font-bold text-red-900 uppercase tracking-wide text-xs sm:text-sm">Revision Requested</p>
+                        <p className="text-sm text-red-700 mt-1 font-medium leading-relaxed">
                             {lease.landlordNotes || 'Please review and resubmit.'}
                         </p>
                     </div>
@@ -115,13 +115,13 @@ export function LeaseDetailClient({ lease }: LeaseDetailClientProps) {
             )}
 
             {hasSigned && !isApproved && (
-                <div className="flex items-start gap-4 p-6 rounded-3xl bg-gray-50 border border-black/5 mb-8">
-                    <div className="h-10 w-10 rounded-full bg-white shadow-sm flex items-center justify-center shrink-0">
-                        <CheckCircle2 className="h-5 w-5 text-black" />
+                <div className="flex items-start gap-4 p-5 rounded-xl bg-white border border-neutral-200 mb-8 shadow-sm">
+                    <div className="h-10 w-10 rounded-full bg-neutral-100 flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="h-5 w-5 text-neutral-900" />
                     </div>
                     <div>
-                        <p className="font-bold text-black uppercase tracking-wide text-sm">Lease Signed</p>
-                        <p className="text-sm text-black/60 mt-1 font-medium">
+                        <p className="font-bold text-neutral-900 uppercase tracking-wide text-xs sm:text-sm">Lease Signed</p>
+                        <p className="text-sm text-neutral-500 mt-1 font-medium leading-relaxed">
                             Your signed lease has been submitted. Waiting for landlord approval.
                         </p>
                     </div>
@@ -129,13 +129,13 @@ export function LeaseDetailClient({ lease }: LeaseDetailClientProps) {
             )}
 
             {isApproved && (
-                <div className="flex items-start gap-4 p-6 rounded-3xl bg-black text-white mb-8 border border-black shadow-xl">
-                    <div className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                <div className="flex items-start gap-4 p-5 rounded-xl bg-neutral-900 text-white mb-8 border border-neutral-900 shadow-xl shadow-neutral-900/10">
+                    <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
                         <CheckCircle2 className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                        <p className="font-bold uppercase tracking-wide text-sm">Lease Approved</p>
-                        <p className="text-sm text-white/80 mt-1 font-medium">
+                        <p className="font-bold uppercase tracking-wide text-xs sm:text-sm">Lease Approved</p>
+                        <p className="text-sm text-white/80 mt-1 font-medium leading-relaxed">
                             Congratulations! Your tenancy begins on {new Date(lease.startDate).toLocaleDateString()}.
                         </p>
                     </div>
@@ -143,13 +143,13 @@ export function LeaseDetailClient({ lease }: LeaseDetailClientProps) {
             )}
 
             {isRejected && (
-                <div className="flex items-start gap-4 p-6 rounded-3xl bg-red-50 border border-red-100 mb-8">
+                <div className="flex items-start gap-4 p-5 rounded-xl bg-red-50 border border-red-100 mb-8">
                     <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
                         <AlertTriangle className="h-5 w-5 text-red-600" />
                     </div>
                     <div>
-                        <p className="font-bold text-red-900 uppercase tracking-wide text-sm">Lease Rejected</p>
-                        <p className="text-sm text-red-700 mt-1 font-medium">
+                        <p className="font-bold text-red-900 uppercase tracking-wide text-xs sm:text-sm">Lease Rejected</p>
+                        <p className="text-sm text-red-700 mt-1 font-medium leading-relaxed">
                             {lease.landlordNotes || 'The landlord has rejected this lease agreement.'}
                         </p>
                     </div>
@@ -161,7 +161,8 @@ export function LeaseDetailClient({ lease }: LeaseDetailClientProps) {
                 <div className="lg:col-span-2 space-y-10">
                     {/* Lease Document Preview */}
                     <section>
-                        <h2 className="font-[family-name:var(--font-anton)] text-2xl uppercase text-black mb-6">
+                        <h2 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-neutral-900"></span>
                             Lease Document
                         </h2>
                         <LeasePreview
@@ -199,10 +200,11 @@ export function LeaseDetailClient({ lease }: LeaseDetailClientProps) {
                         <>
                             {/* Document Upload */}
                             <section>
-                                <h2 className="font-[family-name:var(--font-anton)] text-2xl uppercase text-black mb-6">
+                                <h2 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-neutral-900"></span>
                                     Required Documents
                                 </h2>
-                                <div className="p-6 rounded-3xl border border-black/5 bg-gray-50/50">
+                                <div className="p-6 rounded-xl border border-neutral-200 bg-white">
                                     <DocumentUploader
                                         tenantId={lease.tenantId || ''}
                                         leaseId={lease._id}
@@ -215,10 +217,11 @@ export function LeaseDetailClient({ lease }: LeaseDetailClientProps) {
 
                             {/* Signature */}
                             <section>
-                                <h2 className="font-[family-name:var(--font-anton)] text-2xl uppercase text-black mb-6">
+                                <h2 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-neutral-900"></span>
                                     Sign Here
                                 </h2>
-                                <div className="p-6 rounded-3xl border border-black/5 bg-gray-50/50">
+                                <div className="p-6 rounded-xl border border-neutral-200 bg-white">
                                     <SignatureCanvas
                                         onSignatureChange={setSignature}
                                         initialSignature={signature}
@@ -227,22 +230,22 @@ export function LeaseDetailClient({ lease }: LeaseDetailClientProps) {
                             </section>
 
                             {/* Submit Button */}
-                            <div className="p-8 rounded-3xl bg-black text-white shadow-2xl shadow-black/20">
+                            <div className="p-6 sm:p-8 rounded-xl bg-neutral-900 text-white shadow-xl shadow-neutral-900/10">
                                 <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                                     <div className="space-y-1">
-                                        <h3 className="font-[family-name:var(--font-anton)] text-2xl uppercase tracking-wide">
+                                        <h3 className="text-xl font-bold tracking-tight">
                                             Submit Lease
                                         </h3>
-                                        <p className="text-sm text-white/60 font-medium">
+                                        <p className="text-sm text-white/60 font-medium max-w-md">
                                             {!hasRequiredDocs && 'Please upload your ID documents. '}
                                             {!signature && 'Please sign the lease. '}
-                                            {canSubmit && 'Review terms and submit.'}
+                                            {canSubmit && 'Review terms and submit. Once submitted, this action cannot be undone.'}
                                         </p>
                                     </div>
                                     <Button
                                         onClick={handleSubmit}
                                         disabled={!canSubmit || isSubmitting}
-                                        className="bg-white text-black hover:bg-white/90 rounded-full h-14 px-8 font-bold uppercase tracking-widest text-xs transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+                                        className="bg-white text-neutral-900 hover:bg-neutral-100 rounded-xl h-12 px-8 font-bold text-sm transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 shadow-sm"
                                     >
                                         {isSubmitting ? (
                                             <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -260,8 +263,8 @@ export function LeaseDetailClient({ lease }: LeaseDetailClientProps) {
                 {/* Sidebar */}
                 <div className="space-y-6">
                     {/* Status Timeline */}
-                    <div className="p-6 rounded-3xl border border-black/5 bg-white shadow-sm">
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-black/40 mb-6">Detailed Status</h3>
+                    <div className="p-6 rounded-xl border border-neutral-200 bg-white shadow-sm">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-6">Detailed Status</h3>
                         <LeaseStatusTimeline
                             status={lease.status}
                             createdAt={lease.createdAt || lease.sentAt}
@@ -272,10 +275,10 @@ export function LeaseDetailClient({ lease }: LeaseDetailClientProps) {
                     </div>
 
                     {/* Landlord Info */}
-                    <div className="p-6 rounded-3xl border border-black/5 bg-white shadow-sm">
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-black/40 mb-4">Landlord</h3>
+                    <div className="p-6 rounded-xl border border-neutral-200 bg-white shadow-sm">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-4">Landlord</h3>
                         <div className="flex items-center gap-4">
-                            <div className="h-14 w-14 rounded-2xl bg-gray-200 overflow-hidden shrink-0 flex items-center justify-center">
+                            <div className="h-12 w-12 rounded-full bg-neutral-100 overflow-hidden shrink-0 flex items-center justify-center border border-neutral-100">
                                 {lease.landlord?.avatarUrl ? (
                                     /* eslint-disable-next-line @next/next/no-img-element */
                                     <img
@@ -284,20 +287,20 @@ export function LeaseDetailClient({ lease }: LeaseDetailClientProps) {
                                         className="h-full w-full object-cover"
                                     />
                                 ) : (
-                                    <User className="h-6 w-6 text-black/40" />
+                                    <User className="h-5 w-5 text-neutral-400" />
                                 )}
                             </div>
                             <div>
-                                <p className="font-bold text-black">{lease.landlord?.fullName || 'Landlord'}</p>
-                                <p className="text-xs text-black/50 font-medium">{lease.landlord?.email}</p>
+                                <p className="font-bold text-neutral-900 text-sm">{lease.landlord?.fullName || 'Landlord'}</p>
+                                <p className="text-xs text-neutral-500 font-medium">{lease.landlord?.email}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Property Info */}
-                    <div className="p-6 rounded-3xl border border-black/5 bg-white shadow-sm">
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-black/40 mb-4">Property</h3>
-                        <div className="aspect-video rounded-2xl overflow-hidden bg-gray-100 mb-4 flex items-center justify-center relative">
+                    <div className="p-6 rounded-xl border border-neutral-200 bg-white shadow-sm">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-4">Property</h3>
+                        <div className="aspect-video rounded-lg overflow-hidden bg-neutral-100 mb-4 flex items-center justify-center relative border border-neutral-100">
                             {lease.property?.imageUrl ? (
                                 /* eslint-disable-next-line @next/next/no-img-element */
                                 <img
@@ -306,28 +309,28 @@ export function LeaseDetailClient({ lease }: LeaseDetailClientProps) {
                                     className="h-full w-full object-cover"
                                 />
                             ) : (
-                                <Building2 className="h-8 w-8 text-black/20" />
+                                <Building2 className="h-8 w-8 text-neutral-300" />
                             )}
                         </div>
-                        <p className="font-bold text-black">{lease.property?.title}</p>
-                        <p className="text-xs text-black/50 font-medium mt-1">
+                        <p className="font-bold text-neutral-900 text-sm">{lease.property?.title}</p>
+                        <p className="text-xs text-neutral-500 font-medium mt-1">
                             {lease.property?.address}, {lease.property?.city}
                         </p>
                     </div>
 
                     {/* Quick Stats */}
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="p-5 rounded-3xl bg-black text-white flex flex-col items-center justify-center text-center">
-                            <p className="font-[family-name:var(--font-anton)] text-2xl tracking-wide">
+                        <div className="p-5 rounded-xl bg-neutral-900 text-white flex flex-col items-center justify-center text-center shadow-lg shadow-neutral-900/10">
+                            <p className="text-xl font-bold tracking-tight">
                                 N$ {lease.monthlyRent?.toLocaleString()}
                             </p>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mt-1">Rent</p>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mt-1">Rent</p>
                         </div>
-                        <div className="p-5 rounded-3xl border border-black/5 bg-white flex flex-col items-center justify-center text-center">
-                            <p className="font-[family-name:var(--font-anton)] text-2xl tracking-wide text-black">
+                        <div className="p-5 rounded-xl border border-neutral-200 bg-white flex flex-col items-center justify-center text-center shadow-sm">
+                            <p className="text-xl font-bold tracking-tight text-neutral-900">
                                 N$ {lease.deposit?.toLocaleString()}
                             </p>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-black/40 mt-1">Deposit</p>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mt-1">Deposit</p>
                         </div>
                     </div>
 
@@ -373,7 +376,7 @@ export function LeaseDetailClient({ lease }: LeaseDetailClientProps) {
                             {({ loading, error }: any) => (
                                 <Button
                                     variant="outline"
-                                    className="w-full rounded-2xl h-12 border-dashed border-black/20 text-black/40 hover:text-black hover:border-black/40 hover:bg-black/5 shadow-none"
+                                    className="w-full rounded-xl h-11 border border-neutral-200 text-neutral-600 hover:text-neutral-900 hover:border-neutral-300 hover:bg-white shadow-sm"
                                     disabled={loading}
                                 >
                                     <Download className="h-4 w-4 mr-2" />
