@@ -61,7 +61,7 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
 
     // Get dashboard link based on role
     const getDashboardLink = () => {
-        if (currentRole === 'landlord') return '/landlord'
+        if (currentRole === 'landlord') return '/landlord/properties'
         if (currentRole === 'admin') return '/admin'
         return '/tenant'
     }
@@ -133,14 +133,16 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
 
                                         <DropdownMenuSeparator className="bg-black/5" />
 
-                                        {/* Dashboard - All Roles */}
-                                        <DropdownMenuItem
-                                            className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
-                                            onClick={() => router.push(getDashboardLink())}
-                                        >
-                                            <LayoutDashboard className="mr-3 h-4 w-4 opacity-70" />
-                                            Dashboard
-                                        </DropdownMenuItem>
+                                        {/* Dashboard - Tenant and Admin only (landlords go directly to My Properties) */}
+                                        {currentRole !== 'landlord' && (
+                                            <DropdownMenuItem
+                                                className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
+                                                onClick={() => router.push(getDashboardLink())}
+                                            >
+                                                <LayoutDashboard className="mr-3 h-4 w-4 opacity-70" />
+                                                Dashboard
+                                            </DropdownMenuItem>
+                                        )}
 
                                         {/* Tenant-specific links */}
                                         {currentRole === 'tenant' && (

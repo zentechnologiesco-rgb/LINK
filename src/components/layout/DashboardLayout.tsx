@@ -50,7 +50,6 @@ interface NavItem {
 
 // Dashboard navigation items based on role
 const landlordNavItems: NavItem[] = [
-    { label: 'Overview', href: '/landlord', icon: LayoutDashboard },
     { label: 'My Properties', href: '/landlord/properties', icon: Building2 },
     { label: 'Leases', href: '/landlord/leases', icon: FileCheck },
     { label: 'Inquiries', href: '/landlord/inquiries', icon: MessageSquare },
@@ -98,7 +97,7 @@ export function DashboardLayout({ children, title = 'Dashboard', user }: Dashboa
     const navItems = getNavItems()
 
     const isActive = (href: string) => {
-        if (href === '/landlord' || href === '/tenant' || href === '/admin') {
+        if (href === '/tenant' || href === '/admin') {
             return pathname === href
         }
         return pathname?.startsWith(href)

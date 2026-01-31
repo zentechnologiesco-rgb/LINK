@@ -28,7 +28,7 @@ function BecomeLandlordContent() {
 
     // Redirect if already a landlord
     if (user?.role === 'landlord') {
-        redirect('/landlord')
+        redirect('/landlord/properties')
     }
 
     return (
@@ -104,7 +104,7 @@ function BecomeLandlordContent() {
                                         </div>
                                         <div className="pt-2">
                                             <Button asChild className="w-full bg-black hover:bg-black/80 text-white rounded-full h-12 font-medium text-base shadow-lg shadow-black/10">
-                                                <Link href="/landlord">Go to Dashboard</Link>
+                                                <Link href="/landlord/properties">Go to Dashboard</Link>
                                             </Button>
                                         </div>
                                     </div>
