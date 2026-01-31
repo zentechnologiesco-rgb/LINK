@@ -1,6 +1,5 @@
 import {
     Home,
-    Search,
     MessageSquare,
     Heart,
     FileCheck,
