@@ -15,6 +15,23 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'friendly-crab-162.convex.cloud',
       },
+      {
+        protocol: 'https',
+        hostname: 'admired-falcon-221.convex.site',
+      },
+      {
+        protocol: 'https',
+        hostname: 'friendly-crab-162.convex.site',
+      },
+      {
+        // Catch-all for any Convex storage domain
+        protocol: 'https',
+        hostname: '*.convex.cloud',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.convex.site',
+      },
     ],
     // Skip optimization for Convex storage images to avoid timeouts
     unoptimized: process.env.NODE_ENV === 'development',
