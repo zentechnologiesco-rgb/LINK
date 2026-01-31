@@ -35,13 +35,62 @@ export function PropertyDetailMap({ coordinates, address }: PropertyDetailMapPro
                 style: 'mapbox://styles/mapbox/streets-v12',
                 center: [coordinates.lng, coordinates.lat],
                 zoom: 15,
+                pitch: 45,
+                bearing: -17.6,
+                antialias: true,
                 interactive: true,
             })
 
             map.current.addControl(new mapboxgl.NavigationControl(), 'top-right')
 
             map.current.on('load', () => {
+                if (!map.current) return
+
                 setMapLoaded(true)
+
+                // Add 3D building layer
+                const layers = map.current.getStyle().layers
+                const labelLayerId = layers?.find(
+                    (layer) => layer.type === 'symbol' && layer.layout?.['text-field']
+                )?.id
+
+                map.current.addLayer(
+                    {
+                        id: '3d-buildings',
+                        source: 'composite',
+                        'source-layer': 'building',
+                        filter: ['==', 'extrude', 'true'],
+                        type: 'fill-extrusion',
+                        minzoom: 12,
+                        paint: {
+                            'fill-extrusion-color': [
+                                'interpolate',
+                                ['linear'],
+                                ['get', 'height'],
+                                0, '#e5e7eb',
+                                50, '#d1d5db',
+                                100, '#9ca3af',
+                                200, '#6b7280'
+                            ],
+                            'fill-extrusion-height': [
+                                'interpolate',
+                                ['linear'],
+                                ['zoom'],
+                                12, 0,
+                                13, ['get', 'height']
+                            ],
+                            'fill-extrusion-base': [
+                                'interpolate',
+                                ['linear'],
+                                ['zoom'],
+                                12, 0,
+                                13, ['get', 'min_height']
+                            ],
+                            'fill-extrusion-opacity': 0.8
+                        }
+                    },
+                    labelLayerId
+                )
 
                 // Create custom marker element
                 const el = document.createElement('div')

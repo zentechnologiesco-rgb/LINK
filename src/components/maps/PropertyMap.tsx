@@ -36,6 +36,7 @@ export function PropertyMap({
     const [mapLoaded, setMapLoaded] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [hoveredPropertyId, setHoveredPropertyId] = useState<string | null>(null)
+    const [is3D, setIs3D] = useState(true) // 3D view toggle
 
     // Store properties in a ref to compare changes
     const prevPropertiesRef = useRef<string>('')
@@ -85,6 +86,9 @@ export function PropertyMap({
                 style: 'mapbox://styles/mapbox/streets-v12',
                 center: center,
                 zoom: zoom,
+                pitch: 45, // Tilt for 3D view
+                bearing: -17.6, // Slight rotation for visual interest
+                antialias: true // Smoother 3D buildings
             })
 
             map.current.addControl(new mapboxgl.NavigationControl(), 'top-right')
@@ -193,6 +197,50 @@ export function PropertyMap({
                         'text-color': '#111827'
                     }
                 })
+
+                // Add 3D building layer
+                const layers = map.current.getStyle().layers
+                const labelLayerId = layers?.find(
+                    (layer) => layer.type === 'symbol' && layer.layout?.['text-field']
+                )?.id
+
+                map.current.addLayer(
+                    {
+                        id: '3d-buildings',
+                        source: 'composite',
+                        'source-layer': 'building',
+                        filter: ['==', 'extrude', 'true'],
+                        type: 'fill-extrusion',
+                        minzoom: 12,
+                        paint: {
+                            'fill-extrusion-color': [
+                                'interpolate',
+                                ['linear'],
+                                ['get', 'height'],
+                                0, '#e5e7eb',
+                                50, '#d1d5db',
+                                100, '#9ca3af',
+                                200, '#6b7280'
+                            ],
+                            'fill-extrusion-height': [
+                                'interpolate',
+                                ['linear'],
+                                ['zoom'],
+                                12, 0,
+                                13, ['get', 'height']
+                            ],
+                            'fill-extrusion-base': [
+                                'interpolate',
+                                ['linear'],
+                                ['zoom'],
+                                12, 0,
+                                13, ['get', 'min_height']
+                            ],
+                            'fill-extrusion-opacity': 0.8
+                        }
+                    },
+                    labelLayerId
+                )
 
                 setMapLoaded(true)
             })
@@ -355,6 +403,33 @@ export function PropertyMap({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [mapLoaded]) // Only run once when map loads
 
+    // Handle 3D toggle
+    useEffect(() => {
+        if (!mapLoaded || !map.current) return
+
+        if (is3D) {
+            map.current.easeTo({
+                pitch: 45,
+                bearing: -17.6,
+                duration: 1000
+            })
+            // Show 3D buildings
+            if (map.current.getLayer('3d-buildings')) {
+                map.current.setLayoutProperty('3d-buildings', 'visibility', 'visible')
+            }
+        } else {
+            map.current.easeTo({
+                pitch: 0,
+                bearing: 0,
+                duration: 1000
+            })
+            // Hide 3D buildings
+            if (map.current.getLayer('3d-buildings')) {
+                map.current.setLayoutProperty('3d-buildings', 'visibility', 'none')
+            }
+        }
+    }, [is3D, mapLoaded])
+
     // Show error or placeholder
     if (error || !token) {
         return (
@@ -402,6 +477,44 @@ export function PropertyMap({
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
                     <div className="w-6 h-6 border-2 border-neutral-900 border-t-transparent rounded-full animate-spin" />
                 </div>
+            )}
+
+            {/* 3D Toggle Button */}
+            {mapLoaded && (
+                <button
+                    onClick={() => setIs3D(!is3D)}
+                    className={`absolute top-4 left-4 px-3 py-2 rounded-lg border shadow-lg transition-all duration-300 flex items-center gap-2 font-semibold text-xs ${is3D
+                            ? 'bg-neutral-900 text-white border-neutral-900 hover:bg-neutral-800'
+                            : 'bg-white/95 backdrop-blur text-neutral-700 border-neutral-200 hover:bg-neutral-50'
+                        }`}
+                    title={is3D ? 'Switch to 2D view' : 'Switch to 3D view'}
+                >
+                    <svg
+                        className="w-4 h-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    >
+                        {is3D ? (
+                            <>
+                                <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" />
+                                <path d="M12 12l8-4.5" />
+                                <path d="M12 12v9" />
+                                <path d="M12 12L4 7.5" />
+                            </>
+                        ) : (
+                            <>
+                                <rect x="3" y="3" width="18" height="18" rx="2" />
+                                <path d="M3 9h18" />
+                                <path d="M9 21V9" />
+                            </>
+                        )}
+                    </svg>
+                    {is3D ? '3D' : '2D'}
+                </button>
             )}
         </div>
     )
