@@ -1,10 +1,9 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, Suspense, lazy, useCallback } from "react"
 import { useQuery } from "convex/react"
 import { api } from "../../convex/_generated/api"
 import Link from "next/link"
-import { PropertyMap } from "@/components/maps/PropertyMap"
 import { Header } from "@/components/layout/Header"
 import { MobileNav } from "@/components/layout/MobileNav"
 import { Button } from "@/components/ui/button"
@@ -42,6 +41,13 @@ import Image from "next/image"
 import { SavePropertyButton } from "@/components/properties/SavePropertyButton"
 import { TrustCard } from "@/components/properties/TrustCard"
 import { RecentlyViewedSection } from "@/components/properties/RecentlyViewedSection"
+import { HomePageSkeleton, PropertyGridSkeleton } from "@/components/ui/skeleton"
+import { VirtualizedGrid } from "@/components/ui/virtualized-grid"
+import { useUser } from "@/components/providers/UserProvider"
+import { useDebounce } from "@/hooks/useDebounce"
+
+// Lazy load the map component for faster initial page load
+const PropertyMap = lazy(() => import("@/components/maps/PropertyMap").then(m => ({ default: m.PropertyMap })))
 
 // --- Types ---
 interface Property {
@@ -110,9 +116,14 @@ export default function HomePage() {
     const [minBedrooms, setMinBedrooms] = useState<number | null>(null)
     const [selectedAmenities, setSelectedAmenities] = useState<string[]>([])
 
-    // Data Fetching
+    // Debounced search for performance - waits 300ms after user stops typing
+    const debouncedSearchQuery = useDebounce(searchQuery, 300)
+
+    // Data Fetching - properties from Convex
     const properties = useQuery(api.properties.list, { onlyAvailable: true })
-    const currentUser = useQuery(api.users.currentUser)
+
+    // Use centralized user context instead of separate query
+    const { user: currentUser, isLoading: userLoading } = useUser()
 
     // Normalize Data
     const normalizedProperties: Property[] = useMemo(() => {
@@ -134,17 +145,17 @@ export default function HomePage() {
         }))
     }, [properties])
 
-    // Filter Logic
+    // Filter Logic - uses debounced search for performance
     const filtered = useMemo(() => {
         return normalizedProperties.filter((p) => {
             // Category Match
             const matchType = activeCategory === "all" || p.type.toLowerCase() === activeCategory
 
-            // Text Search Match
-            const matchSearch = !searchQuery ||
-                p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                p.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                p.address.toLowerCase().includes(searchQuery.toLowerCase())
+            // Text Search Match - uses debounced query to avoid filtering on every keystroke
+            const matchSearch = !debouncedSearchQuery ||
+                p.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+                p.city.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+                p.address.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
 
             // Price Match
             const minPrice = priceRange.min ? parseInt(priceRange.min) : 0
@@ -160,7 +171,7 @@ export default function HomePage() {
 
             return matchType && matchSearch && matchPrice && matchBedrooms && matchAmenities
         })
-    }, [normalizedProperties, activeCategory, searchQuery, priceRange, minBedrooms, selectedAmenities])
+    }, [normalizedProperties, activeCategory, debouncedSearchQuery, priceRange, minBedrooms, selectedAmenities])
 
     const mapData = useMemo(() => filtered.map((p, i) => ({
         id: p.id,
@@ -182,14 +193,9 @@ export default function HomePage() {
         setSelectedAmenities([])
     }
 
+    // Show skeleton loading UI instead of blank spinner
     if (properties === undefined) {
-        return (
-            <div className="h-screen w-screen bg-white flex items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-6 h-6 border-2 border-neutral-900 border-t-transparent rounded-full animate-spin" />
-                </div>
-            </div>
-        )
+        return <HomePageSkeleton />
     }
 
     return (
@@ -452,25 +458,35 @@ export default function HomePage() {
                 <div className="min-h-[300px] sm:min-h-[500px]">
                     {viewMode === 'map' ? (
                         <div className="h-[400px] sm:h-[500px] md:h-[600px] w-full rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden border border-neutral-200 shadow-sm relative">
-                            <PropertyMap properties={mapData} onPropertyClick={() => { }} />
+                            <Suspense fallback={
+                                <div className="h-full w-full bg-neutral-100 animate-pulse flex items-center justify-center">
+                                    <div className="flex flex-col items-center gap-3 text-neutral-400">
+                                        <MapIcon className="w-8 h-8" />
+                                        <span className="text-sm font-medium">Loading map...</span>
+                                    </div>
+                                </div>
+                            }>
+                                <PropertyMap properties={mapData} onPropertyClick={() => { }} />
+                            </Suspense>
                         </div>
                     ) : (
-                        filtered.length > 0 ? (
-                            <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
-                                {filtered.map((property) => (
-                                    <TrustCard key={property.id} property={property} />
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="py-16 sm:py-24 md:py-32 flex flex-col items-center justify-center text-center opacity-60 px-4">
-                                <Search className="w-10 h-10 sm:w-12 sm:h-12 text-neutral-300 mb-3 sm:mb-4" />
-                                <h3 className="text-base sm:text-lg font-medium text-neutral-900">No properties found</h3>
-                                <p className="text-xs sm:text-sm text-neutral-500">Adjust your filters to see more results</p>
-                                <Button variant="link" onClick={clearFilters} className="text-blue-600 text-sm">
-                                    Clear filters
-                                </Button>
-                            </div>
-                        )
+                        <VirtualizedGrid
+                            items={filtered}
+                            renderItem={(property) => <TrustCard key={property.id} property={property} />}
+                            getItemKey={(property) => property.id}
+                            initialLoadCount={12}
+                            loadMoreCount={8}
+                            emptyState={
+                                <div className="py-16 sm:py-24 md:py-32 flex flex-col items-center justify-center text-center opacity-60 px-4">
+                                    <Search className="w-10 h-10 sm:w-12 sm:h-12 text-neutral-300 mb-3 sm:mb-4" />
+                                    <h3 className="text-base sm:text-lg font-medium text-neutral-900">No properties found</h3>
+                                    <p className="text-xs sm:text-sm text-neutral-500">Adjust your filters to see more results</p>
+                                    <Button variant="link" onClick={clearFilters} className="text-blue-600 text-sm">
+                                        Clear filters
+                                    </Button>
+                                </div>
+                            }
+                        />
                     )}
                 </div>
             </main>

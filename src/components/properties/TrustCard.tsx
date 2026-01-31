@@ -1,9 +1,10 @@
 "use client"
 
+import { memo } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { SavePropertyButton } from "@/components/properties/SavePropertyButton"
+import { OptimizedImage } from "@/components/ui/optimized-image"
 import {
     MapPin,
     BedDouble,
@@ -30,7 +31,9 @@ export interface TrustCardProps {
     }
 }
 
-export function TrustCard({ property }: TrustCardProps) {
+// Memoized TrustCard component to prevent unnecessary re-renders
+// Re-renders only when property.id changes
+export const TrustCard = memo(function TrustCard({ property }: TrustCardProps) {
     const images = property.images.length > 0 ? property.images : ['/window.svg']
 
     return (
@@ -43,13 +46,16 @@ export function TrustCard({ property }: TrustCardProps) {
                 "transition-all duration-300 ease-out",
                 "hover:-translate-y-1.5 hover:shadow-xl hover:shadow-neutral-900/[0.08] hover:border-neutral-300"
             )}>
-                {/* Image Section */}
-                <div className="relative aspect-[4/3] bg-neutral-100 overflow-hidden">
-                    <Image
+                {/* Image Section - now with optimized lazy loading */}
+                <div className="relative bg-neutral-100 overflow-hidden">
+                    <OptimizedImage
                         src={images[0]}
                         alt={property.title}
                         fill
+                        aspectRatio="4/3"
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                         className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+                        fallbackSrc="/window.svg"
                     />
 
                     {/* Top Row: Type Badge & Save */}
@@ -115,4 +121,12 @@ export function TrustCard({ property }: TrustCardProps) {
             </div>
         </Link>
     )
-}
+}, (prevProps, nextProps) => {
+    // Custom comparison - only re-render if the property ID changes
+    // This is safe because property data from Convex is immutable
+    return prevProps.property.id === nextProps.property.id &&
+        prevProps.property.price === nextProps.property.price &&
+        prevProps.property.images[0] === nextProps.property.images[0]
+})
+
+TrustCard.displayName = 'TrustCard'

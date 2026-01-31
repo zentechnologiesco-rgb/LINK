@@ -227,7 +227,7 @@ function PropertyReviewContent({ id }: { id: string }) {
                                             key={index}
                                             className={`relative rounded-lg overflow-hidden border border-gray-200 ${index === 0 ? 'col-span-2 aspect-video' : 'aspect-square'}`}
                                         >
-                                            <Link href={image} target="_blank">
+                                            <Link href={image} target="_blank" className="block h-full w-full relative">
                                                 <Image
                                                     src={image}
                                                     alt={`Property image ${index + 1}`}

@@ -3,10 +3,11 @@
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import Link from "next/link"
-import Image from "next/image"
+import { OptimizedImage } from "@/components/ui/optimized-image"
 import { Clock, X, ChevronRight, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
+import { RecentlyViewedSkeleton } from "@/components/ui/skeleton"
 
 interface RecentProperty {
     _id: string
@@ -112,12 +113,15 @@ function RecentPropertyCard({
             className="group flex-shrink-0 w-[160px] sm:w-[200px] md:w-[220px] rounded-xl border border-neutral-200 bg-white overflow-hidden hover:border-neutral-300 transition-all hover:shadow-sm"
         >
             {/* Image */}
-            <div className="relative aspect-[4/3] bg-neutral-100">
-                <Image
+            <div className="bg-neutral-100 relative">
+                <OptimizedImage
                     src={property.imageUrls[0] || '/window.svg'}
                     alt={property.title}
                     fill
+                    aspectRatio="4/3"
+                    sizes="(max-width: 640px) 160px, (max-width: 768px) 200px, 220px"
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    fallbackSrc="/window.svg"
                 />
 
                 {/* Remove Button */}

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -166,7 +167,7 @@ function PropertyRequestsContent() {
                                                     <div className="flex items-center gap-3">
                                                         <div className="relative h-12 w-16 rounded-md overflow-hidden bg-gray-100 shrink-0">
                                                             {property.images?.[0] ? (
-                                                                <Image
+                                                                <OptimizedImage
                                                                     src={property.images[0]}
                                                                     alt={property.title}
                                                                     fill
