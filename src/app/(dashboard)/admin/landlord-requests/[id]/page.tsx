@@ -2,7 +2,7 @@
 
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -263,8 +263,8 @@ function RequestDetailContent({ id }: { id: string }) {
                                 <h3 className="text-sm font-medium mb-3">Front of ID</h3>
                                 <div className="relative aspect-[16/9] w-full bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
                                     {documents.idFrontUrl ? (
-                                        <Link href={documents.idFrontUrl} target="_blank">
-                                            <Image
+                                        <Link href={documents.idFrontUrl} target="_blank" className="block relative h-full w-full">
+                                            <OptimizedImage
                                                 src={documents.idFrontUrl}
                                                 alt="ID Front"
                                                 fill
@@ -285,8 +285,8 @@ function RequestDetailContent({ id }: { id: string }) {
                                 <h3 className="text-sm font-medium mb-3">Back of ID</h3>
                                 <div className="relative aspect-[16/9] w-full bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
                                     {documents.idBackUrl ? (
-                                        <Link href={documents.idBackUrl} target="_blank">
-                                            <Image
+                                        <Link href={documents.idBackUrl} target="_blank" className="block relative h-full w-full">
+                                            <OptimizedImage
                                                 src={documents.idBackUrl}
                                                 alt="ID Back"
                                                 fill

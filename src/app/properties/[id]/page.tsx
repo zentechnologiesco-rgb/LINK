@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, use } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import Image from "next/image"
+import { OptimizedImage } from "@/components/ui/optimized-image"
 import { Button } from "@/components/ui/button"
 import {
     MapPin,
@@ -150,7 +150,7 @@ function PropertyDetailContent({ id }: { id: string }) {
 
                 <div className="absolute inset-0 flex items-center justify-center p-2 sm:p-4">
                     <div className="relative w-full max-w-7xl aspect-[4/3] sm:aspect-[16/10]">
-                        <Image
+                        <OptimizedImage
                             src={property.images[currentPhotoIndex]}
                             alt={`Photo ${currentPhotoIndex + 1}`}
                             fill
@@ -217,7 +217,7 @@ function PropertyDetailContent({ id }: { id: string }) {
             <div className="max-w-[1600px] mx-auto pt-16 sm:pt-20 md:pt-24 px-3 sm:px-6 md:px-12 mb-6 sm:mb-8 md:mb-12 animate-in slide-in-from-bottom-8 duration-700 fade-in">
                 {/* Mobile: Single Image with View All Button */}
                 <div className="md:hidden relative aspect-[4/3] rounded-xl sm:rounded-2xl overflow-hidden border border-neutral-200 bg-white">
-                    <Image
+                    <OptimizedImage
                         src={property.images[0]}
                         alt={property.title}
                         fill
@@ -248,7 +248,7 @@ function PropertyDetailContent({ id }: { id: string }) {
                         className="lg:col-span-2 md:col-span-2 h-full relative cursor-pointer group overflow-hidden rounded-xl md:rounded-l-2xl md:rounded-r-none"
                         onClick={() => setShowAllPhotos(true)}
                     >
-                        <Image
+                        <OptimizedImage
                             src={property.images[0]}
                             alt={property.title}
                             fill
@@ -271,7 +271,7 @@ function PropertyDetailContent({ id }: { id: string }) {
                                 className="relative w-full h-full cursor-pointer group overflow-hidden rounded-lg sm:rounded-xl"
                                 onClick={() => { setCurrentPhotoIndex(i + 1); setShowAllPhotos(true); }}
                             >
-                                <Image
+                                <OptimizedImage
                                     src={img}
                                     alt="Property Detail"
                                     fill
@@ -284,7 +284,7 @@ function PropertyDetailContent({ id }: { id: string }) {
                     {/* Final Image / View All */}
                     <div className="hidden md:block relative h-full cursor-pointer group overflow-hidden rounded-r-xl md:rounded-r-2xl bg-neutral-100" onClick={() => setShowAllPhotos(true)}>
                         {property.images[3] ? (
-                            <Image
+                            <OptimizedImage
                                 src={property.images[3]}
                                 alt="Property Detail"
                                 fill
@@ -373,7 +373,7 @@ function PropertyDetailContent({ id }: { id: string }) {
                             <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 border-b border-neutral-100 pb-4 sm:pb-6">
                                 <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-neutral-100 overflow-hidden relative border border-neutral-200 shrink-0">
                                     {property.landlord?.avatarUrl ? (
-                                        <Image src={property.landlord.avatarUrl} alt="Host" fill className="object-cover" />
+                                        <OptimizedImage src={property.landlord.avatarUrl} alt="Host" fill className="object-cover" />
                                     ) : (
                                         <div className="flex items-center justify-center h-full w-full text-neutral-400">
                                             <User className="w-4 h-4 sm:w-5 sm:h-5" />

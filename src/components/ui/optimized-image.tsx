@@ -68,9 +68,11 @@ export function OptimizedImage({
     const usesAbsoluteFill = fill && !aspectRatio
 
     const containerStyles = cn(
-        "relative overflow-hidden bg-neutral-100 min-h-[1px]",
+        "relative overflow-hidden bg-neutral-100",
+        // Minimum height to avoid "height 0" warnings from Next.js when parent collapses
+        "min-h-[1px]",
         // Additional absolute positioning to fill parent when no aspectRatio
-        usesAbsoluteFill && "absolute inset-0",
+        usesAbsoluteFill && "absolute inset-0 h-full w-full",
         aspectRatio && aspectRatioClasses[aspectRatio],
         containerClassName
     )
@@ -102,7 +104,7 @@ export function OptimizedImage({
                 loading={priority ? undefined : "lazy"}
                 decoding="async"
                 // Skip optimization for Convex storage images to avoid timeouts
-                unoptimized={typeof imageSrc === 'string' && imageSrc.includes('convex.cloud')}
+                unoptimized={typeof imageSrc === 'string' && (imageSrc.includes('convex.cloud') || imageSrc.includes('convex.site'))}
                 {...props}
             />
         </div>

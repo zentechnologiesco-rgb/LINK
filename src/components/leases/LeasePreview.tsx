@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
-import Image from 'next/image'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 import { LeaseDocumentData } from './LeaseBuilder'
 import { Building2, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -81,7 +81,7 @@ export function LeasePreview({
                         <div className="flex items-start gap-4">
                             <div className="relative h-24 w-24 rounded-xl overflow-hidden bg-neutral-100 flex-shrink-0 border border-neutral-200">
                                 {property.images?.[0] ? (
-                                    <Image
+                                    <OptimizedImage
                                         src={property.images[0]}
                                         alt={property.title}
                                         fill
@@ -257,7 +257,7 @@ export function LeasePreview({
                             </p>
                             {landlordSignature ? (
                                 <div className="h-24 bg-transparent flex items-center justify-center">
-                                    <Image
+                                    <OptimizedImage
                                         src={landlordSignature}
                                         alt="Landlord signature"
                                         width={200}
@@ -281,7 +281,7 @@ export function LeasePreview({
                             </p>
                             {tenantSignature ? (
                                 <div className="h-24 bg-transparent flex items-center justify-center">
-                                    <Image
+                                    <OptimizedImage
                                         src={tenantSignature}
                                         alt="Tenant signature"
                                         width={200}
