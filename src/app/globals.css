@@ -479,3 +479,16 @@ html {
     box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
   }
 }
+
+/* POI Marker Styles */
+.poi-marker {
+  z-index: 10;
+}
+
+.poi-marker:hover {
+  z-index: 50;
+}
+
+.property-detail-marker {
+  z-index: 100 !important;
+}
