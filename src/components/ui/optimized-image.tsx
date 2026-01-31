@@ -70,7 +70,8 @@ export function OptimizedImage({
     const containerStyles = cn(
         "relative overflow-hidden bg-neutral-100",
         // Minimum height to avoid "height 0" warnings from Next.js when parent collapses
-        "min-h-[1px]",
+        // Use a larger minimum for fill mode since parent may not have dimensions during initial render
+        usesAbsoluteFill ? "min-h-[100px]" : "min-h-[1px]",
         // Additional absolute positioning to fill parent when no aspectRatio
         usesAbsoluteFill && "absolute inset-0 h-full w-full",
         aspectRatio && aspectRatioClasses[aspectRatio],

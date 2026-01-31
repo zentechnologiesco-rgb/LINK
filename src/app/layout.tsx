@@ -20,6 +20,20 @@ export const metadata: Metadata = {
     title: 'LINK - Property Rental Platform',
     description: 'Modern, end-to-end property rental platform for Namibia.',
     type: 'website',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'LINK - Verified Properties in Namibia',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'LINK - Property Rental Platform',
+    description: 'Modern, end-to-end property rental platform for Namibia.',
+    images: ['/og-image.png'],
   },
 }
 
