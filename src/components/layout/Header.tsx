@@ -25,6 +25,7 @@ import {
     Heart,
     MessageSquare,
     LayoutDashboard,
+    Wallet,
 } from 'lucide-react'
 
 interface HeaderProps {
@@ -211,6 +212,20 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                         >
                                             <MessageSquare className="mr-3 h-4 w-4 opacity-70" />
                                             Messages
+                                        </DropdownMenuItem>
+
+                                        {/* Payments - Coming Soon */}
+                                        <DropdownMenuItem
+                                            className="rounded-xl px-3 py-2.5 text-sm font-medium text-black/40 flex items-center justify-between cursor-not-allowed hover:bg-transparent"
+                                            onClick={(e) => e.preventDefault()}
+                                        >
+                                            <div className="flex items-center">
+                                                <Wallet className="mr-3 h-4 w-4 opacity-70" />
+                                                Payments
+                                            </div>
+                                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/40 bg-black/5 px-1.5 py-0.5 rounded">
+                                                Soon
+                                            </span>
                                         </DropdownMenuItem>
 
                                         <DropdownMenuSeparator className="bg-black/5" />
