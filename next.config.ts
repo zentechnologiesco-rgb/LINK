@@ -35,18 +35,12 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'admired-falcon-221.convex.cloud',
       },
-      {
-        protocol: 'https',
-        hostname: 'friendly-crab-162.convex.cloud',
-      },
+
       {
         protocol: 'https',
         hostname: 'admired-falcon-221.convex.site',
       },
-      {
-        protocol: 'https',
-        hostname: 'friendly-crab-162.convex.site',
-      },
+
       {
         // Catch-all for any Convex storage domain
         protocol: 'https',
