@@ -23,8 +23,9 @@ import {
     Zap,
     Home
 } from "lucide-react"
-import { InquiryDialog } from "@/components/properties/InquiryDialog"
+
 import { SavePropertyButton } from "@/components/properties/SavePropertyButton"
+import { ContactLandlordButton } from "@/components/properties/ContactLandlordButton"
 import { PropertyDetailMap } from "@/components/maps/PropertyDetailMap"
 import { useQuery } from "convex/react"
 import { api } from "../../../../convex/_generated/api"
@@ -371,16 +372,7 @@ function PropertyDetailContent({ id }: { id: string }) {
                                 </div>
                             </div>
 
-                            <InquiryDialog
-                                propertyId={property.id}
-                                propertyTitle={property.title}
-                                mode="message"
-                                trigger={
-                                    <Button className="w-full h-10 sm:h-12 bg-neutral-900 hover:bg-neutral-800 text-white font-medium rounded-lg sm:rounded-xl mb-2 sm:mb-3 shadow-lg shadow-neutral-900/10 text-sm sm:text-base">
-                                        Send Message
-                                    </Button>
-                                }
-                            />
+                            <ContactLandlordButton propertyId={property.id} />
 
                             {property.landlord?.phone && (
                                 <Button variant="outline" className="w-full h-10 sm:h-12 border-neutral-200 hover:bg-neutral-50 text-neutral-900 font-medium rounded-lg sm:rounded-xl text-sm sm:text-base">
@@ -405,16 +397,7 @@ function PropertyDetailContent({ id }: { id: string }) {
                             <p className="text-[10px] text-neutral-400 uppercase font-mono">Monthly Rent</p>
                             <p className="font-bold text-lg sm:text-xl text-neutral-900">N${property.price.toLocaleString()}</p>
                         </div>
-                        <InquiryDialog
-                            propertyId={property.id}
-                            propertyTitle={property.title}
-                            mode="message"
-                            trigger={
-                                <Button className="bg-neutral-900 hover:bg-neutral-800 text-white font-medium rounded-full px-5 sm:px-6 h-10 sm:h-11 shadow-lg shadow-neutral-900/10 text-sm sm:text-base">
-                                    Contact Landlord
-                                </Button>
-                            }
-                        />
+                        <ContactLandlordButton propertyId={property.id} variant="mobile" />
                     </div>
                 </div>
 

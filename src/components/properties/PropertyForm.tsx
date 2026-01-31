@@ -15,7 +15,7 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { ChevronLeft, Loader2, Info, Check, XCircle } from 'lucide-react'
+import { ChevronLeft, Loader2, Info, Check, XCircle, Home, MapPin } from 'lucide-react'
 import { ImageUpload } from './ImageUpload'
 import { LocationPicker } from '@/components/maps/LocationPicker'
 import { useMutation, useQuery } from "convex/react"
@@ -185,27 +185,26 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
     }
 
     return (
-        <div className="max-w-4xl mx-auto pb-20">
+        <div className="max-w-4xl mx-auto pb-20 animate-in fade-in duration-500">
             {/* Header */}
-            <div className="mb-10">
+            <div className="mb-12">
                 <Link
                     href="/landlord/properties"
-                    className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-black/40 hover:text-black transition-colors mb-6"
+                    className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-neutral-500 hover:text-neutral-900 transition-colors mb-6"
                 >
-                    <ChevronLeft className="h-4 w-4" />
-                    Back to properties
+                    <ChevronLeft className="h-3 w-3" />
+                    Back to portfolio
                 </Link>
-                <h1 className="font-[family-name:var(--font-anton)] text-4xl uppercase tracking-wide text-black mb-2">
-                    {mode === 'edit' ? 'Edit Property' : 'List a New Property'}
+                <h1 className="font-[family-name:var(--font-anton)] text-4xl uppercase tracking-wide text-neutral-900 mb-2">
+                    {mode === 'edit' ? 'Edit Property' : 'New Listing'}
                 </h1>
-                <p className="text-black/60 font-medium">
+                <p className="text-neutral-500 font-medium max-w-lg">
                     {mode === 'edit'
-                        ? 'Update your property details below.'
-                        : 'Fill in the details to publish your listing.'}
+                        ? 'Update your property details and manage availability.'
+                        : 'Fill in the details below to publish your listing to the marketplace.'}
                 </p>
             </div>
 
-            {/* Info Banner */}
             {/* Rejection Banner */}
             {mode === 'edit' && initialData?.approvalStatus === 'rejected' && (
                 <div className="flex items-start gap-4 p-6 rounded-2xl bg-red-50 border border-red-100 mb-10">
@@ -225,26 +224,14 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                 </div>
             )}
 
-            {/* Info Banner */}
-            {mode === 'create' && (
-                <div className="flex items-start gap-4 p-6 rounded-2xl bg-black/5 border border-black/5 mb-10">
-                    <Info className="h-5 w-5 text-black shrink-0 mt-0.5" />
-                    <p className="text-sm font-medium text-black/80 leading-relaxed">
-                        Your property will be submitted for approval. Once approved by our team, it will be listed publicly on the platform.
-                    </p>
-                </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-10">
+            <form onSubmit={handleSubmit} className="space-y-12">
                 {/* Property Images */}
-                <section className="p-8 bg-white border border-black/5 rounded-3xl">
-                    <div className="mb-6">
-                        <h2 className="font-[family-name:var(--font-anton)] uppercase tracking-wide text-xl text-black mb-1">Property Images</h2>
-                        <p className="text-sm text-black/50 font-medium">
-                            Upload high-quality photos. The first image will be the main photo.
-                        </p>
+                <section>
+                    <div className="mb-6 flex items-baseline justify-between border-b border-neutral-200 pb-2">
+                        <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-widest font-mono">01. Visuals</h2>
+                        <span className="text-xs text-neutral-400 font-mono">Max 6 images</span>
                     </div>
-                    <div className="rounded-2xl border-2 border-dashed border-black/10 bg-gray-50/50 p-6 transition-colors hover:border-black/20">
+                    <div className="rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50 p-8 transition-all hover:border-neutral-300">
                         <ImageUpload
                             maxImages={6}
                             onImagesChange={setImages}
@@ -254,11 +241,14 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                 </section>
 
                 {/* Basic Information */}
-                <section className="p-8 bg-white border border-black/5 rounded-3xl">
-                    <h2 className="font-[family-name:var(--font-anton)] uppercase tracking-wide text-xl text-black mb-6">Basic Information</h2>
-                    <div className="space-y-6">
+                <section>
+                    <div className="mb-6 border-b border-neutral-200 pb-2">
+                        <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-widest font-mono">02. Essentials</h2>
+                    </div>
+
+                    <div className="grid gap-6">
                         <div>
-                            <Label htmlFor="title" className="text-xs font-bold uppercase tracking-wider text-black/40 mb-2 block">Property Title</Label>
+                            <Label htmlFor="title" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 mb-1.5 block">Property Title</Label>
                             <Input
                                 id="title"
                                 placeholder="e.g. Modern 2-Bedroom Apartment in CBD"
@@ -266,15 +256,15 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                                 onChange={(e) => setTitle(e.target.value)}
                                 required
                                 minLength={5}
-                                className="h-12 rounded-xl bg-white border-black/10 focus-visible:ring-black font-medium"
+                                className="h-12 rounded-xl bg-neutral-50 border-transparent focus:bg-white focus:border-neutral-200 focus:ring-0 font-medium transition-all"
                             />
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div>
-                                <Label htmlFor="property_type" className="text-xs font-bold uppercase tracking-wider text-black/40 mb-2 block">Property Type</Label>
+                                <Label htmlFor="property_type" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 mb-1.5 block">Property Type</Label>
                                 <Select value={propertyType} onValueChange={setPropertyType}>
-                                    <SelectTrigger className="h-12 rounded-xl bg-white border-black/10 focus:ring-black font-medium">
+                                    <SelectTrigger className="h-12 rounded-xl bg-neutral-50 border-transparent focus:bg-white focus:border-neutral-200 focus:ring-0 font-medium transition-all">
                                         <SelectValue placeholder="Select type" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -289,7 +279,7 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                                 </Select>
                             </div>
                             <div>
-                                <Label htmlFor="price_nad" className="text-xs font-bold uppercase tracking-wider text-black/40 mb-2 block">Monthly Rent (N$)</Label>
+                                <Label htmlFor="price_nad" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 mb-1.5 block">Monthly Rent (N$)</Label>
                                 <Input
                                     id="price_nad"
                                     type="number"
@@ -298,7 +288,7 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                                     onChange={(e) => setPriceNad(e.target.value)}
                                     required
                                     min={0}
-                                    className="h-12 rounded-xl bg-white border-black/10 focus-visible:ring-black font-[family-name:var(--font-anton)] tracking-wide text-lg"
+                                    className="h-12 rounded-xl bg-neutral-50 border-transparent focus:bg-white focus:border-neutral-200 focus:ring-0 font-[family-name:var(--font-anton)] tracking-wide text-lg transition-all"
                                 />
                             </div>
                         </div>
@@ -306,56 +296,67 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                 </section>
 
                 {/* Location */}
-                <section className="p-8 bg-white border border-black/5 rounded-3xl">
-                    <h2 className="font-[family-name:var(--font-anton)] uppercase tracking-wide text-xl text-black mb-6">Location</h2>
+                <section>
+                    <div className="mb-6 border-b border-neutral-200 pb-2">
+                        <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-widest font-mono">03. Location</h2>
+                    </div>
+
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div>
-                                <Label htmlFor="city" className="text-xs font-bold uppercase tracking-wider text-black/40 mb-2 block">City</Label>
-                                <Input
-                                    id="city"
-                                    placeholder="Windhoek"
-                                    value={city}
-                                    onChange={(e) => setCity(e.target.value)}
-                                    required
-                                    className="h-12 rounded-xl bg-white border-black/10 focus-visible:ring-black font-medium"
-                                />
+                                <Label htmlFor="city" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 mb-1.5 block">City</Label>
+                                <div className="relative">
+                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                                    <Input
+                                        id="city"
+                                        placeholder="Windhoek"
+                                        value={city}
+                                        onChange={(e) => setCity(e.target.value)}
+                                        required
+                                        className="h-12 pl-10 rounded-xl bg-neutral-50 border-transparent focus:bg-white focus:border-neutral-200 focus:ring-0 font-medium transition-all"
+                                    />
+                                </div>
                             </div>
                             <div>
-                                <Label htmlFor="address" className="text-xs font-bold uppercase tracking-wider text-black/40 mb-2 block">Address</Label>
-                                <Input
-                                    id="address"
-                                    placeholder="123 Independence Ave"
-                                    value={address}
-                                    onChange={(e) => setAddress(e.target.value)}
-                                    required
-                                    className="h-12 rounded-xl bg-white border-black/10 focus-visible:ring-black font-medium"
-                                />
+                                <Label htmlFor="address" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 mb-1.5 block">Street Address</Label>
+                                <div className="relative">
+                                    <Home className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                                    <Input
+                                        id="address"
+                                        placeholder="123 Independence Ave"
+                                        value={address}
+                                        onChange={(e) => setAddress(e.target.value)}
+                                        required
+                                        className="h-12 pl-10 rounded-xl bg-neutral-50 border-transparent focus:bg-white focus:border-neutral-200 focus:ring-0 font-medium transition-all"
+                                    />
+                                </div>
                             </div>
                         </div>
 
                         <div>
-                            <Label className="text-xs font-bold uppercase tracking-wider text-black/40 mb-1 block">Pin Location</Label>
-                            <p className="text-xs text-black/50 font-medium mb-4">
-                                Search or click on the map to confirm the exact location.
-                            </p>
-                            <div className="rounded-2xl overflow-hidden border border-black/10">
+                            <Label className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 mb-2 block">Pin Location</Label>
+                            <div className="rounded-2xl overflow-hidden border border-neutral-200 shadow-sm">
                                 <LocationPicker
                                     initialCoordinates={coordinates}
                                     onLocationChange={setCoordinates}
                                     onAddressChange={handleAddressFromMap}
                                 />
                             </div>
+                            <p className="text-[10px] text-neutral-400 font-mono mt-2 text-right">
+                                Click on the map to set exact coordinates.
+                            </p>
                         </div>
                     </div>
                 </section>
 
                 {/* Specifications */}
-                <section className="p-8 bg-white border border-black/5 rounded-3xl">
-                    <h2 className="font-[family-name:var(--font-anton)] uppercase tracking-wide text-xl text-black mb-6">Specifications</h2>
+                <section>
+                    <div className="mb-6 border-b border-neutral-200 pb-2">
+                        <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-widest font-mono">04. Specs</h2>
+                    </div>
                     <div className="grid grid-cols-3 gap-6">
                         <div>
-                            <Label htmlFor="bedrooms" className="text-xs font-bold uppercase tracking-wider text-black/40 mb-2 block">Bedrooms</Label>
+                            <Label htmlFor="bedrooms" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 mb-1.5 block">Bedrooms</Label>
                             <Input
                                 id="bedrooms"
                                 type="number"
@@ -363,11 +364,11 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                                 onChange={(e) => setBedrooms(e.target.value)}
                                 min={0}
                                 required
-                                className="h-12 rounded-xl bg-white border-black/10 focus-visible:ring-black font-medium text-center"
+                                className="h-12 rounded-xl bg-neutral-50 border-transparent focus:bg-white focus:border-neutral-200 focus:ring-0 font-medium text-center transition-all"
                             />
                         </div>
                         <div>
-                            <Label htmlFor="bathrooms" className="text-xs font-bold uppercase tracking-wider text-black/40 mb-2 block">Bathrooms</Label>
+                            <Label htmlFor="bathrooms" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 mb-1.5 block">Bathrooms</Label>
                             <Input
                                 id="bathrooms"
                                 type="number"
@@ -375,11 +376,11 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                                 onChange={(e) => setBathrooms(e.target.value)}
                                 min={0}
                                 required
-                                className="h-12 rounded-xl bg-white border-black/10 focus-visible:ring-black font-medium text-center"
+                                className="h-12 rounded-xl bg-neutral-50 border-transparent focus:bg-white focus:border-neutral-200 focus:ring-0 font-medium text-center transition-all"
                             />
                         </div>
                         <div>
-                            <Label htmlFor="size_sqm" className="text-xs font-bold uppercase tracking-wider text-black/40 mb-2 block">Size (m²)</Label>
+                            <Label htmlFor="size_sqm" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 mb-1.5 block">Size (m²)</Label>
                             <Input
                                 id="size_sqm"
                                 type="number"
@@ -388,15 +389,17 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                                 onChange={(e) => setSizeSqm(e.target.value)}
                                 min={0}
                                 required
-                                className="h-12 rounded-xl bg-white border-black/10 focus-visible:ring-black font-medium text-center"
+                                className="h-12 rounded-xl bg-neutral-50 border-transparent focus:bg-white focus:border-neutral-200 focus:ring-0 font-medium text-center transition-all"
                             />
                         </div>
                     </div>
                 </section>
 
                 {/* Description */}
-                <section className="p-8 bg-white border border-black/5 rounded-3xl">
-                    <h2 className="font-[family-name:var(--font-anton)] uppercase tracking-wide text-xl text-black mb-6">Description</h2>
+                <section>
+                    <div className="mb-6 border-b border-neutral-200 pb-2">
+                        <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-widest font-mono">05. Details</h2>
+                    </div>
                     <Textarea
                         id="description"
                         placeholder="Describe the property features, nearby amenities, transportation, etc."
@@ -404,17 +407,14 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                         onChange={(e) => setDescription(e.target.value)}
                         required
                         minLength={20}
-                        className="min-h-[150px] rounded-xl bg-white border-black/10 focus-visible:ring-black resize-none font-medium leading-relaxed p-4"
+                        className="min-h-[150px] rounded-xl bg-neutral-50 border-transparent focus:bg-white focus:border-neutral-200 focus:ring-0 resize-none font-medium leading-relaxed p-4 transition-all"
                     />
                 </section>
 
                 {/* Amenities */}
-                <section className="p-8 bg-white border border-black/5 rounded-3xl">
-                    <div className="mb-6">
-                        <h2 className="font-[family-name:var(--font-anton)] uppercase tracking-wide text-xl text-black mb-1">Amenities</h2>
-                        <p className="text-sm text-black/50 font-medium">
-                            Select all that apply.
-                        </p>
+                <section>
+                    <div className="mb-6 border-b border-neutral-200 pb-2">
+                        <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-widest font-mono">06. Amenities</h2>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                         {AMENITIES.map((amenity) => {
@@ -425,10 +425,10 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                                     type="button"
                                     onClick={() => handleAmenityChange(amenity.name)}
                                     className={cn(
-                                        "flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-center border",
+                                        "flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all text-center border",
                                         isSelected
-                                            ? 'bg-black text-white border-black'
-                                            : 'bg-white text-black/60 border-black/5 hover:bg-black/5 hover:text-black hover:border-black/20'
+                                            ? 'bg-neutral-900 text-white border-neutral-900 shadow-md'
+                                            : 'bg-white text-neutral-500 border-neutral-100 hover:border-neutral-300 hover:bg-neutral-50'
                                     )}
                                 >
                                     {isSelected && <Check className="h-3 w-3 shrink-0" strokeWidth={3} />}
@@ -440,12 +440,12 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                 </section>
 
                 {/* Action Buttons */}
-                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-4 pt-6">
+                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-4 pt-8 sticky bottom-0 bg-white/80 backdrop-blur-xl p-4 -mx-4 sm:mx-0 border-t border-neutral-100 z-10">
                     <Link href="/landlord/properties" className="w-full sm:w-auto">
                         <Button
                             type="button"
-                            variant="outline"
-                            className="w-full sm:w-auto h-12 rounded-full border-black/10 text-black font-bold uppercase tracking-wider text-xs hover:bg-black/5 hover:text-black shadow-none"
+                            variant="ghost"
+                            className="w-full sm:w-auto h-12 rounded-xl text-neutral-500 font-bold uppercase tracking-wider text-xs hover:bg-neutral-100 hover:text-neutral-900"
                         >
                             Cancel
                         </Button>
@@ -453,7 +453,7 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                     <Button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full sm:w-auto h-12 bg-black hover:bg-black/90 text-white rounded-full font-bold uppercase tracking-wider text-xs shadow-none hover:scale-105 transition-all"
+                        className="w-full sm:w-auto h-12 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl font-bold uppercase tracking-wider text-xs shadow-lg shadow-neutral-900/10 transition-all hover:-translate-y-1"
                     >
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {isLoading

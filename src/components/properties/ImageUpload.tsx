@@ -129,15 +129,15 @@ export function ImageUpload({
     })
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             {/* Upload Area */}
             <div
                 onClick={() => !uploading && fileInputRef.current?.click()}
                 className={cn(
-                    'rounded-xl border border-dashed p-6 text-center cursor-pointer transition-colors',
+                    'rounded-xl border-2 border-dashed p-10 text-center cursor-pointer transition-all duration-300',
                     uploading
-                        ? 'border-border bg-muted/30 cursor-not-allowed'
-                        : 'border-border bg-muted/20 hover:bg-muted/30'
+                        ? 'border-neutral-200 bg-neutral-50 cursor-not-allowed opacity-50'
+                        : 'border-neutral-200 bg-white hover:bg-neutral-50 hover:border-neutral-300'
                 )}
             >
                 <input
@@ -150,32 +150,36 @@ export function ImageUpload({
                     disabled={uploading || imageIds.length >= maxImages}
                 />
                 {uploading ? (
-                    <div className="flex flex-col items-center gap-2">
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" strokeWidth={1.5} />
-                        <p className="text-sm text-muted-foreground">Uploading... {uploadProgress}%</p>
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="h-10 w-10 border-2 border-neutral-200 border-t-neutral-900 rounded-full animate-spin" />
+                        <p className="text-xs font-mono font-bold uppercase tracking-widest text-neutral-500">Uploading... {uploadProgress}%</p>
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center gap-2">
-                        <ImagePlus className="h-8 w-8 text-muted-foreground" strokeWidth={1.5} />
-                        <p className="text-sm font-medium">Click to upload images</p>
-                        <p className="text-xs text-muted-foreground">
-                            PNG, JPG up to 5MB • {imageIds.length}/{maxImages} uploaded
-                        </p>
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="h-12 w-12 rounded-full bg-neutral-100 flex items-center justify-center">
+                            <ImagePlus className="h-5 w-5 text-neutral-500" strokeWidth={1.5} />
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-sm font-bold text-neutral-900">Click to upload images</p>
+                            <p className="text-[10px] font-mono font-bold uppercase tracking-wide text-neutral-400">
+                                PNG, JPG up to 5MB • {imageIds.length}/{maxImages} uploaded
+                            </p>
+                        </div>
                     </div>
                 )}
             </div>
 
             {/* Image Preview Grid */}
             {imageIds.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {imageIds.map((id, index) => {
                         const url = urlMap.get(id)
                         return (
                             <div
                                 key={id}
                                 className={cn(
-                                    'relative rounded-xl overflow-hidden bg-muted/30 border group',
-                                    index === 0 ? 'col-span-2 row-span-2 aspect-video' : 'aspect-square'
+                                    'relative rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200 group transition-all hover:shadow-lg hover:shadow-neutral-900/5',
+                                    index === 0 ? 'col-span-2 row-span-2 aspect-[4/3]' : 'aspect-square'
                                 )}
                             >
                                 {url ? (
@@ -183,15 +187,15 @@ export function ImageUpload({
                                     <img
                                         src={url}
                                         alt={`Property image ${index + 1}`}
-                                        className="absolute inset-0 h-full w-full object-cover"
+                                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                     />
                                 ) : (
                                     <div className="absolute inset-0 flex items-center justify-center">
-                                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                                        <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
                                     </div>
                                 )}
                                 {index === 0 && (
-                                    <span className="absolute top-2 left-2 rounded-md bg-background/80 backdrop-blur px-2 py-1 text-xs font-medium text-foreground border">
+                                    <span className="absolute top-4 left-4 rounded-full bg-neutral-900/90 backdrop-blur-md px-3 py-1 text-[10px] font-mono font-bold uppercase tracking-widest text-white shadow-sm">
                                         Main Photo
                                     </span>
                                 )}
@@ -201,9 +205,9 @@ export function ImageUpload({
                                         e.stopPropagation()
                                         removeImage(id)
                                     }}
-                                    className="absolute top-2 right-2 rounded-full bg-background/80 backdrop-blur border p-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                                    className="absolute top-3 right-3 rounded-full bg-white/90 backdrop-blur border border-neutral-200 p-2 opacity-0 group-hover:opacity-100 transition-all text-neutral-500 hover:text-red-500 hover:bg-white shadow-sm hover:scale-110"
                                 >
-                                    <X className="h-4 w-4" strokeWidth={1.5} />
+                                    <X className="h-3.5 w-3.5" strokeWidth={2} />
                                 </button>
                             </div>
                         )

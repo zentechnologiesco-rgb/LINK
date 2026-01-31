@@ -226,3 +226,40 @@ export const getUserInquiries = query({
         return enriched.sort((a, b) => b.updatedAt - a.updatedAt);
     },
 });
+
+// Get or create an inquiry for a property (for starting a chat)
+export const getOrCreateForProperty = mutation({
+    args: {
+        propertyId: v.id("properties"),
+    },
+    handler: async (ctx, args) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) throw new Error("Not authenticated");
+
+        const property = await ctx.db.get(args.propertyId);
+        if (!property) throw new Error("Property not found");
+
+        // Check if user already has an inquiry for this property
+        const existing = await ctx.db
+            .query("inquiries")
+            .withIndex("by_tenantId", (q) => q.eq("tenantId", userId))
+            .filter((q) => q.eq(q.field("propertyId"), args.propertyId))
+            .first();
+
+        if (existing) {
+            return existing._id;
+        }
+
+        // Create new inquiry
+        const inquiryId = await ctx.db.insert("inquiries", {
+            propertyId: args.propertyId,
+            tenantId: userId,
+            landlordId: property.landlordId,
+            message: "", // No initial message, chat will be empty
+            status: "pending",
+        });
+
+        return inquiryId;
+    },
+});
+

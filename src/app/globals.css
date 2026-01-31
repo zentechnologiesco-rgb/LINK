@@ -435,3 +435,8 @@ html {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
+/* Utilities */
+.mask-gradient-right {
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+}

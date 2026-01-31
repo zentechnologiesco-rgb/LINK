@@ -12,7 +12,12 @@ import {
     ChevronLeft,
     ChevronRight,
     LayoutGrid,
-    Search
+    Search,
+    MapPin,
+    BedDouble,
+    Bath,
+    Maximize,
+    AlertCircle
 } from 'lucide-react'
 import {
     DropdownMenu,
@@ -51,7 +56,7 @@ function LandlordPropertiesContent() {
             <div className="min-h-[60vh] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <div className="h-10 w-10 rounded-full border-2 border-black/10 border-t-black animate-spin" />
-                    <p className="text-sm text-black/40 font-medium">Loading properties...</p>
+                    <p className="text-sm text-black/40 font-medium">Loading portfolio...</p>
                 </div>
             </div>
         )
@@ -69,47 +74,65 @@ function LandlordPropertiesContent() {
     }
 
     return (
-        <div className="px-4 py-8 md:px-6 md:py-10 max-w-[2000px] mx-auto pb-24">
-            {/* Header */}
-            <div className="flex justify-end mb-12">
-                <Link href="/landlord/properties/new">
-                    <Button className="bg-black hover:bg-black/80 text-white rounded-full h-12 px-8 font-bold uppercase tracking-wider text-xs border border-transparent transition-all hover:scale-105 active:scale-95 shadow-none">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Property
-                    </Button>
-                </Link>
+        <div className="min-h-screen bg-white">
+            <div className="max-w-[1600px] mx-auto px-4 md:px-8 py-12 pb-32">
+
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
+                    <div>
+                        <h1 className="font-[family-name:var(--font-anton)] text-5xl md:text-7xl uppercase text-black leading-[0.9] mb-4">
+                            Property<br />Portfolio
+                        </h1>
+                        <p className="text-black/60 font-medium max-w-md">
+                            Manage your listings, track automated leasing, and monitor property performance in real-time.
+                        </p>
+                    </div>
+                    <div>
+                        <Link href="/landlord/properties/new">
+                            <Button className="bg-black hover:bg-neutral-800 text-white h-14 px-8 rounded-xl font-bold tracking-wide transition-all hover:-translate-y-1 shadow-xl shadow-black/10">
+                                <Plus className="mr-2 h-5 w-5" />
+                                Add New Property
+                            </Button>
+                        </Link>
+                    </div>
+                </div>
+
+                {/* Stats Grid */}
+                {properties.length > 0 && (
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-20">
+                        <StatCard label="Total Units" value={stats.total} />
+                        <StatCard label="Active Listings" value={stats.listed} />
+                        <StatCard label="Currently Leased" value={stats.leased} />
+                        <StatCard label="Vacant Units" value={stats.available} highlight={stats.available > 0} />
+                    </div>
+                )}
+
+                {/* Properties Grid */}
+                {properties.length === 0 ? (
+                    <EmptyState />
+                ) : (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                        <div className="flex items-center justify-between border-b border-black/5 pb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                <span className="text-xs font-mono font-bold uppercase tracking-widest text-black/40">
+                                    Live Listings ({properties.length})
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-x-8 gap-y-12">
+                            {properties.map((property: Property) => (
+                                <PropertyCard
+                                    key={property._id}
+                                    property={property}
+                                    hasLease={propertyIdsWithLease.has(property._id)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
             </div>
-
-            {/* Stats */}
-            {properties.length > 0 && (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-                    <StatCard label="Total Properties" value={stats.total} />
-                    <StatCard label="Active Listings" value={stats.listed} />
-                    <StatCard label="Currently Leased" value={stats.leased} />
-                    <StatCard label="Vacant Units" value={stats.available} highlight={stats.available > 0} />
-                </div>
-            )}
-
-            {/* Properties Grid */}
-            {properties.length === 0 ? (
-                <EmptyState />
-            ) : (
-                <div className="space-y-6">
-                    <div className="flex items-center gap-2 text-black/40 font-bold uppercase tracking-widest text-xs mb-8">
-                        <LayoutGrid className="h-4 w-4" />
-                        <span>All Listings</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8">
-                        {properties.map((property: Property) => (
-                            <PropertyCard
-                                key={property._id}
-                                property={property}
-                                hasLease={propertyIdsWithLease.has(property._id)}
-                            />
-                        ))}
-                    </div>
-                </div>
-            )}
         </div>
     )
 }
@@ -118,20 +141,24 @@ function LandlordPropertiesContent() {
 function StatCard({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
     return (
         <div className={cn(
-            "p-6 rounded-3xl border transition-all duration-300",
+            "p-8 rounded-2xl transition-all duration-300 flex flex-col justify-between h-32 md:h-40 group",
             highlight
-                ? "bg-black border-black text-white"
-                : "bg-white border-black/10 text-black hover:border-black"
+                ? "bg-neutral-900 text-white ring-1 ring-black"
+                : "bg-neutral-50 hover:bg-white border border-neutral-100 hover:border-neutral-200 hover:shadow-lg hover:shadow-black/5"
         )}>
+            <div className="flex justify-between items-start">
+                <span className={cn(
+                    "text-[10px] uppercase tracking-widest font-mono font-bold",
+                    highlight ? "text-neutral-400" : "text-neutral-400"
+                )}>
+                    {label}
+                </span>
+                {highlight && <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />}
+            </div>
+
             <p className={cn(
-                "text-[10px] font-bold uppercase tracking-widest mb-2",
-                highlight ? "text-white/60" : "text-black/40"
-            )}>
-                {label}
-            </p>
-            <p className={cn(
-                "font-[family-name:var(--font-anton)] text-5xl",
-                highlight ? "text-white" : "text-black"
+                "font-[family-name:var(--font-anton)] text-5xl md:text-6xl leading-none",
+                highlight ? "text-white" : "text-neutral-900"
             )}>
                 {value}
             </p>
@@ -142,20 +169,19 @@ function StatCard({ label, value, highlight }: { label: string; value: number; h
 // Empty State Component
 function EmptyState() {
     return (
-        <div className="flex flex-col items-center justify-center py-24 px-8 text-center bg-gray-50/50 rounded-[3rem] border border-black/5 dashed">
-            <div className="h-20 w-20 rounded-3xl bg-white border border-black/10 flex items-center justify-center mb-8 rotate-3 transition-transform hover:rotate-6">
-                <Building2 className="h-8 w-8 text-black/20" />
+        <div className="flex flex-col items-center justify-center py-32 px-8 text-center bg-neutral-50 rounded-3xl border border-dashed border-neutral-200">
+            <div className="h-24 w-24 rounded-full bg-white border border-neutral-100 flex items-center justify-center mb-6 shadow-sm">
+                <Building2 className="h-10 w-10 text-neutral-300" />
             </div>
-            <h3 className="font-[family-name:var(--font-anton)] text-2xl uppercase tracking-wide text-black mb-3">
+            <h3 className="font-[family-name:var(--font-anton)] text-3xl text-neutral-900 mb-2 uppercase tracking-wide">
                 No properties yet
             </h3>
-            <p className="text-black/50 mb-8 max-w-sm font-medium">
-                Start building your portfolio by adding your first property listing.
+            <p className="text-neutral-500 mb-8 max-w-sm">
+                Your portfolio is empty. Add your first property to start receiving inquiries.
             </p>
             <Link href="/landlord/properties/new">
-                <Button className="bg-black hover:bg-black/90 text-white rounded-full h-14 px-10 font-bold uppercase tracking-wider text-sm shadow-none hover:scale-105 transition-all">
-                    <Plus className="mr-2 h-5 w-5" />
-                    List Property
+                <Button className="bg-neutral-900 hover:bg-neutral-800 text-white h-12 px-8 rounded-xl font-bold tracking-wide">
+                    List First Property
                 </Button>
             </Link>
         </div>
@@ -169,171 +195,91 @@ function PropertyCard({ property, hasLease }: { property: Property; hasLease: bo
         ? property.imageUrls
         : ['/window.svg']
 
-    const nextImage = (e: React.MouseEvent) => {
-        e.preventDefault()
-        e.stopPropagation()
-        setCurrentImageIndex((prev) => (prev + 1) % images.length)
-    }
-
-    const prevImage = (e: React.MouseEvent) => {
-        e.preventDefault()
-        e.stopPropagation()
-        setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
-    }
-
-    const getStatusBadge = () => {
-        if (hasLease) {
-            return { label: 'Leased', className: 'bg-black text-white border-black' }
-        }
-        if (property.approvalStatus === 'rejected') {
-            return { label: 'Rejected', className: 'bg-red-500 text-white border-red-500' }
-        }
-        if (property.approvalStatus === 'pending') {
-            return { label: 'Pending', className: 'bg-yellow-500 text-white border-yellow-500' }
-        }
-        if (property.isAvailable) {
-            return { label: 'Listed', className: 'bg-white text-black border-black/10' }
-        }
-        return { label: 'Unlisted', className: 'bg-gray-100 text-black/40 border-transparent' }
-    }
-
-    const status = getStatusBadge()
+    const status = (() => {
+        if (hasLease) return { label: 'Leased', color: 'bg-neutral-900 text-white' }
+        if (property.approvalStatus === 'rejected') return { label: 'Rejected', color: 'bg-red-500 text-white' }
+        if (property.approvalStatus === 'pending') return { label: 'Pending', color: 'bg-amber-400 text-neutral-900' }
+        if (!property.isAvailable) return { label: 'Unlisted', color: 'bg-neutral-200 text-neutral-500' }
+        return { label: 'Active', color: 'bg-emerald-500 text-white' }
+    })()
 
     return (
-        <div className="group space-y-4">
-            {/* Image Container */}
-            <div className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-gray-100 border border-black/10 transition-all duration-500 group-hover:scale-[1.02]">
-                <Link href={`/properties/${property._id}`}>
-                    {images[currentImageIndex] === '/window.svg' ? (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-50">
-                            <Building2 className="h-12 w-12 text-black/10" />
-                        </div>
-                    ) : (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
-                            src={images[currentImageIndex]}
-                            alt={property.title}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        />
-                    )}
+        <div className="group flex flex-col gap-4">
+            {/* Image & Status */}
+            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-neutral-100 border border-neutral-200 group-hover:shadow-2xl group-hover:shadow-black/5 transition-all duration-500 group-hover:-translate-y-1">
+                <Link href={`/properties/${property._id}`} className="block h-full w-full">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src={images[0]}
+                        alt={property.title}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
                 </Link>
 
-                {/* Status Badge */}
-                <div className="absolute left-4 top-4">
+                <div className="absolute top-4 left-4">
                     <span className={cn(
-                        "inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border backdrop-blur-md",
-                        status.className
+                        "px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider backdrop-blur-md",
+                        status.color
                     )}>
                         {status.label}
                     </span>
                 </div>
-
-                {/* Actions Dropdown */}
-                <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <button className="h-9 w-9 rounded-full bg-white text-black hover:bg-black hover:text-white border border-black/10 flex items-center justify-center transition-all duration-300">
-                                <MoreHorizontal className="h-4 w-4" />
-                            </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48 p-2 rounded-2xl border-black/5 bg-white shadow-none border">
-                            <DropdownMenuItem asChild className="rounded-xl focus:bg-black/5 font-medium cursor-pointer py-2.5">
-                                <Link href={`/properties/${property._id}`} className="flex items-center gap-2">
-                                    <Eye className="h-4 w-4 text-black/60" />
-                                    <span>View Details</span>
-                                </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild className="rounded-xl focus:bg-black/5 font-medium cursor-pointer py-2.5">
-                                <Link href={`/landlord/properties/${property._id}/edit`} className="flex items-center gap-2">
-                                    <Edit className="h-4 w-4 text-black/60" />
-                                    <span>Edit Property</span>
-                                </Link>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-
-                {/* Image Navigation */}
-                {images.length > 1 && (
-                    <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none">
-                        <button
-                            onClick={prevImage}
-                            className="h-8 w-8 rounded-full bg-white/90 text-black hover:bg-black hover:text-white border border-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-auto -translate-x-2 group-hover:translate-x-0 shadow-none"
-                        >
-                            <ChevronLeft className="h-4 w-4" />
-                        </button>
-                        <button
-                            onClick={nextImage}
-                            className="h-8 w-8 rounded-full bg-white/90 text-black hover:bg-black hover:text-white border border-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-auto translate-x-2 group-hover:translate-x-0 shadow-none"
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                        </button>
-                    </div>
-                )}
-
-                {/* Carousel Dots */}
-                {images.length > 1 && (
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/20 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-                        {images.slice(0, 5).map((_, index) => (
-                            <button
-                                key={index}
-                                onClick={(e) => {
-                                    e.preventDefault()
-                                    e.stopPropagation()
-                                    setCurrentImageIndex(index)
-                                }}
-                                className={cn(
-                                    "h-1.5 w-1.5 rounded-full transition-all duration-300",
-                                    currentImageIndex === index ? "bg-white w-3" : "bg-white/50 hover:bg-white/80"
-                                )}
-                            />
-                        ))}
-                    </div>
-                )}
             </div>
 
-            {/* Content */}
-            <Link href={`/properties/${property._id}`} className="block group/text">
-                <div className="space-y-3 px-1">
-                    <div className="flex items-start justify-between gap-4">
-                        <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-black/40">
-                                    {property.propertyType}
-                                </span>
-                            </div>
-                            <h3 className="font-bold text-lg text-black leading-tight group-hover/text:underline decoration-2 underline-offset-4">
-                                {property.city}
-                            </h3>
-                            <p className="text-sm font-medium text-black/60 truncate mt-0.5 max-w-[200px]">
-                                {property.title}
-                            </p>
-                        </div>
-                        <div className="text-right">
-                            <span className="font-[family-name:var(--font-anton)] text-xl text-black">
-                                N$ {property.priceNad?.toLocaleString()}
-                            </span>
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-black/30">/mo</p>
+            {/* Info */}
+            <div className="space-y-3">
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h3 className="text-lg font-bold text-neutral-900 leading-tight line-clamp-1 group-hover:text-neutral-600 transition-colors">
+                            {property.title}
+                        </h3>
+                        <div className="flex items-center gap-1.5 mt-1 text-neutral-400">
+                            <MapPin className="h-3 w-3" />
+                            <p className="text-xs font-medium">{property.city}</p>
                         </div>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-black/[0.03] border border-black/[0.02]">
-                            <span className="text-xs font-bold text-black/60">
-                                {property.bedrooms || 0} <span className="text-black/30 font-medium">Bed</span>
-                            </span>
-                            <div className="w-px h-3 bg-black/10" />
-                            <span className="text-xs font-bold text-black/60">
-                                {property.bathrooms || 0} <span className="text-black/30 font-medium">Bath</span>
-                            </span>
-                            <div className="w-px h-3 bg-black/10" />
-                            <span className="text-xs font-bold text-black/60">
-                                {property.sizeSqm || 0} <span className="text-black/30 font-medium">m²</span>
-                            </span>
-                        </div>
+                    <div className="text-right">
+                        <span className="font-mono font-bold text-neutral-900 text-lg">
+                            N${property.priceNad.toLocaleString()}
+                        </span>
+                        <p className="text-[10px] text-neutral-400 font-mono">/mo</p>
                     </div>
                 </div>
-            </Link>
+
+                {/* Specs */}
+                <div className="flex items-center gap-2 pt-2 border-t border-dashed border-neutral-200">
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-neutral-50 rounded-md">
+                        <BedDouble className="h-3.5 w-3.5 text-neutral-400" />
+                        <span className="text-xs font-mono font-bold text-neutral-700">{property.bedrooms || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-neutral-50 rounded-md">
+                        <Bath className="h-3.5 w-3.5 text-neutral-400" />
+                        <span className="text-xs font-mono font-bold text-neutral-700">{property.bathrooms || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-neutral-50 rounded-md">
+                        <Maximize className="h-3.5 w-3.5 text-neutral-400" />
+                        <span className="text-xs font-mono font-bold text-neutral-700">{property.sizeSqm || 0}m²</span>
+                    </div>
+                </div>
+
+                {/* Quick Actions Management Bar */}
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                    <Link
+                        href={`/landlord/properties/${property._id}/edit`}
+                        className="flex items-center justify-center gap-2 h-9 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 hover:border-neutral-300 text-xs font-bold text-neutral-700 transition-colors"
+                    >
+                        <Edit className="h-3.5 w-3.5" />
+                        Manage
+                    </Link>
+                    <Link
+                        href={`/properties/${property._id}`}
+                        className="flex items-center justify-center gap-2 h-9 rounded-lg border border-transparent bg-neutral-50 hover:bg-neutral-100 text-xs font-bold text-neutral-500 hover:text-neutral-900 transition-colors"
+                    >
+                        <Eye className="h-3.5 w-3.5" />
+                        Preview
+                    </Link>
+                </div>
+            </div>
         </div>
     )
 }
