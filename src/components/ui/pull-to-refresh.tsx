@@ -31,11 +31,8 @@ export function PullToRefresh({
     const handleTouchStart = useCallback((e: TouchEvent) => {
         if (disabled || state === 'refreshing') return
 
-        const container = containerRef.current
-        if (!container) return
-
-        // Only enable pull-to-refresh when scrolled to top
-        if (container.scrollTop > 0) return
+        // Only enable pull-to-refresh when window is scrolled to top
+        if (window.scrollY > 0) return
 
         startYRef.current = e.touches[0].clientY
         currentYRef.current = e.touches[0].clientY
@@ -45,11 +42,8 @@ export function PullToRefresh({
         if (disabled || state === 'refreshing') return
         if (startYRef.current === 0) return
 
-        const container = containerRef.current
-        if (!container) return
-
-        // Only enable pull-to-refresh when scrolled to top
-        if (container.scrollTop > 0) {
+        // Only enable pull-to-refresh when window is scrolled to top
+        if (window.scrollY > 0) {
             startYRef.current = 0
             setPullDistance(0)
             setState('idle')
@@ -113,7 +107,7 @@ export function PullToRefresh({
     return (
         <div
             ref={containerRef}
-            className={cn("relative overflow-auto overscroll-y-contain", className)}
+            className={cn("relative", className)}
         >
             {/* Pull indicator */}
             <div
