@@ -3,26 +3,40 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { LeaseStatusBadge } from '@/components/leases/LeaseStatusTimeline'
-import { FileText, Plus, Users, Calendar, MoreHorizontal, Eye, ArrowRight, TrendingUp } from 'lucide-react'
+import { FileText, Plus, Calendar, ChevronRight, Building2, TrendingUp } from 'lucide-react'
 import { format } from 'date-fns'
 import { useQuery } from "convex/react"
 import { api } from "../../../../../convex/_generated/api"
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
-function LandlordLeasesContent() {
+export default function LandlordLeasesPage() {
     const leases = useQuery(api.leases.getForLandlord, {})
 
     if (leases === undefined) {
         return (
-            <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="h-6 w-6 border-2 border-neutral-900 border-t-transparent rounded-full animate-spin" />
+            <div className="font-sans text-neutral-900">
+                {/* Stats Skeleton */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                    {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="bg-white rounded-xl border border-neutral-200 p-4">
+                            <div className="h-3 w-16 bg-neutral-100 rounded animate-pulse mb-2" />
+                            <div className="h-8 w-10 bg-neutral-100 rounded animate-pulse" />
+                        </div>
+                    ))}
+                </div>
+                {/* List Skeleton */}
+                <div className="space-y-3">
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="bg-white rounded-xl border border-neutral-200 p-4">
+                            <div className="flex items-center gap-3">
+                                <div className="h-12 w-12 bg-neutral-100 rounded-lg animate-pulse" />
+                                <div className="flex-1 space-y-2">
+                                    <div className="h-4 w-3/4 bg-neutral-100 rounded animate-pulse" />
+                                    <div className="h-3 w-1/2 bg-neutral-100 rounded animate-pulse" />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
         )
@@ -38,135 +52,116 @@ function LandlordLeasesContent() {
         ['rejected', 'expired', 'terminated'].includes(l.status)
     )
 
-    return (
-        <div className="min-h-screen bg-[#fafafa] font-sans text-neutral-900 pb-24">
-            <main className="max-w-[2000px] mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12">
+    const stats = {
+        actionRequired: actionRequired.length,
+        pending: pendingLeases.length,
+        active: activeLeases.length,
+        total: leases.length,
+    }
 
-                {/* Action Bar */}
-                <div className="flex items-center justify-end gap-4 mb-12 border-b border-neutral-200/60 pb-8">
-                    {leases.length > 0 && (
-                        <Link href="/landlord/leases/new">
-                            <Button className="h-14 bg-neutral-900 hover:bg-neutral-800 text-white rounded-full px-8 text-base font-bold tracking-wide shadow-xl shadow-neutral-900/10 transition-all hover:scale-[1.02]">
-                                <Plus className="mr-2 h-5 w-5" />
-                                Create New Lease
-                            </Button>
-                        </Link>
+    return (
+        <div className="font-sans text-neutral-900">
+            {/* Header */}
+            <div className="flex items-center justify-end mb-6 pb-4 border-b border-neutral-100">
+                {leases.length > 0 && (
+                    <Link href="/landlord/leases/new">
+                        <Button className="h-10 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg px-4 text-sm font-medium transition-colors">
+                            <Plus className="mr-1.5 h-4 w-4" />
+                            New Lease
+                        </Button>
+                    </Link>
+                )}
+            </div>
+
+            {leases.length > 0 ? (
+                <div className="space-y-8">
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <StatCard
+                            label="Action Required"
+                            value={stats.actionRequired}
+                            highlight={stats.actionRequired > 0}
+                        />
+                        <StatCard label="In Progress" value={stats.pending} />
+                        <StatCard label="Active" value={stats.active} />
+                        <StatCard label="Total" value={stats.total} />
+                    </div>
+
+                    {/* Lease Sections */}
+                    {actionRequired.length > 0 && (
+                        <section>
+                            <div className="flex items-center gap-2 mb-3">
+                                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                <h2 className="text-xs font-bold text-neutral-900 uppercase tracking-wide">
+                                    Ready to Approve
+                                </h2>
+                            </div>
+                            <div className="space-y-2">
+                                {actionRequired.map((lease: any) => (
+                                    <LeaseCard key={lease._id} lease={lease} highlight />
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {pendingLeases.length > 0 && (
+                        <section>
+                            <h2 className="text-xs font-bold text-neutral-500 uppercase tracking-wide mb-3">
+                                In Progress
+                            </h2>
+                            <div className="space-y-2">
+                                {pendingLeases.map((lease: any) => (
+                                    <LeaseCard key={lease._id} lease={lease} />
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {activeLeases.length > 0 && (
+                        <section>
+                            <h2 className="text-xs font-bold text-neutral-900 uppercase tracking-wide mb-3">
+                                Active Leases
+                            </h2>
+                            <div className="space-y-2">
+                                {activeLeases.map((lease: any) => (
+                                    <LeaseCard key={lease._id} lease={lease} />
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {pastLeases.length > 0 && (
+                        <section>
+                            <h2 className="text-xs font-bold text-neutral-400 uppercase tracking-wide mb-3">
+                                Archive
+                            </h2>
+                            <div className="space-y-2 opacity-60">
+                                {pastLeases.map((lease: any) => (
+                                    <LeaseCard key={lease._id} lease={lease} />
+                                ))}
+                            </div>
+                        </section>
                     )}
                 </div>
-
-                {leases.length > 0 ? (
-                    <div className="space-y-16">
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                            <StatCard
-                                label="Action Required"
-                                value={actionRequired.length}
-                                highlight={actionRequired.length > 0}
-                            />
-                            <StatCard label="In Progress" value={pendingLeases.length} />
-                            <StatCard label="Active" value={activeLeases.length} />
-                            <StatCard label="Total Leases" value={leases.length} />
-                        </div>
-
-                        <div className="space-y-16">
-                            {/* Action Required */}
-                            {actionRequired.length > 0 && (
-                                <section>
-                                    <div className="flex items-center justify-between mb-8">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                                            <h2 className="text-xl font-bold font-[family-name:var(--font-anton)] tracking-wide text-neutral-900 uppercase">
-                                                Action Required
-                                            </h2>
-                                            <span className="bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full text-xs font-mono font-medium">
-                                                {actionRequired.length}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="grid gap-4">
-                                        {actionRequired.map((lease: any) => (
-                                            <LeaseRow key={lease._id} lease={lease} highlight />
-                                        ))}
-                                    </div>
-                                </section>
-                            )}
-
-                            {/* In Progress */}
-                            {pendingLeases.length > 0 && (
-                                <section>
-                                    <div className="flex items-center gap-3 mb-8 opacity-60 hover:opacity-100 transition-opacity">
-                                        <h2 className="text-xl font-bold font-[family-name:var(--font-anton)] tracking-wide text-neutral-900 uppercase">
-                                            In Progress
-                                        </h2>
-                                        <span className="bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full text-xs font-mono font-medium">
-                                            {pendingLeases.length}
-                                        </span>
-                                    </div>
-                                    <div className="grid gap-4">
-                                        {pendingLeases.map((lease: any) => (
-                                            <LeaseRow key={lease._id} lease={lease} />
-                                        ))}
-                                    </div>
-                                </section>
-                            )}
-
-                            {/* Active Leases */}
-                            {activeLeases.length > 0 && (
-                                <section>
-                                    <div className="flex items-center gap-3 mb-8">
-                                        <h2 className="text-xl font-bold font-[family-name:var(--font-anton)] tracking-wide text-neutral-900 uppercase">
-                                            Active Leases
-                                        </h2>
-                                        <span className="bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full text-xs font-mono font-medium">
-                                            {activeLeases.length}
-                                        </span>
-                                    </div>
-                                    <div className="grid gap-4">
-                                        {activeLeases.map((lease: any) => (
-                                            <LeaseRow key={lease._id} lease={lease} />
-                                        ))}
-                                    </div>
-                                </section>
-                            )}
-
-                            {/* Past Leases */}
-                            {pastLeases.length > 0 && (
-                                <section className="pt-8 border-t border-neutral-100">
-                                    <div className="flex items-center gap-3 mb-8 opacity-40">
-                                        <h2 className="text-xl font-bold font-[family-name:var(--font-anton)] tracking-wide text-neutral-900 uppercase">
-                                            Past & Archived
-                                        </h2>
-                                        <span className="bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full text-xs font-mono font-medium">
-                                            {pastLeases.length}
-                                        </span>
-                                    </div>
-                                    <div className="grid gap-4 opacity-50 hover:opacity-100 transition-opacity duration-300">
-                                        {pastLeases.map((lease: any) => (
-                                            <LeaseRow key={lease._id} lease={lease} />
-                                        ))}
-                                    </div>
-                                </section>
-                            )}
-                        </div>
+            ) : (
+                <div className="py-20 flex flex-col items-center justify-center text-center px-4">
+                    <div className="h-14 w-14 rounded-xl bg-neutral-100 flex items-center justify-center mb-5">
+                        <FileText className="h-6 w-6 text-neutral-400" />
                     </div>
-                ) : (
-                    <div className="flex flex-col items-center justify-center py-32 px-4 text-center border border-dashed border-neutral-200 rounded-3xl bg-white/50">
-                        <div className="h-24 w-24 rounded-full bg-white shadow-sm border border-neutral-100 flex items-center justify-center mb-8">
-                            <TrendingUp className="h-10 w-10 text-neutral-300" strokeWidth={1.5} />
-                        </div>
-                        <h3 className="text-2xl font-bold text-neutral-900 mb-3 tracking-tight">No leases active</h3>
-                        <p className="text-neutral-500 mb-10 max-w-md text-lg font-light">
-                            Start by creating a new lease agreement for your properties.
-                        </p>
-                        <Link href="/landlord/leases/new">
-                            <Button className="h-14 bg-neutral-900 hover:bg-neutral-800 text-white rounded-full px-10 text-base font-bold shadow-xl shadow-neutral-900/10 transition-all hover:scale-[1.02]">
-                                <Plus className="mr-2 h-5 w-5" />
-                                Create First Lease
-                            </Button>
-                        </Link>
-                    </div>
-                )}
-            </main>
+                    <h3 className="text-lg font-semibold text-neutral-900 mb-1">
+                        No leases yet
+                    </h3>
+                    <p className="text-sm text-neutral-500 max-w-xs mb-6">
+                        Create a lease to get started with your rental agreements.
+                    </p>
+                    <Link href="/landlord/leases/new">
+                        <Button className="h-10 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg px-6 text-sm font-medium">
+                            <Plus className="mr-1.5 h-4 w-4" />
+                            Create First Lease
+                        </Button>
+                    </Link>
+                </div>
+            )}
         </div>
     )
 }
@@ -174,99 +169,91 @@ function LandlordLeasesContent() {
 function StatCard({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
     return (
         <div className={cn(
-            "p-6 sm:p-8 rounded-2xl border transition-all duration-300",
+            "p-4 rounded-xl border transition-all",
             highlight && value > 0
                 ? "bg-neutral-900 text-white border-neutral-900"
-                : "bg-white border-neutral-200 text-neutral-900 hover:border-neutral-300 hover:shadow-lg hover:shadow-neutral-900/5"
+                : "bg-white border-neutral-200"
         )}>
             <p className={cn(
-                "text-[10px] font-bold uppercase tracking-widest mb-2 opacity-60 font-mono",
-                highlight && value > 0 ? "text-white" : "text-neutral-500"
-            )}>{label}</p>
-            <p className="text-4xl sm:text-5xl font-[family-name:var(--font-anton)] tracking-wide">
+                "text-[10px] font-bold uppercase tracking-wide mb-1",
+                highlight && value > 0 ? "text-neutral-400" : "text-neutral-500"
+            )}>
+                {label}
+            </p>
+            <p className="text-2xl font-bold">
                 {value}
             </p>
         </div>
     )
 }
 
-function LeaseRow({ lease, highlight }: { lease: any; highlight?: boolean }) {
+function LeaseCard({ lease, highlight }: { lease: any; highlight?: boolean }) {
+    const startDate = format(new Date(lease.startDate), 'MMM d')
+    const endDate = format(new Date(lease.endDate), 'MMM d, yyyy')
+
     return (
-        <Link href={`/landlord/leases/${lease._id}`} className="group block">
+        <Link href={`/landlord/leases/${lease._id}`} className="block group">
             <div className={cn(
-                "flex items-center gap-6 p-4 sm:p-5 rounded-2xl border transition-all duration-300",
+                "bg-white rounded-xl border p-4 transition-all",
                 highlight
-                    ? "bg-white border-neutral-900 shadow-md shadow-neutral-900/5 relative overflow-hidden"
-                    : "bg-white border-neutral-200 hover:border-neutral-300 hover:shadow-lg hover:shadow-neutral-900/5"
+                    ? "border-emerald-200 shadow-sm"
+                    : "border-neutral-200 hover:border-neutral-300"
             )}>
-                {highlight && (
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-neutral-900" />
-                )}
-
-                {/* Property Info */}
-                <div className="flex-1 min-w-0 pl-2">
-                    <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-bold text-lg text-neutral-900 truncate tracking-tight group-hover:text-neutral-700 transition-colors">
-                            {lease.property?.title || 'Untitled Property'}
-                        </h3>
-                        <LeaseStatusBadge status={lease.status} />
+                <div className="flex items-start gap-3">
+                    {/* Property Image/Icon */}
+                    <div className="h-12 w-12 rounded-lg bg-neutral-100 overflow-hidden shrink-0 flex items-center justify-center">
+                        {lease.property?.imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                                src={lease.property.imageUrl}
+                                alt={lease.property?.title}
+                                className="h-full w-full object-cover"
+                            />
+                        ) : (
+                            <Building2 className="h-5 w-5 text-neutral-400" />
+                        )}
                     </div>
-                    <div className="flex items-center gap-6 text-xs text-neutral-500 font-medium">
-                        <span className="flex items-center gap-1.5">
-                            <Users className="h-3.5 w-3.5 text-neutral-400" />
-                            {lease.tenant?.fullName || 'No tenant'}
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                            <Calendar className="h-3.5 w-3.5 text-neutral-400" />
-                            {format(new Date(lease.startDate), 'MMM d, yyyy')} — {format(new Date(lease.endDate), 'MMM d, yyyy')}
-                        </span>
-                    </div>
-                </div>
 
-                {/* Rent */}
-                <div className="text-right shrink-0 px-4 sm:px-6 border-l border-neutral-100">
-                    <p className="text-xl font-[family-name:var(--font-anton)] text-neutral-900 tracking-wide">
-                        N${lease.monthlyRent?.toLocaleString()}
-                    </p>
-                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest font-mono">per month</p>
-                </div>
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                            <h3 className="font-semibold text-neutral-900 text-sm truncate">
+                                {lease.property?.title || 'Untitled Property'}
+                            </h3>
+                            <LeaseStatusBadge status={lease.status} />
+                        </div>
 
-                {/* Actions */}
-                <div className="shrink-0 flex items-center gap-2 pr-2">
-                    <div className="h-10 w-10 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-400 group-hover:bg-neutral-900 group-hover:text-white transition-all duration-300">
-                        <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
-                    </div>
-                    <div onClick={(e) => e.preventDefault()}>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <button
-                                    className="h-10 w-10 rounded-full flex items-center justify-center hover:bg-neutral-100 transition-colors text-neutral-400 hover:text-neutral-900"
-                                >
-                                    <MoreHorizontal className="h-5 w-5" />
-                                </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                                align="end"
-                                className="w-56 p-2 rounded-2xl border border-neutral-100 bg-white shadow-xl shadow-neutral-900/10"
-                            >
-                                <DropdownMenuItem asChild>
-                                    <Link
-                                        href={`/landlord/leases/${lease._id}`}
-                                        className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-600 focus:text-neutral-900 focus:bg-neutral-50 transition-colors cursor-pointer"
-                                    >
-                                        <Eye className="h-4 w-4 opacity-70" />
-                                        View Details
-                                    </Link>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        {/* Tenant */}
+                        <p className="text-xs text-neutral-500 truncate mb-2">
+                            {lease.tenant?.fullName || 'No tenant assigned'}
+                        </p>
+
+                        {/* Details Row */}
+                        <div className="flex items-center gap-3 text-xs text-neutral-500">
+                            <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {startDate} - {endDate}
+                            </span>
+                        </div>
+
+                        {/* Rent and Action Row */}
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-neutral-100">
+                            <div>
+                                <span className="text-base font-bold text-neutral-900">
+                                    N${lease.monthlyRent?.toLocaleString()}
+                                </span>
+                                <span className="text-xs text-neutral-400 ml-1">/mo</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs font-medium text-neutral-500 group-hover:text-neutral-900 transition-colors">
+                                <span className="hidden sm:inline">
+                                    {highlight ? 'Review Now' : 'View Details'}
+                                </span>
+                                <ChevronRight className="h-4 w-4" />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </Link>
     )
-}
-
-export default function LandlordLeasesPage() {
-    return <LandlordLeasesContent />
 }

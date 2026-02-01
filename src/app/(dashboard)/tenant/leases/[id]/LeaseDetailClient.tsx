@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { LeaseStatusTimeline } from '@/components/leases/LeaseStatusTimeline'
+import { LeaseStatusTimeline, LeaseStatusBadge } from '@/components/leases/LeaseStatusTimeline'
 import { LeasePreview } from '@/components/leases/LeasePreview'
 import { SignatureCanvas } from '@/components/leases/SignatureCanvas'
 import { DocumentUploader, DocumentFile } from '@/components/leases/DocumentUploader'
@@ -17,7 +17,12 @@ import {
     CheckCircle2,
     AlertTriangle,
     Send,
-    Download
+    Download,
+    Calendar,
+    MapPin,
+    FileText,
+    ChevronDown,
+    ChevronUp
 } from 'lucide-react'
 import { LeasePDF } from '@/components/leases/LeasePDF'
 import dynamic from 'next/dynamic'
@@ -40,6 +45,8 @@ export function LeaseDetailClient({ lease }: LeaseDetailClientProps) {
     const [signature, setSignature] = useState<string | null>(lease.tenantSignatureData || null)
     const [documents, setDocuments] = useState<DocumentFile[]>(lease.tenantDocuments || [])
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [showFullDocument, setShowFullDocument] = useState(false)
+    const [showTimeline, setShowTimeline] = useState(false)
     const tenantSign = useMutation(api.leases.tenantSign)
 
     const canSign = ['sent_to_tenant', 'revision_requested'].includes(lease.status)
@@ -82,28 +89,27 @@ export function LeaseDetailClient({ lease }: LeaseDetailClientProps) {
         clauses: [],
     }
 
-    return (
-        <div className="px-4 py-8 md:px-6 max-w-[1400px] mx-auto pb-24">
-            {/* Header */}
-            <div className="mb-8 sm:mb-10">
-                <Link
-                    href="/tenant/leases"
-                    className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors group"
-                >
-                    <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-                    Back to leases
-                </Link>
-            </div>
+    const startDate = format(new Date(lease.startDate), 'MMM d, yyyy')
+    const endDate = format(new Date(lease.endDate), 'MMM d, yyyy')
 
-            {/* Status Alerts */}
+    return (
+        <div className="font-sans text-neutral-900 pb-24">
+            {/* Back Button */}
+            <Link
+                href="/tenant/leases"
+                className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900 transition-colors mb-6"
+            >
+                <ChevronLeft className="h-4 w-4" />
+                Leases
+            </Link>
+
+            {/* Status Alert */}
             {needsRevision && (
-                <div className="flex items-start gap-4 p-5 rounded-xl bg-red-50 border border-red-100 mb-8">
-                    <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                        <AlertTriangle className="h-5 w-5 text-red-600" />
-                    </div>
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-100 mb-6">
+                    <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
                     <div>
-                        <p className="font-bold text-red-900 uppercase tracking-wide text-xs sm:text-sm">Revision Requested</p>
-                        <p className="text-sm text-red-700 mt-1 font-medium leading-relaxed">
+                        <p className="font-semibold text-red-900 text-sm">Revision Requested</p>
+                        <p className="text-sm text-red-700 mt-0.5">
                             {lease.landlordNotes || 'Please review and resubmit.'}
                         </p>
                     </div>
@@ -111,56 +117,166 @@ export function LeaseDetailClient({ lease }: LeaseDetailClientProps) {
             )}
 
             {hasSigned && !isApproved && (
-                <div className="flex items-start gap-4 p-5 rounded-xl bg-white border border-neutral-200 mb-8 shadow-sm">
-                    <div className="h-10 w-10 rounded-full bg-neutral-100 flex items-center justify-center shrink-0">
-                        <CheckCircle2 className="h-5 w-5 text-neutral-900" />
-                    </div>
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-neutral-50 border border-neutral-200 mb-6">
+                    <CheckCircle2 className="h-5 w-5 text-neutral-600 shrink-0 mt-0.5" />
                     <div>
-                        <p className="font-bold text-neutral-900 uppercase tracking-wide text-xs sm:text-sm">Lease Signed</p>
-                        <p className="text-sm text-neutral-500 mt-1 font-medium leading-relaxed">
-                            Your signed lease has been submitted. Waiting for landlord approval.
+                        <p className="font-semibold text-neutral-900 text-sm">Lease Signed</p>
+                        <p className="text-sm text-neutral-600 mt-0.5">
+                            Waiting for landlord approval.
                         </p>
                     </div>
                 </div>
             )}
 
             {isApproved && (
-                <div className="flex items-start gap-4 p-5 rounded-xl bg-neutral-900 text-white mb-8 border border-neutral-900 shadow-xl shadow-neutral-900/10">
-                    <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                        <CheckCircle2 className="h-5 w-5 text-white" />
-                    </div>
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-100 mb-6">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
                     <div>
-                        <p className="font-bold uppercase tracking-wide text-xs sm:text-sm">Lease Approved</p>
-                        <p className="text-sm text-white/80 mt-1 font-medium leading-relaxed">
-                            Congratulations! Your tenancy begins on {new Date(lease.startDate).toLocaleDateString()}.
+                        <p className="font-semibold text-emerald-900 text-sm">Lease Approved</p>
+                        <p className="text-sm text-emerald-700 mt-0.5">
+                            Your tenancy begins {startDate}.
                         </p>
                     </div>
                 </div>
             )}
 
             {isRejected && (
-                <div className="flex items-start gap-4 p-5 rounded-xl bg-red-50 border border-red-100 mb-8">
-                    <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                        <AlertTriangle className="h-5 w-5 text-red-600" />
-                    </div>
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-100 mb-6">
+                    <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
                     <div>
-                        <p className="font-bold text-red-900 uppercase tracking-wide text-xs sm:text-sm">Lease Rejected</p>
-                        <p className="text-sm text-red-700 mt-1 font-medium leading-relaxed">
-                            {lease.landlordNotes || 'The landlord has rejected this lease agreement.'}
+                        <p className="font-semibold text-red-900 text-sm">Lease Rejected</p>
+                        <p className="text-sm text-red-700 mt-0.5">
+                            {lease.landlordNotes || 'The landlord has rejected this lease.'}
                         </p>
                     </div>
                 </div>
             )}
 
-            <div className="grid lg:grid-cols-3 gap-8">
-                {/* Main Content */}
-                <div className="lg:col-span-2 space-y-10">
-                    {/* Lease Document Preview */}
-                    <section>
-                        <h2 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-neutral-900"></span>
-                            Lease Document
-                        </h2>
+            {/* Property Header Card */}
+            <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden mb-6">
+                {/* Property Image */}
+                <div className="aspect-video sm:aspect-[3/1] bg-neutral-100 relative">
+                    {lease.property?.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                            src={lease.property.imageUrl}
+                            alt={lease.property?.title}
+                            className="h-full w-full object-cover"
+                        />
+                    ) : (
+                        <div className="h-full w-full flex items-center justify-center">
+                            <Building2 className="h-10 w-10 text-neutral-300" />
+                        </div>
+                    )}
+                    <div className="absolute top-3 left-3">
+                        <LeaseStatusBadge status={lease.status} />
+                    </div>
+                </div>
+
+                {/* Property Info */}
+                <div className="p-4">
+                    <h1 className="text-lg font-semibold text-neutral-900 mb-2">
+                        {lease.property?.title || 'Property'}
+                    </h1>
+                    <div className="flex items-center gap-1.5 text-sm text-neutral-500 mb-4">
+                        <MapPin className="h-3.5 w-3.5" />
+                        {lease.property?.address}, {lease.property?.city}
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-neutral-50 rounded-lg p-3">
+                            <p className="text-xs text-neutral-500 mb-0.5">Monthly Rent</p>
+                            <p className="text-lg font-bold text-neutral-900">
+                                N${lease.monthlyRent?.toLocaleString()}
+                            </p>
+                        </div>
+                        <div className="bg-neutral-50 rounded-lg p-3">
+                            <p className="text-xs text-neutral-500 mb-0.5">Deposit</p>
+                            <p className="text-lg font-bold text-neutral-900">
+                                N${lease.deposit?.toLocaleString()}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Dates */}
+                    <div className="flex items-center gap-2 text-sm text-neutral-600 mt-4 pt-4 border-t border-neutral-100">
+                        <Calendar className="h-4 w-4 text-neutral-400" />
+                        {startDate} — {endDate}
+                    </div>
+                </div>
+            </div>
+
+            {/* Landlord Info */}
+            <div className="bg-white rounded-xl border border-neutral-200 p-4 mb-6">
+                <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-neutral-100 overflow-hidden shrink-0 flex items-center justify-center">
+                        {lease.landlord?.avatarUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                                src={lease.landlord.avatarUrl}
+                                alt={lease.landlord?.fullName}
+                                className="h-full w-full object-cover"
+                            />
+                        ) : (
+                            <User className="h-4 w-4 text-neutral-400" />
+                        )}
+                    </div>
+                    <div className="min-w-0">
+                        <p className="font-medium text-neutral-900 text-sm truncate">
+                            {lease.landlord?.fullName || 'Landlord'}
+                        </p>
+                        <p className="text-xs text-neutral-500 truncate">
+                            {lease.landlord?.email}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Status Timeline - Collapsible */}
+            <div className="bg-white rounded-xl border border-neutral-200 mb-6">
+                <button
+                    onClick={() => setShowTimeline(!showTimeline)}
+                    className="w-full flex items-center justify-between p-4"
+                >
+                    <span className="text-sm font-medium text-neutral-900">Lease Timeline</span>
+                    {showTimeline ? (
+                        <ChevronUp className="h-4 w-4 text-neutral-400" />
+                    ) : (
+                        <ChevronDown className="h-4 w-4 text-neutral-400" />
+                    )}
+                </button>
+                {showTimeline && (
+                    <div className="px-4 pb-4 pt-0">
+                        <LeaseStatusTimeline
+                            status={lease.status}
+                            createdAt={lease.createdAt || lease.sentAt}
+                            sentAt={lease.sentAt}
+                            signedAt={lease.signedAt}
+                            approvedAt={lease.approvedAt}
+                        />
+                    </div>
+                )}
+            </div>
+
+            {/* Lease Document - Collapsible */}
+            <div className="bg-white rounded-xl border border-neutral-200 mb-6">
+                <button
+                    onClick={() => setShowFullDocument(!showFullDocument)}
+                    className="w-full flex items-center justify-between p-4"
+                >
+                    <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-neutral-500" />
+                        <span className="text-sm font-medium text-neutral-900">Lease Document</span>
+                    </div>
+                    {showFullDocument ? (
+                        <ChevronUp className="h-4 w-4 text-neutral-400" />
+                    ) : (
+                        <ChevronDown className="h-4 w-4 text-neutral-400" />
+                    )}
+                </button>
+                {showFullDocument && (
+                    <div className="px-4 pb-4 pt-0 overflow-x-auto">
                         <LeasePreview
                             leaseDocument={leaseDocument}
                             property={{
@@ -189,200 +305,131 @@ export function LeaseDetailClient({ lease }: LeaseDetailClientProps) {
                             landlordSignature={lease.landlordSignatureData}
                             signedAt={lease.signedAt}
                         />
-                    </section>
+                    </div>
+                )}
+            </div>
 
-                    {/* Signing Section */}
-                    {canSign && (
-                        <>
-                            {/* Document Upload */}
-                            <section>
-                                <h2 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-neutral-900"></span>
-                                    Required Documents
-                                </h2>
-                                <div className="p-6 rounded-xl border border-neutral-200 bg-white">
-                                    <DocumentUploader
-                                        tenantId={lease.tenantId || ''}
-                                        leaseId={lease._id}
-                                        documents={documents}
-                                        onDocumentsChange={setDocuments}
-                                        requiredDocuments={['id_front', 'id_back']}
-                                    />
-                                </div>
-                            </section>
-
-                            {/* Signature */}
-                            <section>
-                                <h2 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-neutral-900"></span>
-                                    Sign Here
-                                </h2>
-                                <div className="p-6 rounded-xl border border-neutral-200 bg-white">
-                                    <SignatureCanvas
-                                        onSignatureChange={setSignature}
-                                        initialSignature={signature}
-                                    />
-                                </div>
-                            </section>
-
-                            {/* Submit Button */}
-                            <div className="p-6 sm:p-8 rounded-xl bg-neutral-900 text-white shadow-xl shadow-neutral-900/10">
-                                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                                    <div className="space-y-1">
-                                        <h3 className="text-xl font-bold tracking-tight">
-                                            Submit Lease
-                                        </h3>
-                                        <p className="text-sm text-white/60 font-medium max-w-md">
-                                            {!hasRequiredDocs && 'Please upload your ID documents. '}
-                                            {!signature && 'Please sign the lease. '}
-                                            {canSubmit && 'Review terms and submit. Once submitted, this action cannot be undone.'}
-                                        </p>
-                                    </div>
-                                    <Button
-                                        onClick={handleSubmit}
-                                        disabled={!canSubmit || isSubmitting}
-                                        className="bg-white text-neutral-900 hover:bg-neutral-100 rounded-xl h-12 px-8 font-bold text-sm transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 shadow-sm"
-                                    >
-                                        {isSubmitting ? (
-                                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                        ) : (
-                                            <Send className="h-4 w-4 mr-2" />
-                                        )}
-                                        {isSubmitting ? 'Sending...' : 'Sign & Submit'}
-                                    </Button>
-                                </div>
-                            </div>
-                        </>
-                    )}
-                </div>
-
-                {/* Sidebar */}
+            {/* Signing Section */}
+            {canSign && (
                 <div className="space-y-6">
-                    {/* Status Timeline */}
-                    <div className="p-6 rounded-xl border border-neutral-200 bg-white shadow-sm">
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-6">Detailed Status</h3>
-                        <LeaseStatusTimeline
-                            status={lease.status}
-                            createdAt={lease.createdAt || lease.sentAt}
-                            sentAt={lease.sentAt}
-                            signedAt={lease.signedAt}
-                            approvedAt={lease.approvedAt}
+                    {/* Documents Upload */}
+                    <div className="bg-white rounded-xl border border-neutral-200 p-4">
+                        <h2 className="text-sm font-semibold text-neutral-900 mb-4 flex items-center gap-2">
+                            <span className={cn(
+                                "h-5 w-5 rounded-full text-xs flex items-center justify-center font-bold",
+                                hasRequiredDocs
+                                    ? "bg-emerald-100 text-emerald-600"
+                                    : "bg-neutral-100 text-neutral-500"
+                            )}>
+                                1
+                            </span>
+                            Upload ID Documents
+                        </h2>
+                        <DocumentUploader
+                            tenantId={lease.tenantId || ''}
+                            leaseId={lease._id}
+                            documents={documents}
+                            onDocumentsChange={setDocuments}
+                            requiredDocuments={['id_front', 'id_back']}
                         />
                     </div>
 
-                    {/* Landlord Info */}
-                    <div className="p-6 rounded-xl border border-neutral-200 bg-white shadow-sm">
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-4">Landlord</h3>
-                        <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-full bg-neutral-100 overflow-hidden shrink-0 flex items-center justify-center border border-neutral-100">
-                                {lease.landlord?.avatarUrl ? (
-                                    /* eslint-disable-next-line @next/next/no-img-element */
-                                    <img
-                                        src={lease.landlord.avatarUrl}
-                                        alt={lease.landlord?.fullName || 'Landlord'}
-                                        className="h-full w-full object-cover"
-                                    />
-                                ) : (
-                                    <User className="h-5 w-5 text-neutral-400" />
-                                )}
-                            </div>
-                            <div>
-                                <p className="font-bold text-neutral-900 text-sm">{lease.landlord?.fullName || 'Landlord'}</p>
-                                <p className="text-xs text-neutral-500 font-medium">{lease.landlord?.email}</p>
-                            </div>
-                        </div>
+                    {/* Signature */}
+                    <div className="bg-white rounded-xl border border-neutral-200 p-4">
+                        <h2 className="text-sm font-semibold text-neutral-900 mb-4 flex items-center gap-2">
+                            <span className={cn(
+                                "h-5 w-5 rounded-full text-xs flex items-center justify-center font-bold",
+                                signature
+                                    ? "bg-emerald-100 text-emerald-600"
+                                    : "bg-neutral-100 text-neutral-500"
+                            )}>
+                                2
+                            </span>
+                            Sign Lease
+                        </h2>
+                        <SignatureCanvas
+                            onSignatureChange={setSignature}
+                            initialSignature={signature}
+                        />
                     </div>
 
-                    {/* Property Info */}
-                    <div className="p-6 rounded-xl border border-neutral-200 bg-white shadow-sm">
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-4">Property</h3>
-                        <div className="aspect-video rounded-lg overflow-hidden bg-neutral-100 mb-4 flex items-center justify-center relative border border-neutral-100">
-                            {lease.property?.imageUrl ? (
-                                /* eslint-disable-next-line @next/next/no-img-element */
-                                <img
-                                    src={lease.property.imageUrl}
-                                    alt={lease.property?.title || 'Property'}
-                                    className="h-full w-full object-cover"
-                                />
-                            ) : (
-                                <Building2 className="h-8 w-8 text-neutral-300" />
-                            )}
-                        </div>
-                        <p className="font-bold text-neutral-900 text-sm">{lease.property?.title}</p>
-                        <p className="text-xs text-neutral-500 font-medium mt-1">
-                            {lease.property?.address}, {lease.property?.city}
+                    {/* Submit */}
+                    <div className="bg-neutral-900 rounded-xl p-4 text-white">
+                        <h3 className="font-semibold mb-1">Submit Lease</h3>
+                        <p className="text-sm text-neutral-400 mb-4">
+                            {!hasRequiredDocs && 'Please upload your ID documents. '}
+                            {!signature && 'Please sign the lease. '}
+                            {canSubmit && 'Once submitted, this action cannot be undone.'}
                         </p>
-                    </div>
-
-                    {/* Quick Stats */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="p-5 rounded-xl bg-neutral-900 text-white flex flex-col items-center justify-center text-center shadow-lg shadow-neutral-900/10">
-                            <p className="text-xl font-bold tracking-tight">
-                                N$ {lease.monthlyRent?.toLocaleString()}
-                            </p>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mt-1">Rent</p>
-                        </div>
-                        <div className="p-5 rounded-xl border border-neutral-200 bg-white flex flex-col items-center justify-center text-center shadow-sm">
-                            <p className="text-xl font-bold tracking-tight text-neutral-900">
-                                N$ {lease.deposit?.toLocaleString()}
-                            </p>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mt-1">Deposit</p>
-                        </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="w-full">
-                        <PDFDownloadLink
-                            document={
-                                <LeasePDF
-                                    data={{
-                                        leaseDocument: leaseDocument,
-                                        property: {
-                                            title: lease.property?.title || '',
-                                            address: lease.property?.address || '',
-                                            city: lease.property?.city || '',
-                                            images: lease.property?.images,
-                                        },
-                                        landlord: {
-                                            fullName: lease.landlord?.fullName || '',
-                                            email: lease.landlord?.email || '',
-                                            phone: lease.landlord?.phone,
-                                        },
-                                        tenant: {
-                                            fullName: lease.tenant?.fullName || '',
-                                            email: lease.tenant?.email || '',
-                                            phone: lease.tenant?.phone,
-                                        },
-                                        leaseTerms: {
-                                            startDate: lease.startDate,
-                                            endDate: lease.endDate,
-                                            monthlyRent: lease.monthlyRent,
-                                            deposit: lease.deposit,
-                                        },
-                                        tenantSignature: lease.tenantSignatureData,
-                                        landlordSignature: lease.landlordSignatureData,
-                                        signedAt: lease.signedAt,
-                                    }}
-                                />
-                            }
-                            fileName={`Lease_${lease.property?.title}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
-                            className="w-full block"
+                        <Button
+                            onClick={handleSubmit}
+                            disabled={!canSubmit || isSubmitting}
+                            className="w-full bg-white text-neutral-900 hover:bg-neutral-100 h-11 rounded-lg font-semibold text-sm transition-colors disabled:opacity-50"
                         >
-                            {/* @ts-ignore - render prop type mismatch in some versions */}
-                            {({ loading, error }: any) => (
-                                <Button
-                                    variant="outline"
-                                    className="w-full rounded-xl h-11 border border-neutral-200 text-neutral-600 hover:text-neutral-900 hover:border-neutral-300 hover:bg-white shadow-sm"
-                                    disabled={loading}
-                                >
-                                    <Download className="h-4 w-4 mr-2" />
-                                    {loading ? 'Generating PDF...' : 'Download PDF'}
-                                </Button>
+                            {isSubmitting ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            ) : (
+                                <Send className="h-4 w-4 mr-2" />
                             )}
-                        </PDFDownloadLink>
+                            {isSubmitting ? 'Submitting...' : 'Sign & Submit'}
+                        </Button>
                     </div>
                 </div>
-            </div>
+            )}
+
+            {/* Download PDF - Show when signed/approved */}
+            {(hasSigned || isApproved) && (
+                <div className="mt-6">
+                    <PDFDownloadLink
+                        document={
+                            <LeasePDF
+                                data={{
+                                    leaseDocument: leaseDocument,
+                                    property: {
+                                        title: lease.property?.title || '',
+                                        address: lease.property?.address || '',
+                                        city: lease.property?.city || '',
+                                        images: lease.property?.images,
+                                    },
+                                    landlord: {
+                                        fullName: lease.landlord?.fullName || '',
+                                        email: lease.landlord?.email || '',
+                                        phone: lease.landlord?.phone,
+                                    },
+                                    tenant: {
+                                        fullName: lease.tenant?.fullName || '',
+                                        email: lease.tenant?.email || '',
+                                        phone: lease.tenant?.phone,
+                                    },
+                                    leaseTerms: {
+                                        startDate: lease.startDate,
+                                        endDate: lease.endDate,
+                                        monthlyRent: lease.monthlyRent,
+                                        deposit: lease.deposit,
+                                    },
+                                    tenantSignature: lease.tenantSignatureData,
+                                    landlordSignature: lease.landlordSignatureData,
+                                    signedAt: lease.signedAt,
+                                }}
+                            />
+                        }
+                        fileName={`Lease_${lease.property?.title}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
+                        className="block"
+                    >
+                        {/* @ts-ignore - render prop type mismatch in some versions */}
+                        {({ loading }: any) => (
+                            <Button
+                                variant="outline"
+                                className="w-full rounded-xl h-11 border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                                disabled={loading}
+                            >
+                                <Download className="h-4 w-4 mr-2" />
+                                {loading ? 'Generating PDF...' : 'Download PDF'}
+                            </Button>
+                        )}
+                    </PDFDownloadLink>
+                </div>
+            )}
         </div>
     )
 }

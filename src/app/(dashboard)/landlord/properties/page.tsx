@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import {
@@ -36,15 +35,33 @@ interface Property {
     adminNotes?: string
 }
 
-function LandlordPropertiesContent() {
+export default function LandlordPropertiesPage() {
     const properties = useQuery(api.properties.getByLandlord, {})
     const leases = useQuery(api.leases.getForLandlord, {})
 
     if (properties === undefined) {
         return (
-            <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="h-6 w-6 border-2 border-neutral-900 border-t-transparent rounded-full animate-spin" />
+            <div className="font-sans text-neutral-900">
+                {/* Stats Skeleton */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                    {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="bg-white rounded-xl border border-neutral-200 p-4">
+                            <div className="h-3 w-16 bg-neutral-100 rounded animate-pulse mb-2" />
+                            <div className="h-8 w-10 bg-neutral-100 rounded animate-pulse" />
+                        </div>
+                    ))}
+                </div>
+                {/* Cards Skeleton */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+                            <div className="aspect-[4/3] bg-neutral-100 animate-pulse" />
+                            <div className="p-4 space-y-2">
+                                <div className="h-4 w-3/4 bg-neutral-100 rounded animate-pulse" />
+                                <div className="h-3 w-1/2 bg-neutral-100 rounded animate-pulse" />
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
         )
@@ -72,182 +89,152 @@ function LandlordPropertiesContent() {
     )
 
     const stats = {
-        total: properties.length,
+        actionRequired: actionRequired.length,
         listed: activeListings.length,
         leased: propertyIdsWithLease.size,
-        available: activeListings.length + unlistedProperties.length, // Total vacant
+        total: properties.length,
     }
 
     return (
-        <div className="min-h-screen bg-[#fafafa] font-sans text-neutral-900 pb-24">
-            <main className="max-w-[2000px] mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12">
+        <div className="font-sans text-neutral-900">
+            {/* Header */}
+            <div className="flex items-center justify-end mb-6 pb-4 border-b border-neutral-100">
+                {properties.length > 0 && (
+                    <Link href="/landlord/properties/new">
+                        <Button className="h-10 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg px-4 text-sm font-medium transition-colors">
+                            <Plus className="mr-1.5 h-4 w-4" />
+                            Add Property
+                        </Button>
+                    </Link>
+                )}
+            </div>
 
-                {/* Action Bar */}
-                <div className="flex items-center justify-end gap-4 mb-12 border-b border-neutral-200/60 pb-8">
-                    {properties.length > 0 && (
-                        <Link href="/landlord/properties/new">
-                            <Button className="h-12 bg-neutral-900 hover:bg-neutral-800 text-white rounded-full px-8 text-sm font-bold tracking-wide transition-colors">
-                                <Plus className="mr-2 h-5 w-5" />
-                                Create New Property
-                            </Button>
-                        </Link>
+            {properties.length > 0 ? (
+                <div className="space-y-8">
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <StatCard
+                            label="Action Required"
+                            value={stats.actionRequired}
+                            highlight={stats.actionRequired > 0}
+                        />
+                        <StatCard label="Listed" value={stats.listed} />
+                        <StatCard label="Leased" value={stats.leased} />
+                        <StatCard label="Total" value={stats.total} />
+                    </div>
+
+                    {/* Property Sections */}
+                    {actionRequired.length > 0 && (
+                        <section>
+                            <div className="flex items-center gap-2 mb-3">
+                                <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                                <h2 className="text-xs font-bold text-neutral-900 uppercase tracking-wide">
+                                    Action Required
+                                </h2>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                {actionRequired.map((property: Property) => (
+                                    <PropertyCard
+                                        key={property._id}
+                                        property={property}
+                                        hasLease={propertyIdsWithLease.has(property._id)}
+                                        highlight
+                                    />
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {pendingReview.length > 0 && (
+                        <section>
+                            <div className="flex items-center gap-2 mb-3">
+                                <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+                                <h2 className="text-xs font-bold text-neutral-900 uppercase tracking-wide">
+                                    Pending Review
+                                </h2>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                {pendingReview.map((property: Property) => (
+                                    <PropertyCard
+                                        key={property._id}
+                                        property={property}
+                                        hasLease={propertyIdsWithLease.has(property._id)}
+                                    />
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {activeListings.length > 0 && (
+                        <section>
+                            <h2 className="text-xs font-bold text-neutral-900 uppercase tracking-wide mb-3">
+                                Active Listings
+                            </h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                {activeListings.map((property: Property) => (
+                                    <PropertyCard
+                                        key={property._id}
+                                        property={property}
+                                        hasLease={propertyIdsWithLease.has(property._id)}
+                                    />
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {leasedProperties.length > 0 && (
+                        <section>
+                            <h2 className="text-xs font-bold text-neutral-500 uppercase tracking-wide mb-3">
+                                Currently Leased
+                            </h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 opacity-80">
+                                {leasedProperties.map((property: Property) => (
+                                    <PropertyCard
+                                        key={property._id}
+                                        property={property}
+                                        hasLease={true}
+                                    />
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {unlistedProperties.length > 0 && (
+                        <section>
+                            <h2 className="text-xs font-bold text-neutral-400 uppercase tracking-wide mb-3">
+                                Unlisted
+                            </h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 opacity-60">
+                                {unlistedProperties.map((property: Property) => (
+                                    <PropertyCard
+                                        key={property._id}
+                                        property={property}
+                                        hasLease={false}
+                                    />
+                                ))}
+                            </div>
+                        </section>
                     )}
                 </div>
-
-                {properties.length > 0 ? (
-                    <div className="space-y-16">
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                            <StatCard
-                                label="Action Required"
-                                value={actionRequired.length}
-                                highlight={actionRequired.length > 0}
-                            />
-                            <StatCard label="Live Listings" value={stats.listed} />
-                            <StatCard label="Leased" value={stats.leased} />
-                            <StatCard label="Total Units" value={stats.total} />
-                        </div>
-
-                        <div className="space-y-16">
-                            {/* Action Required */}
-                            {actionRequired.length > 0 && (
-                                <section>
-                                    <div className="flex items-center justify-between mb-8">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                                            <h2 className="text-xl font-bold font-[family-name:var(--font-anton)] tracking-wide text-neutral-900 uppercase">
-                                                Action Required
-                                            </h2>
-                                            <span className="bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full text-xs font-mono font-medium">
-                                                {actionRequired.length}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                        {actionRequired.map((property: Property) => (
-                                            <PropertyCard
-                                                key={property._id}
-                                                property={property}
-                                                hasLease={propertyIdsWithLease.has(property._id)}
-                                                highlight
-                                            />
-                                        ))}
-                                    </div>
-                                </section>
-                            )}
-
-                            {/* Pending Review */}
-                            {pendingReview.length > 0 && (
-                                <section>
-                                    <div className="flex items-center gap-3 mb-8">
-                                        <div className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-                                        <h2 className="text-xl font-bold font-[family-name:var(--font-anton)] tracking-wide text-neutral-900 uppercase">
-                                            Pending Review
-                                        </h2>
-                                        <span className="bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full text-xs font-mono font-medium">
-                                            {pendingReview.length}
-                                        </span>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                        {pendingReview.map((property: Property) => (
-                                            <PropertyCard
-                                                key={property._id}
-                                                property={property}
-                                                hasLease={propertyIdsWithLease.has(property._id)}
-                                            />
-                                        ))}
-                                    </div>
-                                </section>
-                            )}
-
-                            {/* Active Listings */}
-                            {activeListings.length > 0 && (
-                                <section>
-                                    <div className="flex items-center gap-3 mb-8">
-                                        <h2 className="text-xl font-bold font-[family-name:var(--font-anton)] tracking-wide text-neutral-900 uppercase">
-                                            Active Listings
-                                        </h2>
-                                        <span className="bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full text-xs font-mono font-medium">
-                                            {activeListings.length}
-                                        </span>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                        {activeListings.map((property: Property) => (
-                                            <PropertyCard
-                                                key={property._id}
-                                                property={property}
-                                                hasLease={propertyIdsWithLease.has(property._id)}
-                                            />
-                                        ))}
-                                    </div>
-                                </section>
-                            )}
-
-                            {/* Leased Properties */}
-                            {leasedProperties.length > 0 && (
-                                <section>
-                                    <div className="flex items-center gap-3 mb-8">
-                                        <h2 className="text-xl font-bold font-[family-name:var(--font-anton)] tracking-wide text-neutral-900 uppercase">
-                                            Currently Leased
-                                        </h2>
-                                        <span className="bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full text-xs font-mono font-medium">
-                                            {leasedProperties.length}
-                                        </span>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 opacity-80 hover:opacity-100 transition-opacity">
-                                        {leasedProperties.map((property: Property) => (
-                                            <PropertyCard
-                                                key={property._id}
-                                                property={property}
-                                                hasLease={true}
-                                            />
-                                        ))}
-                                    </div>
-                                </section>
-                            )}
-
-                            {/* Unlisted/Off-market */}
-                            {unlistedProperties.length > 0 && (
-                                <section className="pt-8 border-t border-neutral-100">
-                                    <div className="flex items-center gap-3 mb-8 opacity-40">
-                                        <h2 className="text-xl font-bold font-[family-name:var(--font-anton)] tracking-wide text-neutral-900 uppercase">
-                                            Unlisted & Drafts
-                                        </h2>
-                                        <span className="bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full text-xs font-mono font-medium">
-                                            {unlistedProperties.length}
-                                        </span>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 opacity-50 hover:opacity-100 transition-opacity duration-300">
-                                        {unlistedProperties.map((property: Property) => (
-                                            <PropertyCard
-                                                key={property._id}
-                                                property={property}
-                                                hasLease={false}
-                                            />
-                                        ))}
-                                    </div>
-                                </section>
-                            )}
-                        </div>
+            ) : (
+                <div className="py-20 flex flex-col items-center justify-center text-center px-4">
+                    <div className="h-14 w-14 rounded-xl bg-neutral-100 flex items-center justify-center mb-5">
+                        <TrendingUp className="h-6 w-6 text-neutral-400" />
                     </div>
-                ) : (
-                    <div className="flex flex-col items-center justify-center py-32 px-4 text-center border border-dashed border-neutral-200 rounded-3xl bg-white/50">
-                        <div className="h-24 w-24 rounded-full bg-white shadow-sm border border-neutral-100 flex items-center justify-center mb-8">
-                            <TrendingUp className="h-10 w-10 text-neutral-300" strokeWidth={1.5} />
-                        </div>
-                        <h3 className="text-2xl font-bold text-neutral-900 mb-3 tracking-tight">No properties yet</h3>
-                        <p className="text-neutral-500 mb-10 max-w-md text-lg font-light">
-                            Start building your portfolio by adding your first property.
-                        </p>
-                        <Link href="/landlord/properties/new">
-                            <Button className="h-14 bg-neutral-900 hover:bg-neutral-800 text-white rounded-full px-10 text-base font-bold shadow-xl shadow-neutral-900/10 transition-all hover:scale-[1.02]">
-                                <Plus className="mr-2 h-5 w-5" />
-                                Create First Property
-                            </Button>
-                        </Link>
-                    </div>
-                )}
-            </main>
+                    <h3 className="text-lg font-semibold text-neutral-900 mb-1">
+                        No properties yet
+                    </h3>
+                    <p className="text-sm text-neutral-500 max-w-xs mb-6">
+                        Start building your portfolio by adding your first property.
+                    </p>
+                    <Link href="/landlord/properties/new">
+                        <Button className="h-10 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg px-6 text-sm font-medium">
+                            <Plus className="mr-1.5 h-4 w-4" />
+                            Add First Property
+                        </Button>
+                    </Link>
+                </div>
+            )}
         </div>
     )
 }
@@ -255,16 +242,18 @@ function LandlordPropertiesContent() {
 function StatCard({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
     return (
         <div className={cn(
-            "p-6 sm:p-8 rounded-2xl border transition-all duration-300",
+            "p-4 rounded-xl border transition-all",
             highlight && value > 0
                 ? "bg-neutral-900 text-white border-neutral-900"
-                : "bg-white border-neutral-200 text-neutral-900 hover:border-neutral-300 hover:shadow-lg hover:shadow-neutral-900/5"
+                : "bg-white border-neutral-200"
         )}>
             <p className={cn(
-                "text-[10px] font-bold uppercase tracking-widest mb-2 opacity-60 font-mono",
-                highlight && value > 0 ? "text-white" : "text-neutral-500"
-            )}>{label}</p>
-            <p className="text-4xl sm:text-5xl font-[family-name:var(--font-anton)] tracking-wide">
+                "text-[10px] font-bold uppercase tracking-wide mb-1",
+                highlight && value > 0 ? "text-neutral-400" : "text-neutral-500"
+            )}>
+                {label}
+            </p>
+            <p className="text-2xl font-bold">
                 {value}
             </p>
         </div>
@@ -286,91 +275,84 @@ function PropertyCard({ property, hasLease, highlight }: { property: Property; h
 
     return (
         <div className={cn(
-            "group flex flex-col bg-white rounded-3xl overflow-hidden border transition-all duration-300",
+            "group bg-white rounded-xl overflow-hidden border transition-all",
             highlight
-                ? "border-red-200 shadow-xl shadow-red-900/5"
-                : "border-neutral-200 hover:border-neutral-300 hover:shadow-xl hover:shadow-neutral-900/5"
+                ? "border-red-200"
+                : "border-neutral-200 hover:border-neutral-300"
         )}>
-            {/* Image & Status */}
-            <div className="relative aspect-[4/3] bg-neutral-100 overflow-hidden">
-                <Link href={`/properties/${property._id}`} className="block h-full w-full">
+            {/* Image */}
+            <Link href={`/properties/${property._id}`} className="block">
+                <div className="relative aspect-[4/3] bg-neutral-100 overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                         src={images[0]}
                         alt={property.title}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
-                </Link>
-
-                <div className="absolute top-4 left-4">
-                    <span className={cn(
-                        "px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider backdrop-blur-md shadow-sm",
-                        status.color
-                    )}>
-                        {status.label}
-                    </span>
-                </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-5 flex flex-col gap-4 flex-1">
-                <div className="flex justify-between items-start">
-                    <div className="min-w-0 flex-1 mr-4">
-                        <Link href={`/properties/${property._id}`} className="block">
-                            <h3 className="text-lg font-bold text-neutral-900 leading-tight truncate group-hover:text-neutral-600 transition-colors">
-                                {property.title}
-                            </h3>
-                        </Link>
-                        <div className="flex items-center gap-1.5 mt-1.5 text-neutral-400">
-                            <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-                            <p className="text-xs font-medium truncate">{property.city}</p>
-                        </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                        <span className="font-mono font-bold text-neutral-900 text-lg">
-                            N${property.priceNad.toLocaleString()}
+                    <div className="absolute top-3 left-3">
+                        <span className={cn(
+                            "px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide",
+                            status.color
+                        )}>
+                            {status.label}
                         </span>
                     </div>
                 </div>
+            </Link>
+
+            {/* Content */}
+            <div className="p-4">
+                <div className="flex justify-between items-start gap-2 mb-2">
+                    <div className="min-w-0">
+                        <Link href={`/properties/${property._id}`}>
+                            <h3 className="font-semibold text-neutral-900 text-sm truncate hover:text-neutral-600 transition-colors">
+                                {property.title}
+                            </h3>
+                        </Link>
+                        <div className="flex items-center gap-1 mt-0.5 text-neutral-400">
+                            <MapPin className="h-3 w-3 shrink-0" />
+                            <p className="text-xs truncate">{property.city}</p>
+                        </div>
+                    </div>
+                    <p className="font-bold text-neutral-900 text-sm shrink-0">
+                        N${property.priceNad.toLocaleString()}
+                    </p>
+                </div>
 
                 {/* Specs */}
-                <div className="grid grid-cols-3 gap-2 py-3 border-y border-neutral-100">
-                    <div className="flex flex-col items-center justify-center p-2 bg-neutral-50 rounded-xl">
-                        <BedDouble className="h-4 w-4 text-neutral-400 mb-1" />
-                        <span className="text-xs font-bold text-neutral-900">{property.bedrooms || 0}</span>
-                    </div>
-                    <div className="flex flex-col items-center justify-center p-2 bg-neutral-50 rounded-xl">
-                        <Bath className="h-4 w-4 text-neutral-400 mb-1" />
-                        <span className="text-xs font-bold text-neutral-900">{property.bathrooms || 0}</span>
-                    </div>
-                    <div className="flex flex-col items-center justify-center p-2 bg-neutral-50 rounded-xl">
-                        <Maximize className="h-4 w-4 text-neutral-400 mb-1" />
-                        <span className="text-xs font-bold text-neutral-900">{property.sizeSqm || 0}m²</span>
-                    </div>
+                <div className="flex items-center gap-4 text-xs text-neutral-500 py-3 border-t border-neutral-100">
+                    <span className="flex items-center gap-1">
+                        <BedDouble className="h-3.5 w-3.5" />
+                        {property.bedrooms || 0}
+                    </span>
+                    <span className="flex items-center gap-1">
+                        <Bath className="h-3.5 w-3.5" />
+                        {property.bathrooms || 0}
+                    </span>
+                    <span className="flex items-center gap-1">
+                        <Maximize className="h-3.5 w-3.5" />
+                        {property.sizeSqm || 0}m²
+                    </span>
                 </div>
 
                 {/* Actions */}
-                <div className="grid grid-cols-2 gap-2 mt-auto">
+                <div className="grid grid-cols-2 gap-2 pt-3 border-t border-neutral-100">
                     <Link
                         href={`/landlord/properties/${property._id}/edit`}
-                        className="flex items-center justify-center gap-2 h-10 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 hover:border-neutral-300 text-xs font-bold text-neutral-700 transition-colors"
+                        className="flex items-center justify-center gap-1.5 h-9 rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50 text-xs font-medium text-neutral-700 transition-colors"
                     >
                         <Edit className="h-3.5 w-3.5" />
                         Manage
                     </Link>
                     <Link
                         href={`/properties/${property._id}`}
-                        className="flex items-center justify-center gap-2 h-10 rounded-xl border border-transparent bg-neutral-900 text-white hover:bg-neutral-800 text-xs font-bold transition-colors"
+                        className="flex items-center justify-center gap-1.5 h-9 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800 text-xs font-medium transition-colors"
                     >
                         <Eye className="h-3.5 w-3.5" />
-                        Preview
+                        View
                     </Link>
                 </div>
             </div>
         </div>
     )
-}
-
-export default function LandlordPropertiesPage() {
-    return <LandlordPropertiesContent />
 }
