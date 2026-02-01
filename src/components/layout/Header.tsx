@@ -94,7 +94,7 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                         <div className="flex items-center gap-2 md:gap-3">
                             {/* Become a Host - Desktop */}
                             {user && currentRole === 'tenant' && (
-                                <Link href="/become-landlord" className="hidden md:block">
+                                <Link href="/become-landlord">
                                     <Button
                                         variant="ghost"
                                         className="rounded-full text-sm font-medium hover:bg-gray-100"
