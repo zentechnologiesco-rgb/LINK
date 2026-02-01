@@ -466,3 +466,39 @@ export const checkExpired = mutation({
     },
 });
 
+// Get count of leases requiring action for current user
+export const getActionRequiredCount = query({
+    args: {},
+    handler: async (ctx) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) return 0;
+
+        const user = await ctx.db.get(userId);
+        if (!user) return 0;
+
+        if (user.role === "landlord") {
+            // For landlords: count leases waiting for their approval
+            const pendingLeases = await ctx.db
+                .query("leases")
+                .withIndex("by_landlordId", (q) => q.eq("landlordId", userId))
+                .filter((q) => q.eq(q.field("status"), "tenant_signed"))
+                .collect();
+            return pendingLeases.length;
+        } else {
+            // For tenants: count leases waiting for their signature
+            const pendingLeases = await ctx.db
+                .query("leases")
+                .withIndex("by_tenantId", (q) => q.eq("tenantId", userId))
+                .filter((q) =>
+                    q.or(
+                        q.eq(q.field("status"), "sent_to_tenant"),
+                        q.eq(q.field("status"), "revision_requested")
+                    )
+                )
+                .collect();
+            return pendingLeases.length;
+        }
+    },
+});
+
+

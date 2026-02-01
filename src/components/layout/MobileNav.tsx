@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { Home, Heart, MessageSquare, User, Building2, LayoutDashboard, LucideIcon } from 'lucide-react'
+import { Home, Heart, MessageSquare, User, Building2, LayoutDashboard, FileText, LucideIcon } from 'lucide-react'
 import { useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 
@@ -16,27 +16,27 @@ interface NavItem {
     label: string
     href: string
     icon: LucideIcon
-    showBadge?: boolean
+    badgeType?: 'messages' | 'leases'
 }
 
 const tenantNavItems: NavItem[] = [
     { label: 'Home', href: '/', icon: Home },
-    { label: 'Saved', href: '/tenant/saved', icon: Heart },
-    { label: 'Messages', href: '/chat', icon: MessageSquare, showBadge: true },
+    { label: 'Leases', href: '/tenant/leases', icon: FileText, badgeType: 'leases' },
+    { label: 'Messages', href: '/chat', icon: MessageSquare, badgeType: 'messages' },
     { label: 'Profile', href: '/settings', icon: User },
 ]
 
 const landlordNavItems: NavItem[] = [
     { label: 'Home', href: '/', icon: Home },
     { label: 'Properties', href: '/landlord/properties', icon: Building2 },
-    { label: 'Messages', href: '/chat', icon: MessageSquare, showBadge: true },
-    { label: 'Profile', href: '/settings', icon: User },
+    { label: 'Leases', href: '/landlord/leases', icon: FileText, badgeType: 'leases' },
+    { label: 'Messages', href: '/chat', icon: MessageSquare, badgeType: 'messages' },
 ]
 
 const adminNavItems: NavItem[] = [
     { label: 'Home', href: '/', icon: Home },
     { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-    { label: 'Messages', href: '/chat', icon: MessageSquare, showBadge: true },
+    { label: 'Messages', href: '/chat', icon: MessageSquare, badgeType: 'messages' },
     { label: 'Profile', href: '/settings', icon: User },
 ]
 
@@ -49,18 +49,30 @@ export function MobileNav({ user, userRole }: MobileNavProps) {
     const pathname = usePathname()
     const currentRole = userRole || user?.role
 
-    // Only fetch unread count if user is logged in
+    // Only fetch counts if user is logged in
     const unreadCountQuery = useQuery(
         api.messages.getUnreadCount,
         user ? {} : "skip"
     )
     const unreadCount = typeof unreadCountQuery === 'number' ? unreadCountQuery : 0
 
+    const leaseActionCountQuery = useQuery(
+        api.leases.getActionRequiredCount,
+        user ? {} : "skip"
+    )
+    const leaseActionCount = typeof leaseActionCountQuery === 'number' ? leaseActionCountQuery : 0
+
     let items: NavItem[] = guestNavItems
     if (user) {
         if (currentRole === 'landlord') items = landlordNavItems
         else if (currentRole === 'admin') items = adminNavItems
         else items = tenantNavItems
+    }
+
+    const getBadgeCount = (badgeType?: 'messages' | 'leases') => {
+        if (badgeType === 'messages') return unreadCount
+        if (badgeType === 'leases') return leaseActionCount
+        return 0
     }
 
     return (
@@ -76,7 +88,8 @@ export function MobileNav({ user, userRole }: MobileNavProps) {
                             ? pathname === '/'
                             : pathname?.startsWith(item.href)
                         const Icon = item.icon
-                        const hasBadge = item.showBadge && unreadCount > 0
+                        const badgeCount = getBadgeCount(item.badgeType)
+                        const hasBadge = badgeCount > 0
 
                         return (
                             <Link
@@ -98,8 +111,11 @@ export function MobileNav({ user, userRole }: MobileNavProps) {
                                         strokeWidth={isActive ? 2.5 : 2}
                                     />
                                     {hasBadge && (
-                                        <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in duration-200">
-                                            {unreadCount > 9 ? '9+' : unreadCount}
+                                        <span className={cn(
+                                            "absolute -top-1 -right-1 h-4 w-4 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in duration-200",
+                                            item.badgeType === 'leases' ? 'bg-amber-500' : 'bg-red-500'
+                                        )}>
+                                            {badgeCount > 9 ? '9+' : badgeCount}
                                         </span>
                                     )}
                                 </div>

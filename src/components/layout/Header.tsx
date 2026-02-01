@@ -42,11 +42,20 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
     const { signOut } = useAuthActions()
     const [isScrolled, setIsScrolled] = useState(false)
 
-    // Only fetch unread count if user is logged in
-    const unreadCount = useQuery(
+    // Only fetch counts if user is logged in
+    const unreadCountQuery = useQuery(
         api.messages.getUnreadCount,
         user ? {} : "skip"
     )
+    const unreadCount = typeof unreadCountQuery === 'number' ? unreadCountQuery : 0
+
+    const leaseActionCountQuery = useQuery(
+        api.leases.getActionRequiredCount,
+        user ? {} : "skip"
+    )
+    const leaseActionCount = typeof leaseActionCountQuery === 'number' ? leaseActionCountQuery : 0
+
+    const totalNotifications = unreadCount + leaseActionCount
 
     useEffect(() => {
         const handleScroll = () => {
@@ -126,10 +135,10 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                                     {getInitials(user) || user.email?.charAt(0).toUpperCase()}
                                                 </AvatarFallback>
                                             </Avatar>
-                                            {/* Unread badge on avatar */}
-                                            {unreadCount && unreadCount > 0 && (
+                                            {/* Notification badge on avatar */}
+                                            {totalNotifications > 0 && (
                                                 <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in duration-200">
-                                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                                    {totalNotifications > 9 ? '9+' : totalNotifications}
                                                 </span>
                                             )}
                                         </button>
@@ -174,8 +183,15 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                                     className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
                                                     onClick={() => router.push('/tenant/leases')}
                                                 >
-                                                    <FileText className="mr-3 h-4 w-4 opacity-70" />
-                                                    My Leases
+                                                    <div className="flex items-center flex-1">
+                                                        <FileText className="mr-3 h-4 w-4 opacity-70" />
+                                                        My Leases
+                                                    </div>
+                                                    {leaseActionCount > 0 && (
+                                                        <span className="h-5 min-w-[20px] px-1.5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                                                            {leaseActionCount}
+                                                        </span>
+                                                    )}
                                                 </DropdownMenuItem>
                                             </>
                                         )}
@@ -194,8 +210,15 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                                     className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
                                                     onClick={() => router.push('/landlord/leases')}
                                                 >
-                                                    <FileText className="mr-3 h-4 w-4 opacity-70" />
-                                                    Leases
+                                                    <div className="flex items-center flex-1">
+                                                        <FileText className="mr-3 h-4 w-4 opacity-70" />
+                                                        Leases
+                                                    </div>
+                                                    {leaseActionCount > 0 && (
+                                                        <span className="h-5 min-w-[20px] px-1.5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                                                            {leaseActionCount}
+                                                        </span>
+                                                    )}
                                                 </DropdownMenuItem>
                                             </>
                                         )}
@@ -229,7 +252,7 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                                 <MessageSquare className="mr-3 h-4 w-4 opacity-70" />
                                                 Messages
                                             </div>
-                                            {unreadCount && unreadCount > 0 && (
+                                            {unreadCount > 0 && (
                                                 <span className="h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                                                     {unreadCount > 99 ? '99+' : unreadCount}
                                                 </span>
