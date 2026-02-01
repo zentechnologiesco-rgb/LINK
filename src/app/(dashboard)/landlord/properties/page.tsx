@@ -57,9 +57,19 @@ function LandlordPropertiesContent() {
     // Group properties
     const actionRequired = properties.filter((p: Property) => p.approvalStatus === 'rejected')
     const pendingReview = properties.filter((p: Property) => p.approvalStatus === 'pending')
-    const activeListings = properties.filter((p: Property) => p.isAvailable && !p.approvalStatus && !propertyIdsWithLease.has(p._id))
+    const activeListings = properties.filter((p: Property) =>
+        p.isAvailable &&
+        p.approvalStatus !== 'rejected' &&
+        p.approvalStatus !== 'pending' &&
+        !propertyIdsWithLease.has(p._id)
+    )
     const leasedProperties = properties.filter((p: Property) => propertyIdsWithLease.has(p._id))
-    const unlistedProperties = properties.filter((p: Property) => !p.isAvailable && !p.approvalStatus && !propertyIdsWithLease.has(p._id))
+    const unlistedProperties = properties.filter((p: Property) =>
+        !p.isAvailable &&
+        p.approvalStatus !== 'rejected' &&
+        p.approvalStatus !== 'pending' &&
+        !propertyIdsWithLease.has(p._id)
+    )
 
     const stats = {
         total: properties.length,
