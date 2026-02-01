@@ -16,7 +16,7 @@ interface ImageUploadProps {
 }
 
 export function ImageUpload({
-    maxImages = 6,
+    maxImages = 15,
     onImagesChange,
     initialImages = []
 }: ImageUploadProps) {

@@ -189,11 +189,11 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                     <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-100 bg-neutral-50">
                         <Camera className="h-4 w-4 text-neutral-500" />
                         <h2 className="text-sm font-semibold text-neutral-900">Photos</h2>
-                        <span className="text-xs text-neutral-400 ml-auto">Max 6</span>
+                        <span className="text-xs text-neutral-400 ml-auto">Max 15</span>
                     </div>
                     <div className="p-4">
                         <ImageUpload
-                            maxImages={6}
+                            maxImages={15}
                             onImagesChange={setImages}
                             initialImages={initialData?.images || []}
                         />

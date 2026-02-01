@@ -1,7 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { LeaseStatusBadge } from '@/components/leases/LeaseStatusTimeline'
+import { PullToRefresh } from '@/components/ui/pull-to-refresh'
 import { FileText, Calendar, ChevronRight, Search, Building2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useQuery } from "convex/react"
@@ -9,7 +12,16 @@ import { api } from "../../../../../convex/_generated/api"
 import { cn } from '@/lib/utils'
 
 export default function TenantLeasesPage() {
+    const router = useRouter()
+    const [isRefreshing, setIsRefreshing] = useState(false)
     const leases = useQuery(api.leases.getForTenant, {})
+
+    const handleRefresh = async () => {
+        setIsRefreshing(true)
+        router.refresh()
+        await new Promise(resolve => setTimeout(resolve, 500))
+        setIsRefreshing(false)
+    }
 
     if (leases === undefined) {
         return (
@@ -59,106 +71,108 @@ export default function TenantLeasesPage() {
     }
 
     return (
-        <div className="font-sans text-neutral-900">
-            {/* Stats */}
-            {leases.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                    <StatCard
-                        label="Action Required"
-                        value={stats.pending}
-                        highlight={stats.pending > 0}
-                    />
-                    <StatCard label="Awaiting" value={stats.signed} />
-                    <StatCard label="Active" value={stats.active} />
-                    <StatCard label="Total" value={stats.total} />
-                </div>
-            )}
-
-            {/* Empty State */}
-            {leases.length === 0 && (
-                <div className="py-20 flex flex-col items-center justify-center text-center px-4">
-                    <div className="h-14 w-14 rounded-xl bg-neutral-100 flex items-center justify-center mb-5">
-                        <FileText className="h-6 w-6 text-neutral-400" />
+        <PullToRefresh onRefresh={handleRefresh} className="min-h-screen">
+            <div className="font-sans text-neutral-900">
+                {/* Stats */}
+                {leases.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                        <StatCard
+                            label="Action Required"
+                            value={stats.pending}
+                            highlight={stats.pending > 0}
+                        />
+                        <StatCard label="Awaiting" value={stats.signed} />
+                        <StatCard label="Active" value={stats.active} />
+                        <StatCard label="Total" value={stats.total} />
                     </div>
-                    <h3 className="text-lg font-semibold text-neutral-900 mb-1">
-                        No leases yet
-                    </h3>
-                    <p className="text-sm text-neutral-500 max-w-xs mb-6">
-                        When a landlord sends you a lease agreement, it will appear here.
-                    </p>
-                    <Link href="/">
-                        <button className="h-10 px-5 bg-neutral-900 hover:bg-neutral-800 text-white text-sm font-medium rounded-lg transition-colors">
-                            <Search className="w-4 h-4 mr-2 inline" />
-                            Find a Home
-                        </button>
-                    </Link>
-                </div>
-            )}
+                )}
 
-            {/* Lease Sections */}
-            {leases.length > 0 && (
-                <div className="space-y-8">
-                    {/* Action Required */}
-                    {pendingLeases.length > 0 && (
-                        <section>
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
-                                <h2 className="text-xs font-bold text-neutral-900 uppercase tracking-wide">
-                                    Action Required
+                {/* Empty State */}
+                {leases.length === 0 && (
+                    <div className="py-20 flex flex-col items-center justify-center text-center px-4">
+                        <div className="h-14 w-14 rounded-xl bg-neutral-100 flex items-center justify-center mb-5">
+                            <FileText className="h-6 w-6 text-neutral-400" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-neutral-900 mb-1">
+                            No leases yet
+                        </h3>
+                        <p className="text-sm text-neutral-500 max-w-xs mb-6">
+                            When a landlord sends you a lease agreement, it will appear here.
+                        </p>
+                        <Link href="/">
+                            <button className="h-10 px-5 bg-neutral-900 hover:bg-neutral-800 text-white text-sm font-medium rounded-lg transition-colors">
+                                <Search className="w-4 h-4 mr-2 inline" />
+                                Find a Home
+                            </button>
+                        </Link>
+                    </div>
+                )}
+
+                {/* Lease Sections */}
+                {leases.length > 0 && (
+                    <div className="space-y-8">
+                        {/* Action Required */}
+                        {pendingLeases.length > 0 && (
+                            <section>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse" />
+                                    <h2 className="text-xs font-bold text-neutral-900 uppercase tracking-wide">
+                                        Action Required
+                                    </h2>
+                                </div>
+                                <div className="space-y-2">
+                                    {pendingLeases.map((lease: any) => (
+                                        <LeaseCard key={lease._id} lease={lease} highlight />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {/* Awaiting Approval */}
+                        {signedLeases.length > 0 && (
+                            <section>
+                                <h2 className="text-xs font-bold text-neutral-500 uppercase tracking-wide mb-3">
+                                    Awaiting Approval
                                 </h2>
-                            </div>
-                            <div className="space-y-2">
-                                {pendingLeases.map((lease: any) => (
-                                    <LeaseCard key={lease._id} lease={lease} highlight />
-                                ))}
-                            </div>
-                        </section>
-                    )}
+                                <div className="space-y-2">
+                                    {signedLeases.map((lease: any) => (
+                                        <LeaseCard key={lease._id} lease={lease} />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
 
-                    {/* Awaiting Approval */}
-                    {signedLeases.length > 0 && (
-                        <section>
-                            <h2 className="text-xs font-bold text-neutral-500 uppercase tracking-wide mb-3">
-                                Awaiting Approval
-                            </h2>
-                            <div className="space-y-2">
-                                {signedLeases.map((lease: any) => (
-                                    <LeaseCard key={lease._id} lease={lease} />
-                                ))}
-                            </div>
-                        </section>
-                    )}
+                        {/* Active */}
+                        {activeLeases.length > 0 && (
+                            <section>
+                                <h2 className="text-xs font-bold text-neutral-900 uppercase tracking-wide mb-3">
+                                    Active Leases
+                                </h2>
+                                <div className="space-y-2">
+                                    {activeLeases.map((lease: any) => (
+                                        <LeaseCard key={lease._id} lease={lease} />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
 
-                    {/* Active */}
-                    {activeLeases.length > 0 && (
-                        <section>
-                            <h2 className="text-xs font-bold text-neutral-900 uppercase tracking-wide mb-3">
-                                Active Leases
-                            </h2>
-                            <div className="space-y-2">
-                                {activeLeases.map((lease: any) => (
-                                    <LeaseCard key={lease._id} lease={lease} />
-                                ))}
-                            </div>
-                        </section>
-                    )}
-
-                    {/* Archive */}
-                    {otherLeases.length > 0 && (
-                        <section>
-                            <h2 className="text-xs font-bold text-neutral-400 uppercase tracking-wide mb-3">
-                                Archive
-                            </h2>
-                            <div className="space-y-2 opacity-60">
-                                {otherLeases.map((lease: any) => (
-                                    <LeaseCard key={lease._id} lease={lease} />
-                                ))}
-                            </div>
-                        </section>
-                    )}
-                </div>
-            )}
-        </div>
+                        {/* Archive */}
+                        {otherLeases.length > 0 && (
+                            <section>
+                                <h2 className="text-xs font-bold text-neutral-400 uppercase tracking-wide mb-3">
+                                    Archive
+                                </h2>
+                                <div className="space-y-2 opacity-60">
+                                    {otherLeases.map((lease: any) => (
+                                        <LeaseCard key={lease._id} lease={lease} />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+                    </div>
+                )}
+            </div>
+        </PullToRefresh>
     )
 }
 

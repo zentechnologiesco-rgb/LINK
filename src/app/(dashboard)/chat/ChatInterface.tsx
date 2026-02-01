@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { PullToRefresh } from '@/components/ui/pull-to-refresh'
 import { cn } from '@/lib/utils'
 import { formatDistanceToNow } from 'date-fns'
 import { Search, MessageSquare, ArrowLeft } from 'lucide-react'
@@ -21,6 +22,7 @@ export function AuthedChatInterface() {
     const [selectedInquiryId, setSelectedInquiryId] = useState<string | null>(activeId)
     const [searchQuery, setSearchQuery] = useState('')
     const [showMobileChat, setShowMobileChat] = useState(false)
+    const [isRefreshing, setIsRefreshing] = useState(false)
 
     const currentUser = useQuery(api.users.currentUser)
     const inquiries = useQuery(api.inquiries.getUserInquiries)
@@ -53,6 +55,13 @@ export function AuthedChatInterface() {
     const handleBackToList = () => {
         setShowMobileChat(false)
         router.push('/chat', { scroll: false })
+    }
+
+    const handleRefresh = async () => {
+        setIsRefreshing(true)
+        router.refresh()
+        await new Promise(resolve => setTimeout(resolve, 500))
+        setIsRefreshing(false)
     }
 
     // Loading state
@@ -91,7 +100,7 @@ export function AuthedChatInterface() {
                 </div>
 
                 {/* Conversation List */}
-                <div className="flex-1 overflow-y-auto">
+                <PullToRefresh onRefresh={handleRefresh} className="flex-1 overflow-y-auto">
                     {filteredInquiries.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
                             <div className="h-16 w-16 rounded-full bg-neutral-100 flex items-center justify-center mb-4">
@@ -141,7 +150,7 @@ export function AuthedChatInterface() {
                             ))}
                         </div>
                     )}
-                </div>
+                </PullToRefresh>
             </div>
 
             {/* Chat Thread Area */}

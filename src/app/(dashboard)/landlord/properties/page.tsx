@@ -1,7 +1,10 @@
 "use client"
 
+import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { PullToRefresh } from '@/components/ui/pull-to-refresh'
 import {
     Building2,
     Plus,
@@ -36,8 +39,18 @@ interface Property {
 }
 
 export default function LandlordPropertiesPage() {
+    const router = useRouter()
+    const [isRefreshing, setIsRefreshing] = useState(false)
     const properties = useQuery(api.properties.getByLandlord, {})
     const leases = useQuery(api.leases.getForLandlord, {})
+
+    const handleRefresh = async () => {
+        setIsRefreshing(true)
+        router.refresh()
+        // Small delay for visual feedback since Convex updates are instant
+        await new Promise(resolve => setTimeout(resolve, 500))
+        setIsRefreshing(false)
+    }
 
     if (properties === undefined) {
         return (
@@ -96,146 +109,148 @@ export default function LandlordPropertiesPage() {
     }
 
     return (
-        <div className="font-sans text-neutral-900">
-            {/* Header */}
-            <div className="flex items-center justify-end mb-6 pb-4 border-b border-neutral-100">
-                {properties.length > 0 && (
-                    <Link href="/landlord/properties/new">
-                        <Button className="h-10 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg px-4 text-sm font-medium transition-colors">
-                            <Plus className="mr-1.5 h-4 w-4" />
-                            Add Property
-                        </Button>
-                    </Link>
+        <PullToRefresh onRefresh={handleRefresh} className="min-h-screen">
+            <div className="font-sans text-neutral-900">
+                {/* Header */}
+                <div className="flex items-center justify-end mb-6 pb-4 border-b border-neutral-100">
+                    {properties.length > 0 && (
+                        <Link href="/landlord/properties/new">
+                            <Button className="h-10 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg px-4 text-sm font-medium transition-colors">
+                                <Plus className="mr-1.5 h-4 w-4" />
+                                Add Property
+                            </Button>
+                        </Link>
+                    )}
+                </div>
+
+                {properties.length > 0 ? (
+                    <div className="space-y-8">
+                        {/* Stats Grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <StatCard
+                                label="Action Required"
+                                value={stats.actionRequired}
+                                highlight={stats.actionRequired > 0}
+                            />
+                            <StatCard label="Listed" value={stats.listed} />
+                            <StatCard label="Leased" value={stats.leased} />
+                            <StatCard label="Total" value={stats.total} />
+                        </div>
+
+                        {/* Property Sections */}
+                        {actionRequired.length > 0 && (
+                            <section>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                                    <h2 className="text-xs font-bold text-neutral-900 uppercase tracking-wide">
+                                        Action Required
+                                    </h2>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                    {actionRequired.map((property: Property) => (
+                                        <PropertyCard
+                                            key={property._id}
+                                            property={property}
+                                            hasLease={propertyIdsWithLease.has(property._id)}
+                                            highlight
+                                        />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {pendingReview.length > 0 && (
+                            <section>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+                                    <h2 className="text-xs font-bold text-neutral-900 uppercase tracking-wide">
+                                        Pending Review
+                                    </h2>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                    {pendingReview.map((property: Property) => (
+                                        <PropertyCard
+                                            key={property._id}
+                                            property={property}
+                                            hasLease={propertyIdsWithLease.has(property._id)}
+                                        />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {activeListings.length > 0 && (
+                            <section>
+                                <h2 className="text-xs font-bold text-neutral-900 uppercase tracking-wide mb-3">
+                                    Active Listings
+                                </h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                    {activeListings.map((property: Property) => (
+                                        <PropertyCard
+                                            key={property._id}
+                                            property={property}
+                                            hasLease={propertyIdsWithLease.has(property._id)}
+                                        />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {leasedProperties.length > 0 && (
+                            <section>
+                                <h2 className="text-xs font-bold text-neutral-500 uppercase tracking-wide mb-3">
+                                    Currently Leased
+                                </h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 opacity-80">
+                                    {leasedProperties.map((property: Property) => (
+                                        <PropertyCard
+                                            key={property._id}
+                                            property={property}
+                                            hasLease={true}
+                                        />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {unlistedProperties.length > 0 && (
+                            <section>
+                                <h2 className="text-xs font-bold text-neutral-400 uppercase tracking-wide mb-3">
+                                    Unlisted
+                                </h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 opacity-60">
+                                    {unlistedProperties.map((property: Property) => (
+                                        <PropertyCard
+                                            key={property._id}
+                                            property={property}
+                                            hasLease={false}
+                                        />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+                    </div>
+                ) : (
+                    <div className="py-20 flex flex-col items-center justify-center text-center px-4">
+                        <div className="h-14 w-14 rounded-xl bg-neutral-100 flex items-center justify-center mb-5">
+                            <TrendingUp className="h-6 w-6 text-neutral-400" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-neutral-900 mb-1">
+                            No properties yet
+                        </h3>
+                        <p className="text-sm text-neutral-500 max-w-xs mb-6">
+                            Start building your portfolio by adding your first property.
+                        </p>
+                        <Link href="/landlord/properties/new">
+                            <Button className="h-10 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg px-6 text-sm font-medium">
+                                <Plus className="mr-1.5 h-4 w-4" />
+                                Add First Property
+                            </Button>
+                        </Link>
+                    </div>
                 )}
             </div>
-
-            {properties.length > 0 ? (
-                <div className="space-y-8">
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <StatCard
-                            label="Action Required"
-                            value={stats.actionRequired}
-                            highlight={stats.actionRequired > 0}
-                        />
-                        <StatCard label="Listed" value={stats.listed} />
-                        <StatCard label="Leased" value={stats.leased} />
-                        <StatCard label="Total" value={stats.total} />
-                    </div>
-
-                    {/* Property Sections */}
-                    {actionRequired.length > 0 && (
-                        <section>
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                                <h2 className="text-xs font-bold text-neutral-900 uppercase tracking-wide">
-                                    Action Required
-                                </h2>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                {actionRequired.map((property: Property) => (
-                                    <PropertyCard
-                                        key={property._id}
-                                        property={property}
-                                        hasLease={propertyIdsWithLease.has(property._id)}
-                                        highlight
-                                    />
-                                ))}
-                            </div>
-                        </section>
-                    )}
-
-                    {pendingReview.length > 0 && (
-                        <section>
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-                                <h2 className="text-xs font-bold text-neutral-900 uppercase tracking-wide">
-                                    Pending Review
-                                </h2>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                {pendingReview.map((property: Property) => (
-                                    <PropertyCard
-                                        key={property._id}
-                                        property={property}
-                                        hasLease={propertyIdsWithLease.has(property._id)}
-                                    />
-                                ))}
-                            </div>
-                        </section>
-                    )}
-
-                    {activeListings.length > 0 && (
-                        <section>
-                            <h2 className="text-xs font-bold text-neutral-900 uppercase tracking-wide mb-3">
-                                Active Listings
-                            </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                {activeListings.map((property: Property) => (
-                                    <PropertyCard
-                                        key={property._id}
-                                        property={property}
-                                        hasLease={propertyIdsWithLease.has(property._id)}
-                                    />
-                                ))}
-                            </div>
-                        </section>
-                    )}
-
-                    {leasedProperties.length > 0 && (
-                        <section>
-                            <h2 className="text-xs font-bold text-neutral-500 uppercase tracking-wide mb-3">
-                                Currently Leased
-                            </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 opacity-80">
-                                {leasedProperties.map((property: Property) => (
-                                    <PropertyCard
-                                        key={property._id}
-                                        property={property}
-                                        hasLease={true}
-                                    />
-                                ))}
-                            </div>
-                        </section>
-                    )}
-
-                    {unlistedProperties.length > 0 && (
-                        <section>
-                            <h2 className="text-xs font-bold text-neutral-400 uppercase tracking-wide mb-3">
-                                Unlisted
-                            </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 opacity-60">
-                                {unlistedProperties.map((property: Property) => (
-                                    <PropertyCard
-                                        key={property._id}
-                                        property={property}
-                                        hasLease={false}
-                                    />
-                                ))}
-                            </div>
-                        </section>
-                    )}
-                </div>
-            ) : (
-                <div className="py-20 flex flex-col items-center justify-center text-center px-4">
-                    <div className="h-14 w-14 rounded-xl bg-neutral-100 flex items-center justify-center mb-5">
-                        <TrendingUp className="h-6 w-6 text-neutral-400" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-neutral-900 mb-1">
-                        No properties yet
-                    </h3>
-                    <p className="text-sm text-neutral-500 max-w-xs mb-6">
-                        Start building your portfolio by adding your first property.
-                    </p>
-                    <Link href="/landlord/properties/new">
-                        <Button className="h-10 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg px-6 text-sm font-medium">
-                            <Plus className="mr-1.5 h-4 w-4" />
-                            Add First Property
-                        </Button>
-                    </Link>
-                </div>
-            )}
-        </div>
+        </PullToRefresh>
     )
 }
 
