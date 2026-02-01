@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -10,7 +10,7 @@ import { toast } from 'sonner'
 import { Eye, EyeOff, ArrowLeft, Loader2 } from 'lucide-react'
 import { useAuthActions } from "@convex-dev/auth/react"
 
-export default function SignUpPage() {
+function SignUpContent() {
     const [isLoading, setIsLoading] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
     const router = useRouter()
@@ -215,5 +215,17 @@ export default function SignUpPage() {
                 </div>
             </main>
         </div>
+    )
+}
+
+export default function SignUpPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+                <Loader2 className="h-8 w-8 animate-spin text-neutral-900" />
+            </div>
+        }>
+            <SignUpContent />
+        </Suspense>
     )
 }
