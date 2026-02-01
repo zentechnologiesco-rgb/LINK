@@ -74,6 +74,8 @@ function EditPropertyContent({ id }: { id: string }) {
                     amenityNames: property.amenityNames || [],
                     images: property.images || [],
                     coordinates: property.coordinates,
+                    approvalStatus: property.approvalStatus,
+                    adminNotes: property.adminNotes,
                 }}
             />
         </div>

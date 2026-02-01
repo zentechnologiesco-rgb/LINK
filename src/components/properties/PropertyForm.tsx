@@ -15,7 +15,7 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { ChevronLeft, Loader2, Info, Check, XCircle, Home, MapPin } from 'lucide-react'
+import { ChevronLeft, Loader2, Info, Check, XCircle, Home, MapPin, Camera, FileText, Settings, Sparkles } from 'lucide-react'
 import { ImageUpload } from './ImageUpload'
 import { LocationPicker } from '@/components/maps/LocationPicker'
 import { useMutation, useQuery } from "convex/react"
@@ -39,7 +39,6 @@ interface PropertyFormProps {
         sizeSqm?: number
         amenityNames?: string[]
         images?: Id<"_storage">[]
-
         coordinates?: { lat: number; lng: number } | null
         approvalStatus?: string
         adminNotes?: string
@@ -138,62 +137,61 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
     if (currentUser === undefined) {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="h-10 w-10 rounded-full border-2 border-black/10 border-t-black animate-spin" />
-                    <p className="text-sm text-black/40 font-medium">Loading...</p>
+                <div className="flex flex-col items-center gap-3">
+                    <div className="h-8 w-8 rounded-full border-2 border-neutral-200 border-t-neutral-900 animate-spin" />
+                    <p className="text-sm text-neutral-400 font-medium">Loading...</p>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="max-w-4xl mx-auto pb-20 animate-in fade-in duration-500">
+        <div className="max-w-2xl mx-auto pb-24">
             {/* Header */}
-            <div className="mb-12">
+            <div className="mb-8">
                 <Link
                     href="/landlord/properties"
-                    className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-neutral-500 hover:text-neutral-900 transition-colors mb-6"
+                    className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900 transition-colors mb-4"
                 >
-                    <ChevronLeft className="h-3 w-3" />
-                    Back to portfolio
+                    <ChevronLeft className="h-4 w-4" />
+                    Properties
                 </Link>
-                <h1 className="font-[family-name:var(--font-anton)] text-4xl uppercase tracking-wide text-neutral-900 mb-2">
-                    {mode === 'edit' ? 'Edit Property' : 'New Listing'}
+                <h1 className="text-2xl font-semibold text-neutral-900">
+                    {mode === 'edit' ? 'Edit Property' : 'New Property'}
                 </h1>
-                <p className="text-neutral-500 font-medium max-w-lg">
+                <p className="text-sm text-neutral-500 mt-1">
                     {mode === 'edit'
-                        ? 'Update your property details and manage availability.'
-                        : 'Fill in the details below to publish your listing to the marketplace.'}
+                        ? 'Update your property details.'
+                        : 'Add a new property to your portfolio.'}
                 </p>
             </div>
 
             {/* Rejection Banner */}
             {mode === 'edit' && initialData?.approvalStatus === 'rejected' && (
-                <div className="flex items-start gap-4 p-6 rounded-2xl bg-red-50 border border-red-100 mb-10">
-                    <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center shrink-0 mt-1">
-                        <XCircle className="h-5 w-5 text-red-600" />
-                    </div>
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-100 mb-6">
+                    <XCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
                     <div>
-                        <h3 className="font-[family-name:var(--font-anton)] text-xl uppercase tracking-wide text-red-900 mb-2">Submission Rejected</h3>
-                        <p className="text-sm font-medium text-red-700 leading-relaxed mb-4 p-4 bg-white/50 rounded-xl border border-red-200/50">
-                            "{initialData.adminNotes || "This property was rejected by the admin team."}"
+                        <p className="font-semibold text-red-900 text-sm">Submission Rejected</p>
+                        <p className="text-sm text-red-700 mt-1">
+                            {initialData.adminNotes || "This property was rejected by the admin team."}
                         </p>
-                        <p className="text-xs font-bold uppercase tracking-wider text-red-800 flex items-center gap-2">
-                            <Info className="h-4 w-4" />
-                            Update the details below and save to resubmit for approval.
+                        <p className="text-xs text-red-600 mt-2 flex items-center gap-1">
+                            <Info className="h-3 w-3" />
+                            Update and save to resubmit for review.
                         </p>
                     </div>
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-12">
-                {/* Property Images */}
-                <section>
-                    <div className="mb-6 flex items-baseline justify-between border-b border-neutral-200 pb-2">
-                        <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-widest font-mono">01. Visuals</h2>
-                        <span className="text-xs text-neutral-400 font-mono">Max 6 images</span>
+            <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Images Section */}
+                <section className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-100 bg-neutral-50">
+                        <Camera className="h-4 w-4 text-neutral-500" />
+                        <h2 className="text-sm font-semibold text-neutral-900">Photos</h2>
+                        <span className="text-xs text-neutral-400 ml-auto">Max 6</span>
                     </div>
-                    <div className="rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50 p-8 transition-all hover:border-neutral-300">
+                    <div className="p-4">
                         <ImageUpload
                             maxImages={6}
                             onImagesChange={setImages}
@@ -202,31 +200,35 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                     </div>
                 </section>
 
-                {/* Basic Information */}
-                <section>
-                    <div className="mb-6 border-b border-neutral-200 pb-2">
-                        <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-widest font-mono">02. Essentials</h2>
+                {/* Basic Info Section */}
+                <section className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-100 bg-neutral-50">
+                        <FileText className="h-4 w-4 text-neutral-500" />
+                        <h2 className="text-sm font-semibold text-neutral-900">Basic Info</h2>
                     </div>
-
-                    <div className="grid gap-6">
+                    <div className="p-4 space-y-4">
                         <div>
-                            <Label htmlFor="title" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 mb-1.5 block">Property Title</Label>
+                            <Label htmlFor="title" className="text-xs font-medium text-neutral-600 mb-1.5 block">
+                                Property Title
+                            </Label>
                             <Input
                                 id="title"
-                                placeholder="e.g. Modern 2-Bedroom Apartment in CBD"
+                                placeholder="e.g. Modern 2-Bedroom Apartment"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 required
                                 minLength={5}
-                                className="h-12 rounded-xl bg-neutral-50 border-transparent focus:bg-white focus:border-neutral-200 focus:ring-0 font-medium transition-all"
+                                className="h-11 rounded-lg bg-neutral-50 border-neutral-200"
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <Label htmlFor="property_type" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 mb-1.5 block">Property Type</Label>
+                                <Label className="text-xs font-medium text-neutral-600 mb-1.5 block">
+                                    Property Type
+                                </Label>
                                 <Select value={propertyType} onValueChange={setPropertyType}>
-                                    <SelectTrigger className="h-12 rounded-xl bg-neutral-50 border-transparent focus:bg-white focus:border-neutral-200 focus:ring-0 font-medium transition-all">
+                                    <SelectTrigger className="h-11 rounded-lg bg-neutral-50 border-neutral-200">
                                         <SelectValue placeholder="Select type" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -239,7 +241,9 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                                 </Select>
                             </div>
                             <div>
-                                <Label htmlFor="price_nad" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 mb-1.5 block">Monthly Rent (N$)</Label>
+                                <Label htmlFor="price_nad" className="text-xs font-medium text-neutral-600 mb-1.5 block">
+                                    Monthly Rent (N$)
+                                </Label>
                                 <Input
                                     id="price_nad"
                                     type="number"
@@ -248,164 +252,179 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                                     onChange={(e) => setPriceNad(e.target.value)}
                                     required
                                     min={0}
-                                    className="h-12 rounded-xl bg-neutral-50 border-transparent focus:bg-white focus:border-neutral-200 focus:ring-0 font-[family-name:var(--font-anton)] tracking-wide text-lg transition-all"
+                                    className="h-11 rounded-lg bg-neutral-50 border-neutral-200 font-semibold"
                                 />
                             </div>
                         </div>
                     </div>
                 </section>
 
-                {/* Location */}
-                <section>
-                    <div className="mb-6 border-b border-neutral-200 pb-2">
-                        <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-widest font-mono">03. Location</h2>
+                {/* Location Section */}
+                <section className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-100 bg-neutral-50">
+                        <MapPin className="h-4 w-4 text-neutral-500" />
+                        <h2 className="text-sm font-semibold text-neutral-900">Location</h2>
                     </div>
-
-                    <div className="space-y-6">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="p-4 space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <Label htmlFor="city" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 mb-1.5 block">City</Label>
-                                <div className="relative">
-                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-                                    <Input
-                                        id="city"
-                                        placeholder="Windhoek"
-                                        value={city}
-                                        onChange={(e) => setCity(e.target.value)}
-                                        required
-                                        className="h-12 pl-10 rounded-xl bg-neutral-50 border-transparent focus:bg-white focus:border-neutral-200 focus:ring-0 font-medium transition-all"
-                                    />
-                                </div>
+                                <Label htmlFor="city" className="text-xs font-medium text-neutral-600 mb-1.5 block">
+                                    City
+                                </Label>
+                                <Input
+                                    id="city"
+                                    placeholder="Windhoek"
+                                    value={city}
+                                    onChange={(e) => setCity(e.target.value)}
+                                    required
+                                    className="h-11 rounded-lg bg-neutral-50 border-neutral-200"
+                                />
                             </div>
                             <div>
-                                <Label htmlFor="address" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 mb-1.5 block">Street Address</Label>
-                                <div className="relative">
-                                    <Home className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-                                    <Input
-                                        id="address"
-                                        placeholder="123 Independence Ave"
-                                        value={address}
-                                        onChange={(e) => setAddress(e.target.value)}
-                                        required
-                                        className="h-12 pl-10 rounded-xl bg-neutral-50 border-transparent focus:bg-white focus:border-neutral-200 focus:ring-0 font-medium transition-all"
-                                    />
-                                </div>
+                                <Label htmlFor="address" className="text-xs font-medium text-neutral-600 mb-1.5 block">
+                                    Address
+                                </Label>
+                                <Input
+                                    id="address"
+                                    placeholder="123 Main Street"
+                                    value={address}
+                                    onChange={(e) => setAddress(e.target.value)}
+                                    required
+                                    className="h-11 rounded-lg bg-neutral-50 border-neutral-200"
+                                />
                             </div>
                         </div>
 
                         <div>
-                            <Label className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 mb-2 block">Pin Location</Label>
-                            <div className="rounded-2xl overflow-hidden border border-neutral-200 shadow-sm">
+                            <Label className="text-xs font-medium text-neutral-600 mb-1.5 block">
+                                Pin on Map
+                            </Label>
+                            <div className="rounded-lg overflow-hidden border border-neutral-200">
                                 <LocationPicker
                                     initialCoordinates={coordinates}
                                     onLocationChange={setCoordinates}
                                     onAddressChange={handleAddressFromMap}
                                 />
                             </div>
-                            <p className="text-[10px] text-neutral-400 font-mono mt-2 text-right">
-                                Click on the map to set exact coordinates.
+                            <p className="text-xs text-neutral-400 mt-1.5">
+                                Click on the map to set the exact location.
                             </p>
                         </div>
                     </div>
                 </section>
 
-                {/* Specifications */}
-                <section>
-                    <div className="mb-6 border-b border-neutral-200 pb-2">
-                        <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-widest font-mono">04. Specs</h2>
+                {/* Specs Section */}
+                <section className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-100 bg-neutral-50">
+                        <Settings className="h-4 w-4 text-neutral-500" />
+                        <h2 className="text-sm font-semibold text-neutral-900">Specifications</h2>
                     </div>
-                    <div className="grid grid-cols-3 gap-6">
-                        <div>
-                            <Label htmlFor="bedrooms" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 mb-1.5 block">Bedrooms</Label>
-                            <Input
-                                id="bedrooms"
-                                type="number"
-                                value={bedrooms}
-                                onChange={(e) => setBedrooms(e.target.value)}
-                                min={0}
-                                required
-                                className="h-12 rounded-xl bg-neutral-50 border-transparent focus:bg-white focus:border-neutral-200 focus:ring-0 font-medium text-center transition-all"
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="bathrooms" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 mb-1.5 block">Bathrooms</Label>
-                            <Input
-                                id="bathrooms"
-                                type="number"
-                                value={bathrooms}
-                                onChange={(e) => setBathrooms(e.target.value)}
-                                min={0}
-                                required
-                                className="h-12 rounded-xl bg-neutral-50 border-transparent focus:bg-white focus:border-neutral-200 focus:ring-0 font-medium text-center transition-all"
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="size_sqm" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 mb-1.5 block">Size (m²)</Label>
-                            <Input
-                                id="size_sqm"
-                                type="number"
-                                placeholder="50"
-                                value={sizeSqm}
-                                onChange={(e) => setSizeSqm(e.target.value)}
-                                min={0}
-                                required
-                                className="h-12 rounded-xl bg-neutral-50 border-transparent focus:bg-white focus:border-neutral-200 focus:ring-0 font-medium text-center transition-all"
-                            />
+                    <div className="p-4">
+                        <div className="grid grid-cols-3 gap-3">
+                            <div>
+                                <Label htmlFor="bedrooms" className="text-xs font-medium text-neutral-600 mb-1.5 block">
+                                    Bedrooms
+                                </Label>
+                                <Input
+                                    id="bedrooms"
+                                    type="number"
+                                    value={bedrooms}
+                                    onChange={(e) => setBedrooms(e.target.value)}
+                                    min={0}
+                                    required
+                                    className="h-11 rounded-lg bg-neutral-50 border-neutral-200 text-center"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="bathrooms" className="text-xs font-medium text-neutral-600 mb-1.5 block">
+                                    Bathrooms
+                                </Label>
+                                <Input
+                                    id="bathrooms"
+                                    type="number"
+                                    value={bathrooms}
+                                    onChange={(e) => setBathrooms(e.target.value)}
+                                    min={0}
+                                    required
+                                    className="h-11 rounded-lg bg-neutral-50 border-neutral-200 text-center"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="size_sqm" className="text-xs font-medium text-neutral-600 mb-1.5 block">
+                                    Size (m²)
+                                </Label>
+                                <Input
+                                    id="size_sqm"
+                                    type="number"
+                                    placeholder="50"
+                                    value={sizeSqm}
+                                    onChange={(e) => setSizeSqm(e.target.value)}
+                                    min={0}
+                                    required
+                                    className="h-11 rounded-lg bg-neutral-50 border-neutral-200 text-center"
+                                />
+                            </div>
                         </div>
                     </div>
                 </section>
 
-                {/* Description */}
-                <section>
-                    <div className="mb-6 border-b border-neutral-200 pb-2">
-                        <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-widest font-mono">05. Details</h2>
+                {/* Description Section */}
+                <section className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-100 bg-neutral-50">
+                        <FileText className="h-4 w-4 text-neutral-500" />
+                        <h2 className="text-sm font-semibold text-neutral-900">Description</h2>
                     </div>
-                    <Textarea
-                        id="description"
-                        placeholder="Describe the property features, nearby amenities, transportation, etc."
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        required
-                        minLength={20}
-                        className="min-h-[150px] rounded-xl bg-neutral-50 border-transparent focus:bg-white focus:border-neutral-200 focus:ring-0 resize-none font-medium leading-relaxed p-4 transition-all"
-                    />
-                </section>
-
-                {/* Amenities */}
-                <section>
-                    <div className="mb-6 border-b border-neutral-200 pb-2">
-                        <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-widest font-mono">06. Amenities</h2>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                        {AMENITIES.map((amenity) => {
-                            const isSelected = selectedAmenities.includes(amenity.name)
-                            return (
-                                <button
-                                    key={amenity.id}
-                                    type="button"
-                                    onClick={() => handleAmenityChange(amenity.name)}
-                                    className={cn(
-                                        "flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all text-center border",
-                                        isSelected
-                                            ? 'bg-neutral-900 text-white border-neutral-900 shadow-md'
-                                            : 'bg-white text-neutral-500 border-neutral-100 hover:border-neutral-300 hover:bg-neutral-50'
-                                    )}
-                                >
-                                    {isSelected && <Check className="h-3 w-3 shrink-0" strokeWidth={3} />}
-                                    <span className="truncate">{amenity.name}</span>
-                                </button>
-                            )
-                        })}
+                    <div className="p-4">
+                        <Textarea
+                            id="description"
+                            placeholder="Describe your property, nearby amenities, transportation..."
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            required
+                            minLength={20}
+                            className="min-h-[120px] rounded-lg bg-neutral-50 border-neutral-200 resize-none"
+                        />
                     </div>
                 </section>
 
-                {/* Action Buttons */}
-                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-4 pt-8 sticky bottom-0 bg-white/80 backdrop-blur-xl p-4 -mx-4 sm:mx-0 border-t border-neutral-100 z-10">
-                    <Link href="/landlord/properties" className="w-full sm:w-auto">
+                {/* Amenities Section */}
+                <section className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-100 bg-neutral-50">
+                        <Sparkles className="h-4 w-4 text-neutral-500" />
+                        <h2 className="text-sm font-semibold text-neutral-900">Amenities</h2>
+                    </div>
+                    <div className="p-4">
+                        <div className="flex flex-wrap gap-2">
+                            {AMENITIES.map((amenity) => {
+                                const isSelected = selectedAmenities.includes(amenity.name)
+                                return (
+                                    <button
+                                        key={amenity.id}
+                                        type="button"
+                                        onClick={() => handleAmenityChange(amenity.name)}
+                                        className={cn(
+                                            "inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all border",
+                                            isSelected
+                                                ? 'bg-neutral-900 text-white border-neutral-900'
+                                                : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'
+                                        )}
+                                    >
+                                        {isSelected && <Check className="h-3 w-3" />}
+                                        {amenity.name}
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </div>
+                </section>
+
+                {/* Action Buttons - Sticky on mobile */}
+                <div className="sticky bottom-0 bg-white/90 backdrop-blur-sm border-t border-neutral-100 -mx-4 px-4 py-4 mt-8 flex flex-col sm:flex-row gap-3 sm:justify-end">
+                    <Link href="/landlord/properties" className="sm:order-1">
                         <Button
                             type="button"
-                            variant="ghost"
-                            className="w-full sm:w-auto h-12 rounded-xl text-neutral-500 font-bold uppercase tracking-wider text-xs hover:bg-neutral-100 hover:text-neutral-900"
+                            variant="outline"
+                            className="w-full sm:w-auto h-11 rounded-lg border-neutral-200"
                         >
                             Cancel
                         </Button>
@@ -413,12 +432,12 @@ export function PropertyForm({ mode = 'create', propertyId, initialData }: Prope
                     <Button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full sm:w-auto h-12 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl font-bold uppercase tracking-wider text-xs shadow-lg shadow-neutral-900/10 transition-all hover:-translate-y-1"
+                        className="w-full sm:w-auto sm:order-2 h-11 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg font-medium"
                     >
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {isLoading
                             ? (mode === 'edit' ? 'Saving...' : 'Creating...')
-                            : (mode === 'edit' ? 'Save Changes' : 'Create Listing')}
+                            : (mode === 'edit' ? 'Save Changes' : 'Create Property')}
                     </Button>
                 </div>
             </form>
