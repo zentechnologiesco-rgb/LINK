@@ -88,15 +88,11 @@ export function LeaseDetailClient({ lease }: LeaseDetailClientProps) {
             <div className="mb-8 sm:mb-10">
                 <Link
                     href="/tenant/leases"
-                    className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors mb-6 group"
+                    className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors group"
                 >
                     <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
                     Back to leases
                 </Link>
-                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-neutral-900 mb-2">
-                    {lease.property?.title}
-                </h1>
-                <p className="text-neutral-500 font-medium text-lg">{lease.property?.address}</p>
             </div>
 
             {/* Status Alerts */}

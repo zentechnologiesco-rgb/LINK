@@ -106,9 +106,9 @@ export default function SignUpPage() {
             </div>
 
             {/* Right Side - Form */}
-            <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-6 sm:p-12 relative bg-white">
-                {/* Mobile Header / Back Button */}
-                <div className="w-full max-w-md absolute top-6 sm:top-8 left-6 sm:left-12 right-6 sm:right-12 flex justify-between items-center lg:justify-end">
+            <div className="w-full lg:w-1/2 flex flex-col items-center relative bg-white overflow-y-auto h-screen">
+                {/* Mobile Header / Back Button - Relative on Mobile, Absolute on Desktop */}
+                <div className="w-full px-6 py-6 sm:px-12 sm:pt-12 flex justify-between items-center lg:absolute lg:top-0 lg:right-0 lg:w-auto lg:p-12 z-20">
                     <Link href="/" className="lg:hidden font-[family-name:var(--font-anton)] text-2xl tracking-wide">
                         LINK
                     </Link>
@@ -121,137 +121,140 @@ export default function SignUpPage() {
                     </Link>
                 </div>
 
-                <div className="w-full max-w-sm space-y-8 mt-12 lg:mt-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="space-y-2">
-                        <h2 className="font-[family-name:var(--font-anton)] text-2xl text-neutral-900 uppercase tracking-wide">
-                            Create Account
-                        </h2>
-                        <p className="text-neutral-500 text-sm">
-                            Enter your details to get started
-                        </p>
-                    </div>
-
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="space-y-4">
-                            {/* Name Fields */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="firstName" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 ml-1">
-                                        First Name
-                                    </Label>
-                                    <Input
-                                        id="firstName"
-                                        name="firstName"
-                                        type="text"
-                                        placeholder="John"
-                                        required
-                                        disabled={isLoading}
-                                        className="h-11 rounded-lg bg-neutral-50 border-neutral-200 focus:border-neutral-900 focus:ring-0 transition-all font-medium text-sm placeholder:text-neutral-400"
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="surname" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 ml-1">
-                                        Surname
-                                    </Label>
-                                    <Input
-                                        id="surname"
-                                        name="surname"
-                                        type="text"
-                                        placeholder="Doe"
-                                        required
-                                        disabled={isLoading}
-                                        className="h-11 rounded-lg bg-neutral-50 border-neutral-200 focus:border-neutral-900 focus:ring-0 transition-all font-medium text-sm placeholder:text-neutral-400"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Email */}
-                            <div className="space-y-1.5">
-                                <Label htmlFor="email" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 ml-1">
-                                    Email Address
-                                </Label>
-                                <Input
-                                    id="email"
-                                    name="email"
-                                    type="email"
-                                    placeholder="name@example.com"
-                                    required
-                                    disabled={isLoading}
-                                    className="h-11 rounded-lg bg-neutral-50 border-neutral-200 focus:border-neutral-900 focus:ring-0 transition-all font-medium text-sm placeholder:text-neutral-400"
-                                />
-                            </div>
-
-                            {/* Password */}
-                            <div className="space-y-1.5">
-                                <Label htmlFor="password" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 ml-1">
-                                    Password
-                                </Label>
-                                <div className="relative">
-                                    <Input
-                                        id="password"
-                                        name="password"
-                                        type={showPassword ? 'text' : 'password'}
-                                        required
-                                        minLength={6}
-                                        disabled={isLoading}
-                                        className="h-11 rounded-lg bg-neutral-50 border-neutral-200 pr-10 focus:border-neutral-900 focus:ring-0 transition-all font-medium text-sm"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-900 transition-colors"
-                                    >
-                                        {showPassword ? (
-                                            <EyeOff className="h-4 w-4" />
-                                        ) : (
-                                            <Eye className="h-4 w-4" />
-                                        )}
-                                    </button>
-                                </div>
-                                <p className="text-[10px] text-neutral-400 font-mono mt-1">Must be at least 6 characters</p>
-                            </div>
+                {/* Form Container - Centered vertically via flex-1 */}
+                <div className="w-full max-w-[400px] flex-1 flex flex-col justify-center px-6 py-8 lg:py-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="w-full space-y-8">
+                        <div className="space-y-2 text-center lg:text-left">
+                            <h2 className="font-[family-name:var(--font-anton)] text-2xl sm:text-3xl text-neutral-900 uppercase tracking-wide">
+                                Create Account
+                            </h2>
+                            <p className="text-neutral-500 text-sm">
+                                Enter your details to get started
+                            </p>
                         </div>
 
-                        {/* Terms */}
-                        <p className="text-xs text-neutral-500 leading-relaxed">
-                            By creating an account, you agree to our{' '}
-                            <Link href="/terms" className="text-neutral-900 font-bold hover:underline">
-                                Terms of Service
-                            </Link>{' '}
-                            and{' '}
-                            <Link href="/privacy" className="text-neutral-900 font-bold hover:underline">
-                                Privacy Policy
-                            </Link>.
-                        </p>
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div className="space-y-4">
+                                {/* Name Fields */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="firstName" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 ml-1">
+                                            First Name
+                                        </Label>
+                                        <Input
+                                            id="firstName"
+                                            name="firstName"
+                                            type="text"
+                                            placeholder="John"
+                                            required
+                                            disabled={isLoading}
+                                            className="h-11 rounded-lg bg-neutral-50 border-neutral-200 focus:border-neutral-900 focus:ring-0 transition-all font-medium text-sm placeholder:text-neutral-400"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="surname" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 ml-1">
+                                            Surname
+                                        </Label>
+                                        <Input
+                                            id="surname"
+                                            name="surname"
+                                            type="text"
+                                            placeholder="Doe"
+                                            required
+                                            disabled={isLoading}
+                                            className="h-11 rounded-lg bg-neutral-50 border-neutral-200 focus:border-neutral-900 focus:ring-0 transition-all font-medium text-sm placeholder:text-neutral-400"
+                                        />
+                                    </div>
+                                </div>
 
-                        <Button
-                            type="submit"
-                            disabled={isLoading}
-                            className="w-full h-11 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg font-bold tracking-wide shadow-lg shadow-neutral-900/10 transition-all hover:translate-y-[-1px]"
-                        >
-                            {isLoading ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Creating Account...
-                                </>
-                            ) : (
-                                <>
-                                    Create Account <ArrowRight className="ml-2 h-4 w-4" />
-                                </>
-                            )}
-                        </Button>
-                    </form>
+                                {/* Email */}
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="email" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 ml-1">
+                                        Email Address
+                                    </Label>
+                                    <Input
+                                        id="email"
+                                        name="email"
+                                        type="email"
+                                        placeholder="name@example.com"
+                                        required
+                                        disabled={isLoading}
+                                        className="h-11 rounded-lg bg-neutral-50 border-neutral-200 focus:border-neutral-900 focus:ring-0 transition-all font-medium text-sm placeholder:text-neutral-400"
+                                    />
+                                </div>
 
-                    <div className="pt-6 border-t border-neutral-100 text-center">
-                        <p className="text-xs text-neutral-500">
-                            Already have an account?{' '}
-                            <Link
-                                href="/sign-in"
-                                className="text-neutral-900 font-bold hover:underline"
+                                {/* Password */}
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="password" className="text-[10px] uppercase tracking-widest font-mono font-bold text-neutral-500 ml-1">
+                                        Password
+                                    </Label>
+                                    <div className="relative">
+                                        <Input
+                                            id="password"
+                                            name="password"
+                                            type={showPassword ? 'text' : 'password'}
+                                            required
+                                            minLength={6}
+                                            disabled={isLoading}
+                                            className="h-11 rounded-lg bg-neutral-50 border-neutral-200 pr-10 focus:border-neutral-900 focus:ring-0 transition-all font-medium text-sm"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-900 transition-colors"
+                                        >
+                                            {showPassword ? (
+                                                <EyeOff className="h-4 w-4" />
+                                            ) : (
+                                                <Eye className="h-4 w-4" />
+                                            )}
+                                        </button>
+                                    </div>
+                                    <p className="text-[10px] text-neutral-400 font-mono mt-1">Must be at least 6 characters</p>
+                                </div>
+                            </div>
+
+                            {/* Terms */}
+                            <p className="text-xs text-neutral-500 leading-relaxed">
+                                By creating an account, you agree to our{' '}
+                                <Link href="/terms" className="text-neutral-900 font-bold hover:underline">
+                                    Terms of Service
+                                </Link>{' '}
+                                and{' '}
+                                <Link href="/privacy" className="text-neutral-900 font-bold hover:underline">
+                                    Privacy Policy
+                                </Link>.
+                            </p>
+
+                            <Button
+                                type="submit"
+                                disabled={isLoading}
+                                className="w-full h-11 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg font-bold tracking-wide shadow-lg shadow-neutral-900/10 transition-all hover:translate-y-[-1px]"
                             >
-                                Sign In Instead
-                            </Link>
-                        </p>
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Creating Account...
+                                    </>
+                                ) : (
+                                    <>
+                                        Create Account <ArrowRight className="ml-2 h-4 w-4" />
+                                    </>
+                                )}
+                            </Button>
+                        </form>
+
+                        <div className="pt-6 border-t border-neutral-100 text-center">
+                            <p className="text-xs text-neutral-500">
+                                Already have an account?{' '}
+                                <Link
+                                    href="/sign-in"
+                                    className="text-neutral-900 font-bold hover:underline"
+                                >
+                                    Sign In Instead
+                                </Link>
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>

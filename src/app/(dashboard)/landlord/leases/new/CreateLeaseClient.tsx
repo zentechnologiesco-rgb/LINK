@@ -171,15 +171,11 @@ export function CreateLeaseClient() {
                 <div className="mb-12">
                     <Link
                         href="/landlord/leases"
-                        className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-neutral-900 transition-colors mb-6 group"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-neutral-900 transition-colors group"
                     >
                         <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
                         Back to leases
                     </Link>
-                    <h1 className="text-4xl md:text-5xl font-[family-name:var(--font-anton)] uppercase tracking-wide text-neutral-900 line-clamp-1">
-                        Create New Lease
-                    </h1>
-                    <p className="text-neutral-500 font-medium mt-2 text-lg font-light">Build a professional lease agreement</p>
                 </div>
 
                 {/* Step Indicator */}

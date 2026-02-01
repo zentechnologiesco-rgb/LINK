@@ -42,11 +42,6 @@ function TenantLeasesContent() {
     return (
         <div className="px-4 py-8 md:px-6 max-w-[1400px] mx-auto space-y-12 pb-24">
 
-            <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Lease Agreements</h1>
-                <p className="text-neutral-500">Manage your active and pending lease agreements.</p>
-            </div>
-
             {/* Stats */}
             {leases.length > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

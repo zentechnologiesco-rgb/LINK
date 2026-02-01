@@ -17,6 +17,7 @@ import {
     Heart,
     MessageSquare,
 } from 'lucide-react'
+import { MobileNav } from '@/components/layout/MobileNav'
 
 interface DashboardLayoutProps {
     children: React.ReactNode
@@ -90,45 +91,8 @@ export function DashboardLayout({ children, title = 'Dashboard', user }: Dashboa
                 </div>
             </main>
 
-            {/* Mobile Bottom Navigation - Identical style to MobileNav */}
-            <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-black/5 md:hidden safe-area-bottom pb-safe">
-                <div className="flex items-center justify-around h-16 px-2">
-                    {navItems.slice(0, 5).map((item) => { // show max 5 items on mobile
-                        const active = isActive(item.href)
-                        const Icon = item.icon
-
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={cn(
-                                    'flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-colors relative',
-                                    active
-                                        ? 'text-black'
-                                        : 'text-neutral-400 hover:text-neutral-600'
-                                )}
-                            >
-                                <Icon
-                                    className={cn(
-                                        'h-6 w-6 transition-all duration-300',
-                                        active && 'scale-105'
-                                    )}
-                                    strokeWidth={active ? 2.5 : 2}
-                                />
-                                <span className={cn(
-                                    'text-[10px]',
-                                    active ? 'font-semibold' : 'font-medium'
-                                )}>
-                                    {item.label.split(' ')[0]} {/* Shorten label for mobile */}
-                                </span>
-                                {active && (
-                                    <span className="absolute -top-[1px] w-8 h-0.5 bg-black rounded-b-full" />
-                                )}
-                            </Link>
-                        )
-                    })}
-                </div>
-            </nav>
+            {/* Mobile Bottom Navigation */}
+            <MobileNav user={user} userRole={user?.role} />
         </div>
     )
 }

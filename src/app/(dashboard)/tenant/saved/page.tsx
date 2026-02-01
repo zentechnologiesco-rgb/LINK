@@ -39,33 +39,14 @@ export default function SavedPropertiesPage() {
 
     return (
         <div className="font-sans text-neutral-900">
-            {/* Minimal Hero Section */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-10 mb-6 md:mb-12 border-b border-neutral-100 pb-6 md:pb-12">
-                <div className="max-w-2xl w-full">
-                    <div className="inline-flex items-center gap-2 mb-3 sm:mb-6 px-2.5 sm:px-3 py-1 rounded-full bg-neutral-100/80 border border-neutral-200/60">
-                        <div className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-                        </div>
-                        <span className="text-[10px] sm:text-[11px] font-mono text-neutral-600 uppercase tracking-widest font-medium">Personal Collection</span>
-                    </div>
-                    <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold tracking-tight text-neutral-900 mb-3 sm:mb-6 leading-[1.1]">
-                        Saved Properties.
-                    </h1>
-                    <p className="text-sm sm:text-base md:text-lg lg:text-xl text-neutral-500 leading-relaxed font-light max-w-lg">
-                        Your curated list of potential homes. Track, compare, and apply when you're ready.
-                    </p>
-                </div>
-
-                {/* Action Button */}
-                <div className="w-full md:w-auto shrink-0">
-                    <Link href="/">
-                        <Button className="w-full md:w-auto h-12 sm:h-14 px-6 sm:px-8 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl font-bold text-sm sm:text-base tracking-wide shadow-lg shadow-neutral-900/10 transition-all hover:scale-[1.01]">
-                            <Search className="w-4 h-4 mr-2" />
-                            Browse More
-                        </Button>
-                    </Link>
-                </div>
+            {/* Action Bar */}
+            <div className="flex items-center justify-end gap-6 md:gap-10 mb-6 md:mb-12 border-b border-neutral-100 pb-6 md:pb-8">
+                <Link href="/">
+                    <Button className="w-full md:w-auto h-12 sm:h-14 px-6 sm:px-8 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl font-bold text-sm sm:text-base tracking-wide shadow-lg shadow-neutral-900/10 transition-all hover:scale-[1.01]">
+                        <Search className="w-4 h-4 mr-2" />
+                        Browse More
+                    </Button>
+                </Link>
             </div>
 
             {/* Content Area */}

@@ -69,7 +69,7 @@ export function AuthedChatInterface() {
     }
 
     return (
-        <div className="flex flex-1 overflow-hidden bg-white h-[calc(100vh-64px)]">
+        <div className="flex flex-1 overflow-hidden bg-white h-full">
             {/* Sidebar - Conversation List */}
             <div className={cn(
                 "w-full md:w-[380px] lg:w-[420px] border-r border-neutral-100 flex flex-col bg-white transition-all duration-300",

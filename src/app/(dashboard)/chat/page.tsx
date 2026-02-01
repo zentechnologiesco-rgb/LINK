@@ -16,7 +16,7 @@ function ChatLoading() {
 
 export default function ChatPage() {
     return (
-        <div className="h-[calc(100vh-4rem)] flex flex-col">
+        <div className="h-[calc(100vh-120px)] flex flex-col -mx-4 sm:-mx-6 md:-mx-12 -mt-4 -mb-24">
             <Suspense fallback={<ChatLoading />}>
                 <AuthedChatInterface />
             </Suspense>

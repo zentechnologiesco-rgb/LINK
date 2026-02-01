@@ -152,23 +152,15 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
             <div className="px-4 py-8 md:px-6 max-w-[2000px] mx-auto">
                 {/* Header */}
                 <div className="mb-12">
-                    <Link
-                        href="/landlord/leases"
-                        className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-neutral-900 transition-colors mb-6 group"
-                    >
-                        <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-                        Back to leases
-                    </Link>
-                    <div className="flex flex-wrap items-start justify-between gap-6">
-                        <div>
-                            <div className="flex items-center gap-4">
-                                <h1 className="text-4xl md:text-5xl font-[family-name:var(--font-anton)] uppercase tracking-wide text-neutral-900">
-                                    {lease.property?.title}
-                                </h1>
-                                <LeaseStatusBadge status={lease.status} />
-                            </div>
-                            <p className="text-neutral-500 font-medium mt-2 text-lg font-light">{lease.property?.address}</p>
-                        </div>
+                    <div className="flex items-center justify-between">
+                        <Link
+                            href="/landlord/leases"
+                            className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-neutral-900 transition-colors group"
+                        >
+                            <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                            Back to leases
+                        </Link>
+                        <LeaseStatusBadge status={lease.status} />
                     </div>
                 </div>
 

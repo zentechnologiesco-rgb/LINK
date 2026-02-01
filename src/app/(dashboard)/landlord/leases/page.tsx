@@ -42,34 +42,16 @@ function LandlordLeasesContent() {
         <div className="min-h-screen bg-[#fafafa] font-sans text-neutral-900 pb-24">
             <main className="max-w-[2000px] mx-auto px-4 sm:px-6 md:px-8 py-8 md:py-12">
 
-                {/* Hero Section */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-10 mb-12 border-b border-neutral-200/60 pb-12">
-                    <div className="max-w-2xl w-full">
-                        <div className="inline-flex items-center gap-2 mb-6 px-3 py-1 rounded-full bg-neutral-100 border border-neutral-200">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                            </span>
-                            <span className="text-[11px] font-mono text-neutral-600 uppercase tracking-widest font-medium">Real-time Dashboard</span>
-                        </div>
-                        <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-neutral-900 mb-6 leading-[1.1]">
-                            Manage Leases.
-                        </h1>
-                        <p className="text-lg text-neutral-500 leading-relaxed font-light max-w-lg">
-                            Track agreements, monitor status, and manage lease lifecycles efficiently.
-                        </p>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                        {leases.length > 0 && (
-                            <Link href="/landlord/leases/new">
-                                <Button className="h-14 bg-neutral-900 hover:bg-neutral-800 text-white rounded-full px-8 text-base font-bold tracking-wide shadow-xl shadow-neutral-900/10 transition-all hover:scale-[1.02]">
-                                    <Plus className="mr-2 h-5 w-5" />
-                                    Create New Lease
-                                </Button>
-                            </Link>
-                        )}
-                    </div>
+                {/* Action Bar */}
+                <div className="flex items-center justify-end gap-4 mb-12 border-b border-neutral-200/60 pb-8">
+                    {leases.length > 0 && (
+                        <Link href="/landlord/leases/new">
+                            <Button className="h-14 bg-neutral-900 hover:bg-neutral-800 text-white rounded-full px-8 text-base font-bold tracking-wide shadow-xl shadow-neutral-900/10 transition-all hover:scale-[1.02]">
+                                <Plus className="mr-2 h-5 w-5" />
+                                Create New Lease
+                            </Button>
+                        </Link>
+                    )}
                 </div>
 
                 {leases.length > 0 ? (

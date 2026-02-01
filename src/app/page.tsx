@@ -206,17 +206,7 @@ export default function HomePage() {
 
                 {/* Minimal Hero Section */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 md:gap-10 mb-6 md:mb-12 border-b border-neutral-100 pb-6 md:pb-12">
-                    <div className="max-w-2xl w-full">
-
-                        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold tracking-tight text-neutral-900 mb-3 sm:mb-6 leading-[1.1]">
-                            Verified Properties.
-                        </h1>
-                        <p className="text-sm sm:text-base md:text-lg lg:text-xl text-neutral-500 leading-relaxed font-light max-w-lg">
-                            Direct access to Namibia's most trusted real estate database. Updated in real-time.
-                        </p>
-                    </div>
-
-                    {/* Search Component - Aligned right */}
+                    {/* Search Component */}
                     <div className="w-full md:max-w-[420px] shrink-0">
                         <div className="relative group">
                             <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 group-focus-within:text-neutral-900 transition-colors" />
@@ -490,7 +480,7 @@ export default function HomePage() {
                     )}
                 </div>
             </main>
-            <MobileNav user={currentUser} />
+            <MobileNav user={currentUser} userRole={currentUser?.role} />
         </div>
     )
 }
