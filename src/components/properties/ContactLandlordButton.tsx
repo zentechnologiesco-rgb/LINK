@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useMutation } from 'convex/react'
+import { useRouter, usePathname } from 'next/navigation'
+import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { Id } from '../../../convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
@@ -12,14 +12,22 @@ import { cn } from '@/lib/utils'
 
 interface ContactLandlordButtonProps {
     propertyId: string
+    landlordId?: string
     variant?: 'default' | 'mobile'
     className?: string
 }
 
-export function ContactLandlordButton({ propertyId, variant = 'default', className }: ContactLandlordButtonProps) {
+export function ContactLandlordButton({ propertyId, landlordId, variant = 'default', className }: ContactLandlordButtonProps) {
     const router = useRouter()
+    const pathname = usePathname()
     const [isLoading, setIsLoading] = useState(false)
     const getOrCreateInquiry = useMutation(api.inquiries.getOrCreateForProperty)
+    const currentUser = useQuery(api.users.currentUser)
+
+    // Don't show the button if the current user is the landlord
+    if (landlordId && currentUser && currentUser._id === landlordId) {
+        return null
+    }
 
     const handleContact = async () => {
         setIsLoading(true)
@@ -29,10 +37,18 @@ export function ContactLandlordButton({ propertyId, variant = 'default', classNa
             })
             router.push(`/chat?id=${inquiryId}`)
         } catch (error) {
-            if (error instanceof Error && error.message === "Not authenticated") {
+            // Check for authentication error - Convex may format errors differently
+            const errorMessage = error instanceof Error ? error.message : String(error)
+            if (errorMessage.includes("Not authenticated")) {
                 toast.error("Please sign in to contact the landlord")
-                router.push('/sign-in')
+                // Redirect to sign-in with the current page as the redirect destination
+                const redirectUrl = encodeURIComponent(pathname)
+                router.push(`/sign-in?redirect=${redirectUrl}`)
+            } else if (errorMessage.includes("cannot contact yourself")) {
+                // Landlord trying to contact themselves - silently ignore
+                toast.error("You cannot message yourself on your own property")
             } else {
+                console.error("Failed to contact landlord:", error)
                 toast.error("Failed to start conversation")
             }
         } finally {
@@ -46,7 +62,7 @@ export function ContactLandlordButton({ propertyId, variant = 'default', classNa
                 onClick={handleContact}
                 disabled={isLoading}
                 className={cn(
-                    "bg-neutral-900 hover:bg-neutral-800 text-white font-medium rounded-full px-5 sm:px-6 h-10 sm:h-11 shadow-lg shadow-neutral-900/10 text-sm sm:text-base",
+                    "bg-neutral-900 hover:bg-neutral-800 text-white font-medium rounded-lg px-6 h-11",
                     className
                 )}
             >
@@ -55,7 +71,7 @@ export function ContactLandlordButton({ propertyId, variant = 'default', classNa
                 ) : (
                     <MessageCircle className="w-4 h-4 mr-2" />
                 )}
-                Contact Landlord
+                Contact
             </Button>
         )
     }
@@ -65,7 +81,7 @@ export function ContactLandlordButton({ propertyId, variant = 'default', classNa
             onClick={handleContact}
             disabled={isLoading}
             className={cn(
-                "w-full h-10 sm:h-12 bg-neutral-900 hover:bg-neutral-800 text-white font-medium rounded-lg sm:rounded-xl mb-2 sm:mb-3 shadow-lg shadow-neutral-900/10 text-sm sm:text-base",
+                "w-full h-12 bg-neutral-900 hover:bg-neutral-800 text-white font-medium rounded-lg",
                 className
             )}
         >

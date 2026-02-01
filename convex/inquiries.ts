@@ -239,6 +239,11 @@ export const getOrCreateForProperty = mutation({
         const property = await ctx.db.get(args.propertyId);
         if (!property) throw new Error("Property not found");
 
+        // Prevent landlords from creating inquiries with themselves
+        if (property.landlordId === userId) {
+            throw new Error("You cannot contact yourself on your own property");
+        }
+
         // Check if user already has an inquiry for this property
         const existing = await ctx.db
             .query("inquiries")

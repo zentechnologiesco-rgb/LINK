@@ -16,12 +16,12 @@ import {
     Phone,
     User,
     Shield,
-    Calendar,
-    MessageCircle,
     X,
     Grid3X3,
-    Zap,
-    Home
+    Home,
+    CheckCircle2,
+    ArrowLeft,
+    Dot
 } from "lucide-react"
 
 import { SavePropertyButton } from "@/components/properties/SavePropertyButton"
@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils"
 
 interface PropertyDetails {
     id: string
+    landlordId: string
     title: string
     description: string
     price: number
@@ -57,33 +58,13 @@ interface PropertyDetails {
     } | null
 }
 
-function Metric({ label, value, highlight = false, large = false }: { label: string, value: string | number, highlight?: boolean, large?: boolean }) {
-    return (
-        <div className="flex flex-col gap-0.5">
-            <span className="text-[9px] sm:text-[10px] uppercase text-neutral-400 font-semibold tracking-wider font-mono">{label}</span>
-            <span className={cn(
-                "font-mono font-medium text-neutral-900",
-                highlight && "text-blue-600",
-                large ? "text-lg sm:text-xl md:text-2xl" : "text-sm sm:text-base"
-            )}>
-                {value}
-            </span>
-        </div>
-    )
-}
-
-function getAmenityIcon(amenity: string) {
-    // Return a default icon or map as needed
-    // For this design, we might use simple text pills or minimal icons
-    return Zap
-}
-
 // --- Main Component ---
 
 function PropertyDetailContent({ id }: { id: string }) {
     const [showAllPhotos, setShowAllPhotos] = useState(false)
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
     const [isScrolled, setIsScrolled] = useState(false)
+    const [copied, setCopied] = useState(false)
 
     // Track view mutation
     const trackView = useMutation(api.recentlyViewed.trackView)
@@ -91,7 +72,7 @@ function PropertyDetailContent({ id }: { id: string }) {
 
     // Sticky Nav Logic
     useEffect(() => {
-        const handleScroll = () => setIsScrolled(window.scrollY > 400)
+        const handleScroll = () => setIsScrolled(window.scrollY > 200)
         window.addEventListener('scroll', handleScroll)
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
@@ -108,11 +89,25 @@ function PropertyDetailContent({ id }: { id: string }) {
         }
     }, [convexProperty, id, trackView])
 
+    // Share functionality
+    const handleShare = async () => {
+        try {
+            await navigator.clipboard.writeText(window.location.href)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+        } catch {
+            // Fallback
+        }
+    }
+
     // Loading State
     if (convexProperty === undefined) {
         return (
-            <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
-                <div className="w-6 h-6 border-2 border-neutral-900 border-t-transparent rounded-full animate-spin" />
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-8 h-8 border-2 border-neutral-900 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-sm text-neutral-500">Loading property...</p>
+                </div>
             </div>
         )
     }
@@ -121,6 +116,7 @@ function PropertyDetailContent({ id }: { id: string }) {
 
     const property: PropertyDetails = {
         id: convexProperty._id,
+        landlordId: convexProperty.landlordId,
         title: convexProperty.title,
         description: convexProperty.description || 'No description available',
         price: convexProperty.priceNad,
@@ -141,15 +137,23 @@ function PropertyDetailContent({ id }: { id: string }) {
     if (showAllPhotos) {
         return (
             <div className="fixed inset-0 z-[100] bg-black animate-in fade-in duration-200">
-                <button
-                    onClick={() => setShowAllPhotos(false)}
-                    className="absolute top-4 right-4 sm:top-6 sm:right-6 z-50 p-2 bg-white/10 rounded-full hover:bg-white/20 text-white transition-all"
-                >
-                    <X className="w-5 h-5 sm:w-6 sm:h-6" />
-                </button>
+                {/* Header */}
+                <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4 sm:p-6">
+                    <button
+                        onClick={() => setShowAllPhotos(false)}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-full text-neutral-900 hover:bg-neutral-100 transition-all text-sm font-medium"
+                    >
+                        <X className="w-4 h-4" />
+                        <span>Close</span>
+                    </button>
+                    <div className="text-white/70 font-mono text-sm bg-black/50 px-3 py-1.5 rounded-full">
+                        {currentPhotoIndex + 1} / {property.images.length}
+                    </div>
+                </div>
 
-                <div className="absolute inset-0 flex items-center justify-center p-2 sm:p-4">
-                    <div className="relative w-full max-w-7xl aspect-[4/3] sm:aspect-[16/10]">
+                {/* Main Image */}
+                <div className="absolute inset-0 flex items-center justify-center p-4 pt-20 pb-20">
+                    <div className="relative w-full max-w-5xl h-full max-h-[80vh]">
                         <OptimizedImage
                             src={property.images[currentPhotoIndex]}
                             alt={`Photo ${currentPhotoIndex + 1}`}
@@ -160,262 +164,392 @@ function PropertyDetailContent({ id }: { id: string }) {
                 </div>
 
                 {/* Navigation Arrows */}
-                <button
-                    onClick={() => setCurrentPhotoIndex((prev) => (prev - 1 + property.images.length) % property.images.length)}
-                    className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 p-2 sm:p-4 text-white hover:opacity-70"
-                >
-                    <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8" />
-                </button>
-                <button
-                    onClick={() => setCurrentPhotoIndex((prev) => (prev + 1) % property.images.length)}
-                    className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-2 sm:p-4 text-white hover:opacity-70"
-                >
-                    <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8" />
-                </button>
+                {property.images.length > 1 && (
+                    <>
+                        <button
+                            onClick={() => setCurrentPhotoIndex((prev) => (prev - 1 + property.images.length) % property.images.length)}
+                            className="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white flex items-center justify-center text-neutral-900 hover:scale-105 transition-transform shadow-lg"
+                        >
+                            <ChevronLeft className="w-6 h-6" />
+                        </button>
+                        <button
+                            onClick={() => setCurrentPhotoIndex((prev) => (prev + 1) % property.images.length)}
+                            className="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white flex items-center justify-center text-neutral-900 hover:scale-105 transition-transform shadow-lg"
+                        >
+                            <ChevronRight className="w-6 h-6" />
+                        </button>
+                    </>
+                )}
 
-                <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 text-white/50 font-mono text-xs sm:text-sm">
-                    {currentPhotoIndex + 1} / {property.images.length}
+                {/* Thumbnail Strip */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-black/80 to-transparent">
+                    <div className="flex gap-2 justify-center overflow-x-auto pb-2 no-scrollbar">
+                        {property.images.map((img, i) => (
+                            <button
+                                key={i}
+                                onClick={() => setCurrentPhotoIndex(i)}
+                                className={cn(
+                                    "relative w-16 h-12 sm:w-20 sm:h-14 rounded-lg overflow-hidden shrink-0 transition-all border-2",
+                                    i === currentPhotoIndex
+                                        ? "border-white opacity-100 scale-105"
+                                        : "border-transparent opacity-50 hover:opacity-75"
+                                )}
+                            >
+                                <OptimizedImage
+                                    src={img}
+                                    alt={`Thumbnail ${i + 1}`}
+                                    fill
+                                    className="object-cover"
+                                />
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-[#fafafa] font-sans text-neutral-900 pb-20 overflow-x-hidden">
-            {/* Nav / Back Button */}
-            <div className={cn(
-                "fixed top-0 left-0 right-0 z-40 transition-all duration-300 px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between",
-                isScrolled ? "bg-white/90 backdrop-blur-md border-b border-neutral-200" : "bg-transparent"
+        <div className="min-h-screen bg-white font-sans text-neutral-900 overflow-x-hidden">
+            {/* Sticky Navigation Header */}
+            <header className={cn(
+                "fixed top-0 left-0 right-0 z-40 transition-all duration-300",
+                isScrolled
+                    ? "bg-white border-b border-neutral-200"
+                    : "bg-transparent"
             )}>
-                <Link
-                    href="/"
-                    className={cn(
-                        "flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full transition-all border",
-                        isScrolled
-                            ? "bg-white border-neutral-200 text-neutral-900 hover:bg-neutral-50"
-                            : "bg-white/90 border-transparent text-neutral-900 hover:bg-white shadow-sm"
-                    )}
-                >
-                    <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    <span className="font-mono text-[10px] sm:text-xs uppercase tracking-wider">Back</span>
-                </Link>
+                <div className="max-w-[1120px] mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
+                    {/* Back Button */}
+                    <Link
+                        href="/"
+                        className={cn(
+                            "flex items-center justify-center w-9 h-9 rounded-full transition-all",
+                            isScrolled
+                                ? "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
+                                : "bg-white text-neutral-900 hover:bg-neutral-100 shadow-md"
+                        )}
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                    </Link>
 
-                {isScrolled && (
-                    <div className="hidden sm:flex items-center gap-4 md:gap-6 animate-in fade-in slide-in-from-top-4 duration-300">
-                        <div className="flex flex-col text-right">
-                            <span className="text-[10px] sm:text-xs text-neutral-400 font-mono uppercase">Price</span>
-                            <span className="font-mono font-medium text-sm sm:text-base">N${(property.price / 1000).toFixed(1)}k/mo</span>
-                        </div>
-                        <Button className="rounded-full bg-neutral-900 text-white hover:bg-neutral-800 text-xs sm:text-sm px-3 sm:px-4">
-                            Contact
-                        </Button>
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleShare}
+                            className={cn(
+                                "flex items-center gap-2 h-9 px-4 rounded-full transition-all text-sm font-medium",
+                                isScrolled
+                                    ? "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
+                                    : "bg-white text-neutral-900 hover:bg-neutral-100 shadow-md"
+                            )}
+                        >
+                            {copied ? <CheckCircle2 className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+                            <span className="hidden sm:inline">{copied ? 'Copied!' : 'Share'}</span>
+                        </button>
+                        <SavePropertyButton
+                            propertyId={property.id}
+                            className={cn(
+                                "h-9 w-9 rounded-full",
+                                isScrolled
+                                    ? "bg-neutral-100 hover:bg-neutral-200 border-0"
+                                    : "bg-white hover:bg-neutral-100 border-0 shadow-md"
+                            )}
+                        />
                     </div>
-                )}
-            </div>
+                </div>
+            </header>
 
-            {/* Hero Image Grid - "TrustMRR style" */}
-            <div className="max-w-[1600px] mx-auto pt-16 sm:pt-20 md:pt-24 px-3 sm:px-6 md:px-12 mb-6 sm:mb-8 md:mb-12 animate-in slide-in-from-bottom-8 duration-700 fade-in">
-                {/* Mobile: Single Image with View All Button */}
-                <div className="md:hidden relative aspect-[4/3] rounded-xl sm:rounded-2xl overflow-hidden border border-neutral-200 bg-white">
+            {/* Hero Image Section */}
+            <section className="relative">
+                {/* Mobile: Full-width image carousel */}
+                <div className="md:hidden relative aspect-[4/3]">
                     <OptimizedImage
-                        src={property.images[0]}
+                        src={property.images[currentPhotoIndex]}
                         alt={property.title}
                         fill
                         className="object-cover"
                         priority
                     />
-                    <div className="absolute top-3 left-3">
-                        <span className="px-2 py-1 rounded-md bg-white/90 backdrop-blur text-[10px] sm:text-xs font-bold uppercase tracking-wide text-neutral-900 shadow-sm flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            Live
-                        </span>
-                    </div>
+
+                    {/* Mobile photo navigation */}
                     {property.images.length > 1 && (
-                        <button
-                            onClick={() => setShowAllPhotos(true)}
-                            className="absolute bottom-3 right-3 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full shadow-sm font-semibold text-xs flex items-center gap-1.5"
-                        >
-                            <Grid3X3 className="w-3 h-3" />
-                            {property.images.length} Photos
-                        </button>
+                        <>
+                            {/* Dots indicator */}
+                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10">
+                                {property.images.slice(0, 5).map((_, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setCurrentPhotoIndex(i)}
+                                        className={cn(
+                                            "w-1.5 h-1.5 rounded-full transition-all",
+                                            i === currentPhotoIndex
+                                                ? "bg-white w-4"
+                                                : "bg-white/60"
+                                        )}
+                                    />
+                                ))}
+                                {property.images.length > 5 && (
+                                    <span className="text-white/80 text-xs ml-1">+{property.images.length - 5}</span>
+                                )}
+                            </div>
+                            {/* Tap areas */}
+                            <button
+                                onClick={() => setCurrentPhotoIndex((prev) => (prev - 1 + property.images.length) % property.images.length)}
+                                className="absolute left-0 top-0 bottom-0 w-1/3"
+                            />
+                            <button
+                                onClick={() => setCurrentPhotoIndex((prev) => (prev + 1) % property.images.length)}
+                                className="absolute right-0 top-0 bottom-0 w-1/3"
+                            />
+                        </>
                     )}
+
+                    {/* View all photos button */}
+                    <button
+                        onClick={() => setShowAllPhotos(true)}
+                        className="absolute bottom-4 right-4 flex items-center gap-2 px-3 py-2 bg-white rounded-lg text-sm font-medium text-neutral-900 hover:bg-neutral-50 transition-all z-10 shadow-lg"
+                    >
+                        <Grid3X3 className="w-4 h-4" />
+                        {property.images.length}
+                    </button>
                 </div>
 
-                {/* Desktop: Grid Layout */}
-                <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-2 h-[50vh] md:h-[60vh] rounded-2xl md:rounded-3xl overflow-hidden border border-neutral-200 bg-white p-1">
-                    {/* Main Large Image */}
-                    <div
-                        className="lg:col-span-2 md:col-span-2 h-full relative cursor-pointer group overflow-hidden rounded-xl md:rounded-l-2xl md:rounded-r-none"
-                        onClick={() => setShowAllPhotos(true)}
-                    >
-                        <OptimizedImage
-                            src={property.images[0]}
-                            alt={property.title}
-                            fill
-                            className="object-cover transition-transform duration-700 group-hover:scale-105"
-                            priority
-                        />
-                        <div className="absolute top-4 left-4">
-                            <span className="px-3 py-1.5 rounded-md bg-white/90 backdrop-blur text-xs font-bold uppercase tracking-wide text-neutral-900 shadow-sm flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                Live Listing
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Secondary Images Column */}
-                    <div className="hidden lg:grid grid-rows-2 gap-1.5 sm:gap-2 h-full">
-                        {property.images.slice(1, 3).map((img, i) => (
+                {/* Desktop: Grid layout */}
+                <div className="hidden md:block pt-16">
+                    <div className="max-w-[1120px] mx-auto px-6 pt-4">
+                        <div className="grid grid-cols-4 grid-rows-2 gap-2 h-[480px] rounded-xl overflow-hidden">
+                            {/* Main large image */}
                             <div
-                                key={i}
-                                className="relative w-full h-full cursor-pointer group overflow-hidden rounded-lg sm:rounded-xl"
-                                onClick={() => { setCurrentPhotoIndex(i + 1); setShowAllPhotos(true); }}
+                                className="col-span-2 row-span-2 relative cursor-pointer group"
+                                onClick={() => { setCurrentPhotoIndex(0); setShowAllPhotos(true); }}
                             >
                                 <OptimizedImage
-                                    src={img}
-                                    alt="Property Detail"
+                                    src={property.images[0]}
+                                    alt={property.title}
                                     fill
-                                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                    className="object-cover transition-all duration-300 group-hover:brightness-90"
+                                    priority
                                 />
                             </div>
-                        ))}
-                    </div>
 
-                    {/* Final Image / View All */}
-                    <div className="hidden md:block relative h-full cursor-pointer group overflow-hidden rounded-r-xl md:rounded-r-2xl bg-neutral-100" onClick={() => setShowAllPhotos(true)}>
-                        {property.images[3] ? (
-                            <OptimizedImage
-                                src={property.images[3]}
-                                alt="Property Detail"
-                                fill
-                                className="object-cover transition-transform duration-500 group-hover:scale-105 opacity-80 group-hover:opacity-60"
-                            />
-                        ) : (
-                            <div className="absolute inset-0 bg-neutral-100" />
-                        )}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="bg-white/90 backdrop-blur px-4 py-2 sm:px-5 sm:py-3 rounded-full shadow-sm font-semibold text-xs sm:text-sm hover:scale-105 transition-transform">
-                                View all photos
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                            {/* Secondary images */}
+                            {property.images.slice(1, 5).map((img, i) => (
+                                <div
+                                    key={i}
+                                    className="relative cursor-pointer group overflow-hidden"
+                                    onClick={() => { setCurrentPhotoIndex(i + 1); setShowAllPhotos(true); }}
+                                >
+                                    <OptimizedImage
+                                        src={img}
+                                        alt={`Photo ${i + 2}`}
+                                        fill
+                                        className="object-cover transition-all duration-300 group-hover:brightness-90"
+                                    />
 
-            {/* Content Layout */}
-            <div className="max-w-[1400px] mx-auto px-3 sm:px-6 md:px-12 grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-20">
-
-                {/* Left Column: Details */}
-                <div className="lg:col-span-8 space-y-8 sm:space-y-12 md:space-y-16 animate-in slide-in-from-bottom-8 duration-700 delay-100 fade-in fill-mode-backwards">
-
-                    {/* Title & Key Metrics Header */}
-                    <div className="border-b border-neutral-200/60 pb-6 sm:pb-8 md:pb-10">
-                        <div className="flex items-start justify-between gap-3 mb-4 sm:mb-6">
-                            <div className="min-w-0 flex-1">
-                                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-neutral-900 mb-1 sm:mb-2 line-clamp-2">
-                                    {property.title}
-                                </h1>
-                                <div className="flex items-center text-neutral-500 gap-1.5 sm:gap-2 text-sm sm:text-base md:text-lg">
-                                    <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                                    <span className="truncate">{property.address}</span>
-                                </div>
-                            </div>
-                            <SavePropertyButton propertyId={property.id} className="bg-white border hover:bg-neutral-50 shrink-0" />
-                        </div>
-
-                        {/* Tech-Forward Data Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl bg-white border border-neutral-200">
-                            <Metric label="Monthly Rent" value={`N$${property.price.toLocaleString()}`} large highlight />
-                            <Metric label="Config" value={`${property.bedrooms}BR / ${property.bathrooms}BA`} />
-                            <Metric label="Area" value={`${property.size} m²`} />
-                            <Metric label="Type" value={property.type} />
-                        </div>
-                    </div>
-
-                    {/* Description */}
-                    <div className="space-y-3 sm:space-y-4 md:space-y-6">
-                        <h3 className="text-[10px] sm:text-xs font-bold text-neutral-900 uppercase tracking-widest font-mono">Overview</h3>
-                        <p className="text-sm sm:text-base md:text-lg text-neutral-600 leading-relaxed font-light">
-                            {property.description}
-                        </p>
-                    </div>
-
-                    {/* Amenities Grid */}
-                    <div className="space-y-3 sm:space-y-4 md:space-y-6 border-t border-neutral-200/60 pt-6 sm:pt-8 md:pt-10">
-                        <h3 className="text-[10px] sm:text-xs font-bold text-neutral-900 uppercase tracking-widest font-mono">Features & Amenities</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-y-2 sm:gap-y-3 md:gap-y-4 gap-x-4 sm:gap-x-6 md:gap-x-8">
-                            {property.amenities.map(amenity => (
-                                <div key={amenity} className="flex items-center gap-2 sm:gap-3 text-neutral-700 text-sm sm:text-base">
-                                    <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-blue-500 shrink-0" />
-                                    <span className="truncate">{amenity}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Location Map Placeholder */}
-                    <div className="space-y-3 sm:space-y-4 md:space-y-6 border-t border-neutral-200/60 pt-6 sm:pt-8 md:pt-10">
-                        <h3 className="text-[10px] sm:text-xs font-bold text-neutral-900 uppercase tracking-widest font-mono">Location</h3>
-                        {property.coordinates && (
-                            <div className="h-[250px] sm:h-[300px] md:h-[400px] rounded-xl sm:rounded-2xl overflow-hidden border border-neutral-200 bg-neutral-100 relative">
-                                <PropertyDetailMap coordinates={property.coordinates} address={property.address} />
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Right Column: Sticky Action Card - Hidden on mobile, shown at bottom instead */}
-                <div className="hidden lg:block lg:col-span-4 relative">
-                    <div className="sticky top-24 md:top-32 space-y-4 sm:space-y-6 animate-in slide-in-from-bottom-8 duration-700 delay-200 fade-in fill-mode-backwards">
-
-                        {/* Request Card */}
-                        <div className="p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-white border border-neutral-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-                            <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 border-b border-neutral-100 pb-4 sm:pb-6">
-                                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-neutral-100 overflow-hidden relative border border-neutral-200 shrink-0">
-                                    {property.landlord?.avatarUrl ? (
-                                        <OptimizedImage src={property.landlord.avatarUrl} alt="Host" fill className="object-cover" />
-                                    ) : (
-                                        <div className="flex items-center justify-center h-full w-full text-neutral-400">
-                                            <User className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    {/* Show "View all" overlay on last image if more photos */}
+                                    {i === 3 && property.images.length > 5 && (
+                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/50 transition-colors">
+                                            <span className="text-white font-medium">+{property.images.length - 5} more</span>
                                         </div>
                                     )}
                                 </div>
-                                <div className="min-w-0">
-                                    <p className="text-[10px] sm:text-xs text-neutral-500 uppercase font-bold tracking-wide">Listed By</p>
-                                    <p className="font-semibold text-neutral-900 text-sm sm:text-base truncate">{property.landlord?.name || 'Verified Landlord'}</p>
+                            ))}
+
+                            {/* Fill empty slots if less than 5 images */}
+                            {property.images.length < 5 && Array(5 - property.images.length).fill(0).map((_, i) => (
+                                <div key={`empty-${i}`} className="bg-neutral-100" />
+                            ))}
+                        </div>
+
+                        {/* View all photos button */}
+                        <div className="flex justify-end mt-3">
+                            <button
+                                onClick={() => setShowAllPhotos(true)}
+                                className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg text-sm font-medium text-neutral-900 hover:bg-neutral-50 transition-all border border-neutral-200"
+                            >
+                                <Grid3X3 className="w-4 h-4" />
+                                View all {property.images.length} photos
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Main Content */}
+            <main className="max-w-[1120px] mx-auto px-4 sm:px-6 pb-32 lg:pb-16">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 lg:gap-24 pt-8">
+
+                    {/* Left Column - Property Details */}
+                    <div className="lg:col-span-2">
+
+                        {/* Title Section */}
+                        <section className="pb-8 border-b border-neutral-200">
+                            <h1 className="text-2xl sm:text-3xl font-semibold text-neutral-900 mb-2">
+                                {property.title}
+                            </h1>
+
+                            {/* Property specs - inline like Airbnb */}
+                            <div className="flex items-center flex-wrap gap-1 text-neutral-600 mb-4">
+                                <span>{property.bedrooms} bedroom{property.bedrooms !== 1 ? 's' : ''}</span>
+                                <Dot className="w-4 h-4 text-neutral-400" />
+                                <span>{property.bathrooms} bathroom{property.bathrooms !== 1 ? 's' : ''}</span>
+                                <Dot className="w-4 h-4 text-neutral-400" />
+                                <span>{property.size} m²</span>
+                                <Dot className="w-4 h-4 text-neutral-400" />
+                                <span className="capitalize">{property.type}</span>
+                            </div>
+
+                            {/* Location */}
+                            <div className="flex items-center gap-2 text-neutral-600">
+                                <MapPin className="w-4 h-4 shrink-0" />
+                                <span>{property.address}, {property.city}</span>
+                            </div>
+                        </section>
+
+                        {/* Mobile: Price and Contact Section */}
+                        <section className="lg:hidden py-8 border-b border-neutral-200">
+                            <div className="space-y-4">
+                                <div>
+                                    <p className="text-sm text-neutral-500 mb-1">Monthly Rent</p>
+                                    <p className="text-3xl font-semibold text-neutral-900">
+                                        N${property.price.toLocaleString()}
+                                    </p>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <ContactLandlordButton propertyId={property.id} landlordId={property.landlordId} />
+
+                                    {property.landlord?.phone && (
+                                        <a
+                                            href={`tel:${property.landlord.phone}`}
+                                            className="flex items-center justify-center gap-2 w-full h-12 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 font-medium rounded-lg transition-colors"
+                                        >
+                                            <Phone className="w-4 h-4" />
+                                            {property.landlord.phone}
+                                        </a>
+                                    )}
+                                </div>
+
+                                <div className="space-y-2 pt-4 border-t border-neutral-100">
+                                    <div className="flex items-center gap-3 text-sm text-neutral-500">
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                                        <span>Usually responds within 24 hours</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-sm text-neutral-500">
+                                        <Shield className="w-4 h-4 text-blue-500 shrink-0" />
+                                        <span>Protected by Link guarantee</span>
+                                    </div>
                                 </div>
                             </div>
+                        </section>
 
-                            <ContactLandlordButton propertyId={property.id} />
+                        {/* Landlord Preview */}
+                        <section className="py-8 border-b border-neutral-200">
+                            <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 rounded-full bg-neutral-100 overflow-hidden relative shrink-0">
+                                    {property.landlord?.avatarUrl ? (
+                                        <OptimizedImage
+                                            src={property.landlord.avatarUrl}
+                                            alt="Landlord"
+                                            fill
+                                            className="object-cover"
+                                        />
+                                    ) : (
+                                        <div className="flex items-center justify-center h-full w-full text-neutral-400">
+                                            <User className="w-6 h-6" />
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <p className="font-medium text-neutral-900">
+                                        Listed by {property.landlord?.name || 'Property Owner'}
+                                    </p>
+                                    <div className="flex items-center gap-1.5 text-sm text-neutral-500">
+                                        <Shield className="w-3.5 h-3.5 text-emerald-600" />
+                                        <span>Verified Landlord</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
 
-                            {property.landlord?.phone && (
-                                <Button variant="outline" className="w-full h-10 sm:h-12 border-neutral-200 hover:bg-neutral-50 text-neutral-900 font-medium rounded-lg sm:rounded-xl text-sm sm:text-base">
-                                    <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2" />
-                                    {property.landlord.phone}
-                                </Button>
-                            )}
+                        {/* Description */}
+                        <section className="py-8 border-b border-neutral-200">
+                            <h2 className="text-xl font-semibold text-neutral-900 mb-6">About this property</h2>
+                            <p className="text-neutral-600 leading-relaxed whitespace-pre-line">
+                                {property.description}
+                            </p>
+                        </section>
 
-                            <div className="mt-3 sm:mt-4 flex items-center justify-center gap-2 text-[10px] sm:text-xs text-neutral-400">
-                                <Shield className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                                <span>Identity Verified</span>
+                        {/* Amenities */}
+                        {property.amenities.length > 0 && (
+                            <section className="py-8 border-b border-neutral-200">
+                                <h2 className="text-xl font-semibold text-neutral-900 mb-6">What this place offers</h2>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {property.amenities.map(amenity => (
+                                        <div key={amenity} className="flex items-center gap-4">
+                                            <CheckCircle2 className="w-5 h-5 text-neutral-600 shrink-0" />
+                                            <span className="text-neutral-600">{amenity}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {/* Location Map */}
+                        {property.coordinates && (
+                            <section className="py-8">
+                                <h2 className="text-xl font-semibold text-neutral-900 mb-6">Where you'll be</h2>
+                                <div className="h-[320px] sm:h-[400px] rounded-xl overflow-hidden border border-neutral-200 mb-4">
+                                    <PropertyDetailMap coordinates={property.coordinates} address={property.address} />
+                                </div>
+                                <p className="text-neutral-600">
+                                    {property.address}, {property.city}
+                                </p>
+                            </section>
+                        )}
+                    </div>
+
+                    {/* Right Column - Contact Section (Desktop only) */}
+                    <div className="hidden lg:block">
+                        <div className="sticky top-24 space-y-6">
+                            {/* Price */}
+                            <div>
+                                <p className="text-sm text-neutral-500 mb-1">Monthly Rent</p>
+                                <p className="text-3xl font-semibold text-neutral-900">
+                                    N${property.price.toLocaleString()}
+                                </p>
+                            </div>
+
+                            {/* Contact Button */}
+                            <div className="space-y-3">
+                                <ContactLandlordButton propertyId={property.id} landlordId={property.landlordId} />
+
+                                {property.landlord?.phone && (
+                                    <a
+                                        href={`tel:${property.landlord.phone}`}
+                                        className="flex items-center justify-center gap-2 w-full h-12 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 font-medium rounded-lg transition-colors"
+                                    >
+                                        <Phone className="w-4 h-4" />
+                                        {property.landlord.phone}
+                                    </a>
+                                )}
+                            </div>
+
+                            {/* Trust Indicators */}
+                            <div className="space-y-3 pt-4 border-t border-neutral-200">
+                                <div className="flex items-center gap-3 text-sm text-neutral-500">
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                                    <span>Usually responds within 24 hours</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-sm text-neutral-500">
+                                    <Shield className="w-4 h-4 text-blue-500 shrink-0" />
+                                    <span>Protected by Link guarantee</span>
+                                </div>
                             </div>
                         </div>
-
                     </div>
                 </div>
-
-                {/* Mobile Fixed Bottom CTA */}
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-neutral-200 p-3 sm:p-4 safe-area-bottom">
-                    <div className="flex items-center justify-between gap-3 max-w-[1400px] mx-auto">
-                        <div className="flex-1 min-w-0">
-                            <p className="text-[10px] text-neutral-400 uppercase font-mono">Monthly Rent</p>
-                            <p className="font-bold text-lg sm:text-xl text-neutral-900">N${property.price.toLocaleString()}</p>
-                        </div>
-                        <ContactLandlordButton propertyId={property.id} variant="mobile" />
-                    </div>
-                </div>
-
-            </div>
+            </main>
         </div>
     )
 }

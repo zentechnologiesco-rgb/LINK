@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { Search, Heart, MessageSquare, User, Building2, LayoutDashboard } from 'lucide-react'
+import { Home, Heart, MessageSquare, User, Building2, LayoutDashboard } from 'lucide-react'
 
 interface MobileNavProps {
     user?: any
@@ -11,28 +11,28 @@ interface MobileNavProps {
 }
 
 const tenantNavItems = [
-    { label: 'Explore', href: '/', icon: Search },
+    { label: 'Home', href: '/', icon: Home },
     { label: 'Saved', href: '/tenant/saved', icon: Heart },
     { label: 'Messages', href: '/chat', icon: MessageSquare },
     { label: 'Profile', href: '/settings', icon: User },
 ]
 
 const landlordNavItems = [
-    { label: 'Explore', href: '/', icon: Search },
+    { label: 'Home', href: '/', icon: Home },
     { label: 'Properties', href: '/landlord/properties', icon: Building2 },
     { label: 'Messages', href: '/chat', icon: MessageSquare },
     { label: 'Profile', href: '/settings', icon: User },
 ]
 
 const adminNavItems = [
-    { label: 'Explore', href: '/', icon: Search },
+    { label: 'Home', href: '/', icon: Home },
     { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { label: 'Messages', href: '/chat', icon: MessageSquare },
     { label: 'Profile', href: '/settings', icon: User },
 ]
 
 const guestNavItems = [
-    { label: 'Explore', href: '/', icon: Search },
+    { label: 'Home', href: '/', icon: Home },
     { label: 'Sign In', href: '/sign-in', icon: User },
 ]
 
