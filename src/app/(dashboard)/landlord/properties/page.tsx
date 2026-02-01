@@ -86,7 +86,7 @@ function LandlordPropertiesContent() {
                 <div className="flex items-center justify-end gap-4 mb-12 border-b border-neutral-200/60 pb-8">
                     {properties.length > 0 && (
                         <Link href="/landlord/properties/new">
-                            <Button className="h-14 bg-neutral-900 hover:bg-neutral-800 text-white rounded-full px-8 text-base font-bold tracking-wide shadow-xl shadow-neutral-900/10 transition-all hover:scale-[1.02]">
+                            <Button className="h-12 bg-neutral-900 hover:bg-neutral-800 text-white rounded-full px-8 text-sm font-bold tracking-wide transition-colors">
                                 <Plus className="mr-2 h-5 w-5" />
                                 Create New Property
                             </Button>
