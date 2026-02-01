@@ -14,6 +14,8 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useAuthActions } from "@convex-dev/auth/react"
+import { useQuery } from 'convex/react'
+import { api } from '../../../convex/_generated/api'
 import { toast } from 'sonner'
 import { getDisplayName, getInitials } from '@/lib/user-name'
 import {
@@ -39,6 +41,12 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
     const router = useRouter()
     const { signOut } = useAuthActions()
     const [isScrolled, setIsScrolled] = useState(false)
+
+    // Only fetch unread count if user is logged in
+    const unreadCount = useQuery(
+        api.messages.getUnreadCount,
+        user ? {} : "skip"
+    )
 
     useEffect(() => {
         const handleScroll = () => {
@@ -110,7 +118,7 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                             ) : user ? (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <button className="flex items-center gap-2 p-1 pr-2 md:pr-3 rounded-full hover:bg-neutral-100 transition-all border border-transparent hover:border-neutral-200">
+                                        <button className="flex items-center gap-2 p-1 pr-2 md:pr-3 rounded-full hover:bg-neutral-100 transition-all border border-transparent hover:border-neutral-200 relative">
                                             <Menu className="h-4 w-4 ml-2 text-neutral-600" />
                                             <Avatar className="h-8 w-8 border-none">
                                                 <AvatarImage src={user.avatarUrl} alt={user.email || ''} className="object-cover" />
@@ -118,6 +126,12 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                                     {getInitials(user) || user.email?.charAt(0).toUpperCase()}
                                                 </AvatarFallback>
                                             </Avatar>
+                                            {/* Unread badge on avatar */}
+                                            {unreadCount && unreadCount > 0 && (
+                                                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in duration-200">
+                                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                                </span>
+                                            )}
                                         </button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent
@@ -180,7 +194,7 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                                     className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
                                                     onClick={() => router.push('/landlord/leases')}
                                                 >
-                                                    <Heart className="mr-3 h-4 w-4 opacity-70" />
+                                                    <FileText className="mr-3 h-4 w-4 opacity-70" />
                                                     Leases
                                                 </DropdownMenuItem>
                                             </>
@@ -206,13 +220,20 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                             </>
                                         )}
 
-                                        {/* Messages - All Roles */}
+                                        {/* Messages - All Roles with badge */}
                                         <DropdownMenuItem
                                             className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
                                             onClick={() => router.push('/chat')}
                                         >
-                                            <MessageSquare className="mr-3 h-4 w-4 opacity-70" />
-                                            Messages
+                                            <div className="flex items-center flex-1">
+                                                <MessageSquare className="mr-3 h-4 w-4 opacity-70" />
+                                                Messages
+                                            </div>
+                                            {unreadCount && unreadCount > 0 && (
+                                                <span className="h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                                                    {unreadCount > 99 ? '99+' : unreadCount}
+                                                </span>
+                                            )}
                                         </DropdownMenuItem>
 
                                         {/* Payments - Coming Soon */}

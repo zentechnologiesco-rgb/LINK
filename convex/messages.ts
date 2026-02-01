@@ -76,3 +76,48 @@ export const markAsRead = mutation({
         }
     },
 });
+
+// Get total unread message count for current user
+export const getUnreadCount = query({
+    args: {},
+    handler: async (ctx) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) return 0;
+
+        // Get user to determine role
+        const user = await ctx.db.get(userId);
+        if (!user) return 0;
+
+        // Get all inquiries where user is a participant
+        let inquiries;
+        if (user.role === "landlord") {
+            inquiries = await ctx.db
+                .query("inquiries")
+                .withIndex("by_landlordId", (q) => q.eq("landlordId", userId))
+                .collect();
+        } else {
+            inquiries = await ctx.db
+                .query("inquiries")
+                .withIndex("by_tenantId", (q) => q.eq("tenantId", userId))
+                .collect();
+        }
+
+        // Count unread messages across all inquiries
+        let unreadCount = 0;
+        for (const inquiry of inquiries) {
+            const unreadMessages = await ctx.db
+                .query("messages")
+                .withIndex("by_inquiryId", (q) => q.eq("inquiryId", inquiry._id))
+                .filter((q) =>
+                    q.and(
+                        q.eq(q.field("readAt"), undefined),
+                        q.neq(q.field("senderId"), userId)
+                    )
+                )
+                .collect();
+            unreadCount += unreadMessages.length;
+        }
+
+        return unreadCount;
+    },
+});

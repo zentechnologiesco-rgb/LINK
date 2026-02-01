@@ -3,35 +3,44 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { Home, Heart, MessageSquare, User, Building2, LayoutDashboard } from 'lucide-react'
+import { Home, Heart, MessageSquare, User, Building2, LayoutDashboard, LucideIcon } from 'lucide-react'
+import { useQuery } from 'convex/react'
+import { api } from '../../../convex/_generated/api'
 
 interface MobileNavProps {
     user?: any
     userRole?: 'tenant' | 'landlord' | 'admin' | null
 }
 
-const tenantNavItems = [
+interface NavItem {
+    label: string
+    href: string
+    icon: LucideIcon
+    showBadge?: boolean
+}
+
+const tenantNavItems: NavItem[] = [
     { label: 'Home', href: '/', icon: Home },
     { label: 'Saved', href: '/tenant/saved', icon: Heart },
-    { label: 'Messages', href: '/chat', icon: MessageSquare },
+    { label: 'Messages', href: '/chat', icon: MessageSquare, showBadge: true },
     { label: 'Profile', href: '/settings', icon: User },
 ]
 
-const landlordNavItems = [
+const landlordNavItems: NavItem[] = [
     { label: 'Home', href: '/', icon: Home },
     { label: 'Properties', href: '/landlord/properties', icon: Building2 },
-    { label: 'Messages', href: '/chat', icon: MessageSquare },
+    { label: 'Messages', href: '/chat', icon: MessageSquare, showBadge: true },
     { label: 'Profile', href: '/settings', icon: User },
 ]
 
-const adminNavItems = [
+const adminNavItems: NavItem[] = [
     { label: 'Home', href: '/', icon: Home },
     { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-    { label: 'Messages', href: '/chat', icon: MessageSquare },
+    { label: 'Messages', href: '/chat', icon: MessageSquare, showBadge: true },
     { label: 'Profile', href: '/settings', icon: User },
 ]
 
-const guestNavItems = [
+const guestNavItems: NavItem[] = [
     { label: 'Home', href: '/', icon: Home },
     { label: 'Sign In', href: '/sign-in', icon: User },
 ]
@@ -40,15 +49,19 @@ export function MobileNav({ user, userRole }: MobileNavProps) {
     const pathname = usePathname()
     const currentRole = userRole || user?.role
 
-    let items = guestNavItems
+    // Only fetch unread count if user is logged in
+    const unreadCountQuery = useQuery(
+        api.messages.getUnreadCount,
+        user ? {} : "skip"
+    )
+    const unreadCount = typeof unreadCountQuery === 'number' ? unreadCountQuery : 0
+
+    let items: NavItem[] = guestNavItems
     if (user) {
         if (currentRole === 'landlord') items = landlordNavItems
         else if (currentRole === 'admin') items = adminNavItems
         else items = tenantNavItems
     }
-
-    // Dashboard pages check removed to allow global usage
-    // const isDashboard = pathname?.startsWith('/landlord') || ...
 
     return (
         <>
@@ -63,25 +76,33 @@ export function MobileNav({ user, userRole }: MobileNavProps) {
                             ? pathname === '/'
                             : pathname?.startsWith(item.href)
                         const Icon = item.icon
+                        const hasBadge = item.showBadge && unreadCount > 0
 
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
                                 className={cn(
-                                    'flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-all duration-200',
+                                    'flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-all duration-200 relative',
                                     isActive
                                         ? 'text-neutral-900'
                                         : 'text-neutral-400 hover:text-neutral-600'
                                 )}
                             >
-                                <Icon
-                                    className={cn(
-                                        'h-6 w-6 transition-all duration-200',
-                                        isActive && 'scale-105'
+                                <div className="relative">
+                                    <Icon
+                                        className={cn(
+                                            'h-6 w-6 transition-all duration-200',
+                                            isActive && 'scale-105'
+                                        )}
+                                        strokeWidth={isActive ? 2.5 : 2}
+                                    />
+                                    {hasBadge && (
+                                        <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in duration-200">
+                                            {unreadCount > 9 ? '9+' : unreadCount}
+                                        </span>
                                     )}
-                                    strokeWidth={isActive ? 2.5 : 2}
-                                />
+                                </div>
                                 <span className={cn(
                                     'text-[10px]',
                                     isActive ? 'font-bold' : 'font-medium'
