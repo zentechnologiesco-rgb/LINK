@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, use } from "react"
+import { useState, useEffect, useRef, use, useCallback, TouchEvent } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { OptimizedImage } from "@/components/ui/optimized-image"
@@ -66,6 +66,11 @@ function PropertyDetailContent({ id }: { id: string }) {
     const [isScrolled, setIsScrolled] = useState(false)
     const [copied, setCopied] = useState(false)
 
+    // Touch gesture state for mobile carousel
+    const touchStartX = useRef<number>(0)
+    const touchEndX = useRef<number>(0)
+    const minSwipeDistance = 50 // minimum distance in px to trigger swipe
+
     // Track view mutation
     const trackView = useMutation(api.recentlyViewed.trackView)
     const hasTracked = useRef(false)
@@ -99,6 +104,36 @@ function PropertyDetailContent({ id }: { id: string }) {
             // Fallback
         }
     }
+
+    // Touch handlers for mobile carousel swipe
+    const onTouchStart = useCallback((e: TouchEvent<HTMLDivElement>) => {
+        touchEndX.current = 0 // Reset end position
+        touchStartX.current = e.targetTouches[0].clientX
+    }, [])
+
+    const onTouchMove = useCallback((e: TouchEvent<HTMLDivElement>) => {
+        touchEndX.current = e.targetTouches[0].clientX
+    }, [])
+
+    const onTouchEnd = useCallback((imagesLength: number) => {
+        if (!touchStartX.current || !touchEndX.current) return
+
+        const distance = touchStartX.current - touchEndX.current
+        const isLeftSwipe = distance > minSwipeDistance
+        const isRightSwipe = distance < -minSwipeDistance
+
+        if (isLeftSwipe) {
+            // Swipe left -> go to next image
+            setCurrentPhotoIndex((prev) => (prev + 1) % imagesLength)
+        } else if (isRightSwipe) {
+            // Swipe right -> go to previous image
+            setCurrentPhotoIndex((prev) => (prev - 1 + imagesLength) % imagesLength)
+        }
+
+        // Reset values
+        touchStartX.current = 0
+        touchEndX.current = 0
+    }, [])
 
     // Loading State
     if (convexProperty === undefined) {
@@ -262,45 +297,104 @@ function PropertyDetailContent({ id }: { id: string }) {
             {/* Hero Image Section */}
             <section className="relative">
                 {/* Mobile: Full-width image carousel */}
-                <div className="md:hidden relative aspect-[4/3]">
+                <div
+                    className="md:hidden relative aspect-[4/3] touch-pan-y"
+                    onTouchStart={onTouchStart}
+                    onTouchMove={onTouchMove}
+                    onTouchEnd={() => onTouchEnd(property.images.length)}
+                >
                     <OptimizedImage
                         src={property.images[currentPhotoIndex]}
                         alt={property.title}
                         fill
-                        className="object-cover"
+                        className="object-cover select-none pointer-events-none"
                         priority
                     />
 
                     {/* Mobile photo navigation */}
                     {property.images.length > 1 && (
                         <>
-                            {/* Dots indicator */}
-                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10">
-                                {property.images.slice(0, 5).map((_, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => setCurrentPhotoIndex(i)}
-                                        className={cn(
-                                            "w-1.5 h-1.5 rounded-full transition-all",
-                                            i === currentPhotoIndex
-                                                ? "bg-white w-4"
-                                                : "bg-white/60"
-                                        )}
-                                    />
-                                ))}
-                                {property.images.length > 5 && (
-                                    <span className="text-white/80 text-xs ml-1">+{property.images.length - 5}</span>
-                                )}
+                            {/* Smart dots indicator with sliding window */}
+                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
+                                {/* Position counter */}
+                                <div className="bg-black/50 backdrop-blur-sm px-2 py-1 rounded-full">
+                                    <span className="text-white text-xs font-medium">
+                                        {currentPhotoIndex + 1} / {property.images.length}
+                                    </span>
+                                </div>
+
+                                {/* Dots - show sliding window of 5 dots */}
+                                <div className="flex items-center gap-1.5 bg-black/30 backdrop-blur-sm px-2 py-1.5 rounded-full">
+                                    {(() => {
+                                        const total = property.images.length
+                                        const maxDots = 5
+
+                                        // If 5 or fewer images, show all dots
+                                        if (total <= maxDots) {
+                                            return property.images.map((_, i) => (
+                                                <button
+                                                    key={i}
+                                                    onClick={() => setCurrentPhotoIndex(i)}
+                                                    className={cn(
+                                                        "rounded-full transition-all duration-200",
+                                                        i === currentPhotoIndex
+                                                            ? "bg-white w-2 h-2"
+                                                            : "bg-white/50 w-1.5 h-1.5 hover:bg-white/70"
+                                                    )}
+                                                    aria-label={`Go to image ${i + 1}`}
+                                                />
+                                            ))
+                                        }
+
+                                        // Calculate sliding window for more than 5 images
+                                        let startIdx = Math.max(0, currentPhotoIndex - 2)
+                                        const endIdx = Math.min(total, startIdx + maxDots)
+
+                                        // Adjust start if we're near the end
+                                        if (endIdx - startIdx < maxDots) {
+                                            startIdx = Math.max(0, endIdx - maxDots)
+                                        }
+
+                                        return property.images.slice(startIdx, endIdx).map((_, i) => {
+                                            const actualIndex = startIdx + i
+                                            const isEdge = i === 0 || i === maxDots - 1
+                                            const isAtBoundary = (startIdx > 0 && i === 0) || (endIdx < total && i === maxDots - 1)
+
+                                            return (
+                                                <button
+                                                    key={actualIndex}
+                                                    onClick={() => setCurrentPhotoIndex(actualIndex)}
+                                                    className={cn(
+                                                        "rounded-full transition-all duration-200",
+                                                        actualIndex === currentPhotoIndex
+                                                            ? "bg-white w-2 h-2"
+                                                            : isAtBoundary
+                                                                ? "bg-white/30 w-1 h-1"
+                                                                : "bg-white/50 w-1.5 h-1.5 hover:bg-white/70"
+                                                    )}
+                                                    aria-label={`Go to image ${actualIndex + 1}`}
+                                                />
+                                            )
+                                        })
+                                    })()}
+                                </div>
                             </div>
-                            {/* Tap areas */}
+
+                            {/* Navigation arrows (semi-transparent, appear on tap) */}
                             <button
                                 onClick={() => setCurrentPhotoIndex((prev) => (prev - 1 + property.images.length) % property.images.length)}
-                                className="absolute left-0 top-0 bottom-0 w-1/3"
-                            />
+                                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white active:bg-black/50 transition-colors z-10"
+                                aria-label="Previous image"
+                            >
+                                <ChevronLeft className="w-5 h-5" />
+                            </button>
                             <button
                                 onClick={() => setCurrentPhotoIndex((prev) => (prev + 1) % property.images.length)}
-                                className="absolute right-0 top-0 bottom-0 w-1/3"
-                            />
+                                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-white active:bg-black/50 transition-colors z-10"
+                                aria-label="Next image"
+                            >
+                                <ChevronRight className="w-5 h-5" />
+                            </button>
                         </>
                     )}
 
