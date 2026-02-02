@@ -308,15 +308,15 @@ export default function HomePage() {
                                             )}
                                         </button>
                                     </SheetTrigger>
-                                    <SheetContent side="right" className="!w-full sm:!w-[320px] md:!w-[360px] overflow-hidden bg-white p-0 sm:rounded-l-2xl border-l-0 flex flex-col h-auto max-h-[100dvh]">
+                                    <SheetContent side="right" className="!w-[85%] sm:!w-[320px] md:!w-[360px] overflow-hidden bg-white p-0 sm:rounded-l-xl border-l-0 flex flex-col">
 
                                         {/* Header */}
-                                        <div className="flex items-center gap-3 px-4 py-2.5 pr-14 border-b border-neutral-100">
-                                            <SheetTitle className="text-sm font-semibold text-neutral-900">Filters</SheetTitle>
+                                        <div className="flex items-center gap-3 px-5 py-4 pr-12 border-b border-neutral-100">
+                                            <SheetTitle className="text-base font-semibold text-neutral-900">Filters</SheetTitle>
                                             {activeFilterCount > 0 && (
                                                 <button
                                                     onClick={clearFilters}
-                                                    className="text-xs font-medium text-red-500 hover:text-red-600"
+                                                    className="text-xs font-medium text-neutral-400 hover:text-neutral-600"
                                                 >
                                                     Reset
                                                 </button>
@@ -324,73 +324,81 @@ export default function HomePage() {
                                         </div>
 
                                         {/* Content */}
-                                        <div className="flex-1 px-4 py-3 space-y-3">
+                                        <div className="flex-1 px-5 py-5 space-y-6 overflow-y-auto">
 
                                             {/* Price */}
-                                            <div className="space-y-1.5">
-                                                <label className="text-[11px] font-medium text-neutral-500 uppercase tracking-wide">Price</label>
-                                                <div className="grid grid-cols-2 gap-2">
+                                            <div className="space-y-3">
+                                                <label className="text-xs font-semibold text-neutral-900">Price Range</label>
+                                                <div className="space-y-2">
                                                     <input
                                                         type="number"
-                                                        placeholder="Min"
+                                                        placeholder="Minimum price"
                                                         value={priceRange.min}
                                                         onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value })}
-                                                        className="h-9 px-3 bg-neutral-100 rounded-lg text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-300"
+                                                        className="w-full h-11 px-4 bg-neutral-50 border border-neutral-200 rounded-lg text-sm placeholder:text-neutral-400 focus:outline-none focus:border-neutral-400"
                                                     />
                                                     <input
                                                         type="number"
-                                                        placeholder="Max"
+                                                        placeholder="Maximum price"
                                                         value={priceRange.max}
                                                         onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value })}
-                                                        className="h-9 px-3 bg-neutral-100 rounded-lg text-sm placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-300"
+                                                        className="w-full h-11 px-4 bg-neutral-50 border border-neutral-200 rounded-lg text-sm placeholder:text-neutral-400 focus:outline-none focus:border-neutral-400"
                                                     />
                                                 </div>
-                                                <div className="grid grid-cols-4 gap-1">
-                                                    {["5k", "15k", "30k", "50k"].map((label, i) => {
-                                                        const value = ["5000", "15000", "30000", "50000"][i]
-                                                        return (
-                                                            <button
-                                                                key={value}
-                                                                onClick={() => setPriceRange({ min: "", max: value })}
-                                                                className={cn(
-                                                                    "h-7 rounded text-[11px] font-medium transition-colors",
-                                                                    priceRange.max === value
-                                                                        ? "bg-neutral-900 text-white"
-                                                                        : "bg-neutral-100 text-neutral-600"
-                                                                )}
-                                                            >
-                                                                {label}
-                                                            </button>
-                                                        )
-                                                    })}
+                                                <div className="grid grid-cols-4 gap-2">
+                                                    {[
+                                                        { label: "5k", value: "5000" },
+                                                        { label: "15k", value: "15000" },
+                                                        { label: "30k", value: "30000" },
+                                                        { label: "50k", value: "50000" }
+                                                    ].map((option) => (
+                                                        <button
+                                                            key={option.value}
+                                                            onClick={() => setPriceRange({ min: "", max: option.value })}
+                                                            className={cn(
+                                                                "aspect-square rounded-lg text-xs font-medium transition-colors flex items-center justify-center",
+                                                                priceRange.max === option.value
+                                                                    ? "bg-neutral-900 text-white"
+                                                                    : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                                                            )}
+                                                        >
+                                                            {option.label}
+                                                        </button>
+                                                    ))}
                                                 </div>
                                             </div>
 
                                             {/* Bedrooms */}
-                                            <div className="space-y-1.5">
-                                                <label className="text-[11px] font-medium text-neutral-500 uppercase tracking-wide">Bedrooms</label>
-                                                <div className="grid grid-cols-5 gap-1">
-                                                    {[null, 1, 2, 3, 4].map((num) => (
+                                            <div className="space-y-3">
+                                                <label className="text-xs font-semibold text-neutral-900">Bedrooms</label>
+                                                <div className="grid grid-cols-5 gap-2">
+                                                    {[
+                                                        { label: "Any", value: null },
+                                                        { label: "1+", value: 1 },
+                                                        { label: "2+", value: 2 },
+                                                        { label: "3+", value: 3 },
+                                                        { label: "4+", value: 4 }
+                                                    ].map((option) => (
                                                         <button
-                                                            key={num ?? "any"}
-                                                            onClick={() => setMinBedrooms(num)}
+                                                            key={option.label}
+                                                            onClick={() => setMinBedrooms(option.value)}
                                                             className={cn(
-                                                                "h-8 rounded text-xs font-medium transition-colors",
-                                                                minBedrooms === num
+                                                                "aspect-square rounded-lg text-xs font-medium transition-colors flex items-center justify-center",
+                                                                minBedrooms === option.value
                                                                     ? "bg-neutral-900 text-white"
-                                                                    : "bg-neutral-100 text-neutral-600"
+                                                                    : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
                                                             )}
                                                         >
-                                                            {num === null ? "Any" : `${num}+`}
+                                                            {option.label}
                                                         </button>
                                                     ))}
                                                 </div>
                                             </div>
 
                                             {/* Amenities */}
-                                            <div className="space-y-1.5">
-                                                <label className="text-[11px] font-medium text-neutral-500 uppercase tracking-wide">Amenities</label>
-                                                <div className="flex flex-wrap gap-1">
+                                            <div className="space-y-3">
+                                                <label className="text-xs font-semibold text-neutral-900">Amenities</label>
+                                                <div className="grid grid-cols-2 gap-2">
                                                     {AMENITIES_LIST.map((amenity) => (
                                                         <button
                                                             key={amenity}
@@ -402,10 +410,10 @@ export default function HomePage() {
                                                                 }
                                                             }}
                                                             className={cn(
-                                                                "h-7 px-2.5 rounded text-[11px] font-medium transition-colors",
+                                                                "h-10 px-3 rounded-lg text-xs font-medium transition-colors text-left",
                                                                 selectedAmenities.includes(amenity)
                                                                     ? "bg-neutral-900 text-white"
-                                                                    : "bg-neutral-100 text-neutral-600"
+                                                                    : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
                                                             )}
                                                         >
                                                             {amenity}
