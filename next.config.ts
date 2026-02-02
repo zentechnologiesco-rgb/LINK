@@ -51,14 +51,12 @@ const nextConfig: NextConfig = {
         hostname: '*.convex.site',
       },
     ],
-    // Enable optimization in production
-    unoptimized: process.env.NODE_ENV === 'development',
     // Increase cache TTL to reduce re-fetching
-    minimumCacheTTL: 60 * 60 * 24, // 24 hours
+    minimumCacheTTL: 60 * 60 * 24 * 7, // 7 days - images rarely change
     // Device sizes for responsive images
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    // Use modern formats
+    // Use modern formats for smaller file size with same quality
     formats: ['image/avif', 'image/webp'],
   },
 

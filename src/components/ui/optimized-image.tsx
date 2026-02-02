@@ -1,11 +1,13 @@
 "use client"
 
 import Image, { ImageProps } from "next/image"
+import { useState, useCallback } from "react"
 import { cn } from "@/lib/utils"
 
 interface OptimizedImageProps extends Omit<ImageProps, 'onLoad' | 'onError'> {
     containerClassName?: string
     aspectRatio?: 'video' | 'square' | '4/3' | '3/2' | '16/9'
+    showSkeleton?: boolean
 }
 
 const aspectRatioClasses = {
@@ -14,6 +16,18 @@ const aspectRatioClasses = {
     '4/3': 'aspect-[4/3]',
     '3/2': 'aspect-[3/2]',
     '16/9': 'aspect-[16/9]',
+}
+
+// Simple shimmer skeleton for loading state
+function ImageSkeleton({ className }: { className?: string }) {
+    return (
+        <div
+            className={cn(
+                "absolute inset-0 bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200 bg-[length:200%_100%] animate-shimmer",
+                className
+            )}
+        />
+    )
 }
 
 export function OptimizedImage({
@@ -25,9 +39,23 @@ export function OptimizedImage({
     aspectRatio,
     sizes,
     priority,
+    showSkeleton = true,
     ...props
 }: OptimizedImageProps) {
-    // For Convex storage images, skip Next.js optimization to avoid issues
+    const [isLoaded, setIsLoaded] = useState(false)
+    const [hasError, setHasError] = useState(false)
+
+    const handleLoad = useCallback(() => {
+        setIsLoaded(true)
+    }, [])
+
+    const handleError = useCallback(() => {
+        setHasError(true)
+        setIsLoaded(true) // Hide skeleton on error too
+    }, [])
+
+    // For Convex storage images, skip Next.js optimization to avoid timeout issues
+    // but keep full quality
     const isConvexImage = typeof src === 'string' && (
         src.includes('convex.cloud') || src.includes('convex.site')
     )
@@ -40,14 +68,26 @@ export function OptimizedImage({
                 aspectRatioClasses[aspectRatio],
                 containerClassName
             )}>
+                {/* Loading skeleton - shown until image loads */}
+                {showSkeleton && !isLoaded && !hasError && (
+                    <ImageSkeleton />
+                )}
+
                 <Image
                     src={src}
                     alt={alt}
                     fill
                     sizes={sizes}
                     priority={priority}
+                    quality={100}
                     unoptimized={isConvexImage}
-                    className={cn("object-cover", className)}
+                    onLoad={handleLoad}
+                    onError={handleError}
+                    className={cn(
+                        "object-cover transition-opacity duration-300",
+                        isLoaded ? "opacity-100" : "opacity-0",
+                        className
+                    )}
                     {...props}
                 />
             </div>
@@ -62,8 +102,15 @@ export function OptimizedImage({
             fill={fill}
             sizes={sizes}
             priority={priority}
+            quality={100}
             unoptimized={isConvexImage}
-            className={className}
+            onLoad={handleLoad}
+            onError={handleError}
+            className={cn(
+                "transition-opacity duration-300",
+                isLoaded ? "opacity-100" : "opacity-0",
+                className
+            )}
             {...props}
         />
     )

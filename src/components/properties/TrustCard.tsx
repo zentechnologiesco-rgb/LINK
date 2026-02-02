@@ -29,11 +29,13 @@ export interface TrustCardProps {
         description?: string
         coordinates?: { lat: number; lng: number } | null
     }
+    /** Set to true for above-the-fold cards (first 4-8 visible) for faster initial load */
+    priority?: boolean
 }
 
 // Memoized TrustCard component to prevent unnecessary re-renders
 // Re-renders only when property.id changes
-export const TrustCard = memo(function TrustCard({ property }: TrustCardProps) {
+export const TrustCard = memo(function TrustCard({ property, priority = false }: TrustCardProps) {
     const images = property.images.length > 0 ? property.images : ['/window.svg']
 
     return (
@@ -53,6 +55,7 @@ export const TrustCard = memo(function TrustCard({ property }: TrustCardProps) {
                         alt={property.title}
                         fill
                         aspectRatio="4/3"
+                        priority={priority}
                         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                         className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
                     />
