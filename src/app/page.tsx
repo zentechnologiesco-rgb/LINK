@@ -311,12 +311,12 @@ export default function HomePage() {
                                     <SheetContent side="right" className="!w-full sm:!w-[320px] md:!w-[360px] overflow-hidden bg-white p-0 sm:rounded-l-2xl border-l-0 flex flex-col h-auto max-h-[100dvh]">
 
                                         {/* Header */}
-                                        <div className="flex items-center justify-between px-4 py-2.5 pr-12 border-b border-neutral-100">
+                                        <div className="flex items-center gap-3 px-4 py-2.5 pr-14 border-b border-neutral-100">
                                             <SheetTitle className="text-sm font-semibold text-neutral-900">Filters</SheetTitle>
                                             {activeFilterCount > 0 && (
                                                 <button
                                                     onClick={clearFilters}
-                                                    className="text-xs font-medium text-neutral-400 hover:text-neutral-600"
+                                                    className="text-xs font-medium text-red-500 hover:text-red-600"
                                                 >
                                                     Reset
                                                 </button>
