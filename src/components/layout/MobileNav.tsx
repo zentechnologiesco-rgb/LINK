@@ -105,7 +105,7 @@ export function MobileNav({ user, userRole }: MobileNavProps) {
                                 <div className="relative">
                                     <Icon
                                         className={cn(
-                                            'h-6 w-6 transition-all duration-200',
+                                            'h-5 w-5 transition-all duration-200',
                                             isActive && 'scale-105'
                                         )}
                                         strokeWidth={isActive ? 2.5 : 2}
