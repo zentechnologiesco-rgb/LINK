@@ -4,6 +4,8 @@ import './globals.css'
 import { Toaster } from '@/components/ui/sonner'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ConvexClientProvider } from '@/components/providers/ConvexClientProvider'
+import { Analytics } from '@vercel/analytics/next'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -70,6 +72,8 @@ export default function RootLayout({
           </AppLayout>
           <Toaster />
         </ConvexClientProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )

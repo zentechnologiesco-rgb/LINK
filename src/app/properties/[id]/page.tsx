@@ -193,6 +193,7 @@ function PropertyDetailContent({ id }: { id: string }) {
                             src={property.images[currentPhotoIndex]}
                             alt={`Photo ${currentPhotoIndex + 1}`}
                             fill
+                            qualityPreset="full"
                             className="object-contain"
                         />
                     </div>
@@ -234,6 +235,7 @@ function PropertyDetailContent({ id }: { id: string }) {
                                     src={img}
                                     alt={`Thumbnail ${i + 1}`}
                                     fill
+                                    qualityPreset="thumbnail"
                                     className="object-cover"
                                 />
                             </button>
@@ -307,6 +309,7 @@ function PropertyDetailContent({ id }: { id: string }) {
                         src={property.images[currentPhotoIndex]}
                         alt={property.title}
                         fill
+                        qualityPreset="hero"
                         className="object-cover select-none pointer-events-none"
                         priority
                     />
@@ -421,6 +424,7 @@ function PropertyDetailContent({ id }: { id: string }) {
                                     src={property.images[0]}
                                     alt={property.title}
                                     fill
+                                    qualityPreset="hero"
                                     className="object-cover transition-all duration-300 group-hover:brightness-90"
                                     priority
                                 />
@@ -437,6 +441,7 @@ function PropertyDetailContent({ id }: { id: string }) {
                                         src={img}
                                         alt={`Photo ${i + 2}`}
                                         fill
+                                        qualityPreset="card"
                                         className="object-cover transition-all duration-300 group-hover:brightness-90"
                                     />
 
@@ -546,6 +551,7 @@ function PropertyDetailContent({ id }: { id: string }) {
                                             src={property.landlord.avatarUrl}
                                             alt="Landlord"
                                             fill
+                                            qualityPreset="thumbnail"
                                             className="object-cover"
                                         />
                                     ) : (

@@ -4,10 +4,28 @@ import Image, { ImageProps } from "next/image"
 import { useState, useCallback } from "react"
 import { cn } from "@/lib/utils"
 
-interface OptimizedImageProps extends Omit<ImageProps, 'onLoad' | 'onError'> {
+/**
+ * Quality presets for different use cases
+ * Lower quality = smaller file size = faster loading
+ */
+export type ImageQualityPreset = 'thumbnail' | 'card' | 'gallery' | 'hero' | 'full'
+
+const QUALITY_PRESETS: Record<ImageQualityPreset, number> = {
+    thumbnail: 60,  // Small previews, cards in lists
+    card: 70,       // Property cards, medium previews
+    gallery: 80,    // Gallery view, larger images
+    hero: 85,       // Hero images, main display
+    full: 90,       // Full resolution view
+}
+
+interface OptimizedImageProps extends Omit<ImageProps, 'onLoad' | 'onError' | 'quality'> {
     containerClassName?: string
     aspectRatio?: 'video' | 'square' | '4/3' | '3/2' | '16/9'
     showSkeleton?: boolean
+    /** Quality preset - determines compression level */
+    qualityPreset?: ImageQualityPreset
+    /** Override quality directly (0-100) */
+    quality?: number
 }
 
 const aspectRatioClasses = {
@@ -40,6 +58,9 @@ export function OptimizedImage({
     sizes,
     priority,
     showSkeleton = true,
+    qualityPreset = 'card',
+    quality,
+    loading,
     ...props
 }: OptimizedImageProps) {
     const [isLoaded, setIsLoaded] = useState(false)
@@ -54,11 +75,11 @@ export function OptimizedImage({
         setIsLoaded(true) // Hide skeleton on error too
     }, [])
 
-    // For Convex storage images, skip Next.js optimization to avoid timeout issues
-    // but keep full quality
-    const isConvexImage = typeof src === 'string' && (
-        src.includes('convex.cloud') || src.includes('convex.site')
-    )
+    // Determine quality - use explicit quality if provided, otherwise use preset
+    const imageQuality = quality ?? QUALITY_PRESETS[qualityPreset]
+
+    // Determine loading strategy - priority images load eagerly, others are lazy
+    const loadingStrategy = loading ?? (priority ? 'eager' : 'lazy')
 
     // If using fill with aspectRatio, wrap in a container
     if (fill && aspectRatio) {
@@ -79,8 +100,8 @@ export function OptimizedImage({
                     fill
                     sizes={sizes}
                     priority={priority}
-                    quality={100}
-                    unoptimized={isConvexImage}
+                    quality={imageQuality}
+                    loading={loadingStrategy}
                     onLoad={handleLoad}
                     onError={handleError}
                     className={cn(
@@ -102,8 +123,8 @@ export function OptimizedImage({
             fill={fill}
             sizes={sizes}
             priority={priority}
-            quality={100}
-            unoptimized={isConvexImage}
+            quality={imageQuality}
+            loading={loadingStrategy}
             onLoad={handleLoad}
             onError={handleError}
             className={cn(
@@ -116,13 +137,14 @@ export function OptimizedImage({
     )
 }
 
-// Thumbnail variant for property cards
+// Thumbnail variant for property cards - optimized for small displays
 export function PropertyThumbnail({
     src,
     alt,
     className,
+    priority,
     ...props
-}: Omit<OptimizedImageProps, 'aspectRatio' | 'fill' | 'sizes'>) {
+}: Omit<OptimizedImageProps, 'aspectRatio' | 'fill' | 'sizes' | 'qualityPreset'>) {
     return (
         <OptimizedImage
             src={src}
@@ -130,20 +152,45 @@ export function PropertyThumbnail({
             fill
             aspectRatio="4/3"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            qualityPreset="thumbnail"
+            priority={priority}
             className={cn("object-cover", className)}
             {...props}
         />
     )
 }
 
-// Hero image variant for property detail pages
+// Card image variant - slightly higher quality for featured cards
+export function PropertyCardImage({
+    src,
+    alt,
+    className,
+    priority,
+    ...props
+}: Omit<OptimizedImageProps, 'aspectRatio' | 'fill' | 'sizes' | 'qualityPreset'>) {
+    return (
+        <OptimizedImage
+            src={src}
+            alt={alt}
+            fill
+            aspectRatio="4/3"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            qualityPreset="card"
+            priority={priority}
+            className={cn("object-cover", className)}
+            {...props}
+        />
+    )
+}
+
+// Hero image variant for property detail pages - highest quality
 export function PropertyHeroImage({
     src,
     alt,
     className,
     priority = true,
     ...props
-}: Omit<OptimizedImageProps, 'fill' | 'sizes'>) {
+}: Omit<OptimizedImageProps, 'fill' | 'sizes' | 'qualityPreset'>) {
     return (
         <OptimizedImage
             src={src}
@@ -151,6 +198,31 @@ export function PropertyHeroImage({
             fill
             priority={priority}
             sizes="100vw"
+            qualityPreset="hero"
+            className={cn("object-cover", className)}
+            {...props}
+        />
+    )
+}
+
+// Gallery image variant - balanced quality for gallery views
+export function GalleryImage({
+    src,
+    alt,
+    className,
+    priority,
+    aspectRatio = '4/3',
+    ...props
+}: Omit<OptimizedImageProps, 'fill' | 'sizes' | 'qualityPreset'>) {
+    return (
+        <OptimizedImage
+            src={src}
+            alt={alt}
+            fill
+            aspectRatio={aspectRatio}
+            priority={priority}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 75vw, 50vw"
+            qualityPreset="gallery"
             className={cn("object-cover", className)}
             {...props}
         />
@@ -164,7 +236,7 @@ export function AvatarImage({
     size = 40,
     className,
     ...props
-}: Omit<OptimizedImageProps, 'fill' | 'width' | 'height'> & { size?: number }) {
+}: Omit<OptimizedImageProps, 'fill' | 'width' | 'height' | 'qualityPreset'> & { size?: number }) {
     return (
         <div
             className={cn("relative rounded-full overflow-hidden bg-neutral-100", className)}
@@ -175,6 +247,7 @@ export function AvatarImage({
                 alt={alt}
                 width={size}
                 height={size}
+                quality={60}
                 className="object-cover"
                 {...props}
             />

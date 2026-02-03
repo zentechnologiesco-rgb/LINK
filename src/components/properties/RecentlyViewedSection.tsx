@@ -119,6 +119,7 @@ function RecentPropertyCard({
                     alt={property.title}
                     fill
                     aspectRatio="4/3"
+                    qualityPreset="thumbnail"
                     sizes="(max-width: 640px) 160px, (max-width: 768px) 200px, 220px"
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                 />

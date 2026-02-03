@@ -85,6 +85,7 @@ export function LeasePreview({
                                         src={property.images[0]}
                                         alt={property.title}
                                         fill
+                                        qualityPreset="thumbnail"
                                         className="object-cover"
                                     />
                                 ) : (
@@ -262,6 +263,7 @@ export function LeasePreview({
                                         alt="Landlord signature"
                                         width={200}
                                         height={80}
+                                        qualityPreset="thumbnail"
                                         className="object-contain"
                                     />
                                 </div>
@@ -286,6 +288,7 @@ export function LeasePreview({
                                         alt="Tenant signature"
                                         width={200}
                                         height={80}
+                                        qualityPreset="thumbnail"
                                         className="object-contain"
                                     />
                                 </div>
