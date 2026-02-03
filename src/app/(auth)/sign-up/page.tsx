@@ -46,7 +46,7 @@ function SignUpContent() {
             router.push(redirectUrl ? decodeURIComponent(redirectUrl) : '/')
         } catch (error) {
             console.error(error)
-            toast.error(error instanceof Error ? error.message : 'Sign up failed')
+            toast.error(error instanceof Error ? error.message : 'Sign up fail')
             setIsLoading(false)
         }
     }
