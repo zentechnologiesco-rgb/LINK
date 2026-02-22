@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card } from '@/components/ui/card'
-import { Eraser, Check, Type, PenTool } from 'lucide-react'
+import { Eraser, Check, Type, PenTool, RotateCcw } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface SignatureCanvasProps {
     onSignatureChange: (signatureData: string | null) => void
@@ -36,8 +37,8 @@ export function SignatureCanvas({ onSignatureChange, initialSignature, disabled 
         ctx.scale(2, 2)
 
         // Set drawing styles
-        ctx.strokeStyle = '#1a1a2e'
-        ctx.lineWidth = 2
+        ctx.strokeStyle = '#000000'
+        ctx.lineWidth = 3
         ctx.lineCap = 'round'
         ctx.lineJoin = 'round'
 
@@ -57,14 +58,14 @@ export function SignatureCanvas({ onSignatureChange, initialSignature, disabled 
         if (!canvas) return { x: 0, y: 0 }
 
         const rect = canvas.getBoundingClientRect()
-        
+
         if ('touches' in e) {
             return {
                 x: e.touches[0].clientX - rect.left,
                 y: e.touches[0].clientY - rect.top
             }
         }
-        
+
         return {
             x: e.clientX - rect.left,
             y: e.clientY - rect.top
@@ -73,7 +74,7 @@ export function SignatureCanvas({ onSignatureChange, initialSignature, disabled 
 
     const startDrawing = useCallback((e: React.MouseEvent | React.TouchEvent) => {
         if (disabled) return
-        
+
         const canvas = canvasRef.current
         const ctx = canvas?.getContext('2d')
         if (!ctx) return
@@ -99,9 +100,9 @@ export function SignatureCanvas({ onSignatureChange, initialSignature, disabled 
 
     const stopDrawing = useCallback(() => {
         if (!isDrawing) return
-        
+
         setIsDrawing(false)
-        
+
         // Save signature data
         const canvas = canvasRef.current
         if (canvas && hasSignature) {
@@ -138,7 +139,7 @@ export function SignatureCanvas({ onSignatureChange, initialSignature, disabled 
 
         // Draw typed signature with cursive-style font
         ctx.font = 'italic 32px "Brush Script MT", cursive, Georgia, serif'
-        ctx.fillStyle = '#1a1a2e'
+        ctx.fillStyle = '#000000'
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
         ctx.fillText(typedName, rect.width / 2, rect.height / 2)
@@ -157,7 +158,9 @@ export function SignatureCanvas({ onSignatureChange, initialSignature, disabled 
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <Label className="text-base font-semibold">Your Signature</Label>
+                <Label className="font-[family-name:var(--font-anton)] uppercase tracking-wide text-lg text-black">
+                    Your Signature
+                </Label>
                 {hasSignature && (
                     <Button
                         type="button"
@@ -165,33 +168,34 @@ export function SignatureCanvas({ onSignatureChange, initialSignature, disabled 
                         size="sm"
                         onClick={clearSignature}
                         disabled={disabled}
-                        className="text-red-500 hover:text-red-600"
+                        className="text-black/40 hover:text-black hover:bg-black/5 rounded-full px-3 h-8 text-xs font-bold uppercase tracking-wider"
                     >
-                        <Eraser className="h-4 w-4 mr-1" />
-                        Clear
+                        <RotateCcw className="h-3 w-3 mr-1.5" />
+                        Reset
                     </Button>
                 )}
             </div>
 
             <Tabs value={mode} onValueChange={(v) => setMode(v as 'draw' | 'type')}>
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="draw" disabled={disabled}>
+                <TabsList className="grid w-full grid-cols-2 rounded-full p-1 bg-black/5">
+                    <TabsTrigger value="draw" disabled={disabled} className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-none">
                         <PenTool className="h-4 w-4 mr-2" />
                         Draw
                     </TabsTrigger>
-                    <TabsTrigger value="type" disabled={disabled}>
+                    <TabsTrigger value="type" disabled={disabled} className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-none">
                         <Type className="h-4 w-4 mr-2" />
                         Type
                     </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="draw" className="mt-4">
-                    <Card className="p-1">
+                <TabsContent value="draw" className="mt-4 group relative">
+                    <Card className="p-0 border-0 rounded-2xl overflow-hidden ring-1 ring-black/10 bg-white shadow-none">
                         <canvas
                             ref={canvasRef}
-                            className={`w-full h-32 border-2 border-dashed rounded-lg bg-white cursor-crosshair touch-none ${
-                                disabled ? 'opacity-50 cursor-not-allowed' : ''
-                            }`}
+                            className={cn(
+                                "w-full h-40 bg-white cursor-crosshair touch-none transition-colors",
+                                disabled ? "opacity-50 cursor-not-allowed" : "group-hover:bg-gray-50"
+                            )}
                             onMouseDown={startDrawing}
                             onMouseMove={draw}
                             onMouseUp={stopDrawing}
@@ -200,9 +204,16 @@ export function SignatureCanvas({ onSignatureChange, initialSignature, disabled 
                             onTouchMove={draw}
                             onTouchEnd={stopDrawing}
                         />
+                        {!hasSignature && !disabled && (
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <p className="text-black/20 font-[family-name:var(--font-anton)] text-xl uppercase tracking-widest select-none">
+                                    Sign Here
+                                </p>
+                            </div>
+                        )}
                     </Card>
-                    <p className="text-xs text-muted-foreground mt-2">
-                        Draw your signature using your mouse or finger (on touch devices)
+                    <p className="text-xs text-black/40 mt-2 font-medium text-center">
+                        Draw your signature using your mouse or finger
                     </p>
                 </TabsContent>
 
@@ -213,24 +224,24 @@ export function SignatureCanvas({ onSignatureChange, initialSignature, disabled 
                         value={typedName}
                         onChange={(e) => setTypedName(e.target.value)}
                         disabled={disabled}
-                        className="text-lg"
+                        className="text-lg rounded-xl border-black/10 focus-visible:ring-black bg-white h-12"
                     />
-                    <Card className="p-1">
+                    <Card className="p-0 border-0 rounded-2xl overflow-hidden ring-1 ring-black/10 bg-white">
                         <canvas
                             ref={canvasRef}
-                            className="w-full h-32 border-2 border-dashed rounded-lg bg-white"
+                            className="w-full h-32 bg-white"
                         />
                     </Card>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-black/40 text-center font-medium">
                         Your typed name will be rendered as a signature
                     </p>
                 </TabsContent>
             </Tabs>
 
             {hasSignature && (
-                <div className="flex items-center gap-2 text-green-600 text-sm">
+                <div className="flex items-center justify-center gap-2 text-black font-bold text-sm bg-black/5 py-2 rounded-full">
                     <Check className="h-4 w-4" />
-                    Signature captured
+                    Signature Captured
                 </div>
             )}
         </div>

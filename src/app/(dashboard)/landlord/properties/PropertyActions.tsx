@@ -21,9 +21,11 @@ import {
 } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from 'sonner'
-import { togglePropertyAvailability, deleteProperty, requestPropertyApproval } from '../actions'
 import { AssignTenantDialog } from '@/components/properties/AssignTenantDialog'
 import { MoreHorizontal, Eye, Edit, Trash2, ToggleLeft, ToggleRight, Loader2, Send, AlertCircle, UserPlus } from 'lucide-react'
+import { useMutation } from "convex/react"
+import { api } from "../../../../../convex/_generated/api"
+import { Id } from "../../../../../convex/_generated/dataModel"
 
 interface PropertyActionsProps {
     propertyId: string
@@ -57,6 +59,10 @@ export function PropertyActions({
     const canToggleAvailability = approvalStatus === 'approved' && !hasActiveLease
     const canAssignTenant = approvalStatus === 'approved' && !hasActiveLease
 
+    const updateProperty = useMutation(api.properties.update)
+    const deleteProperty = useMutation(api.properties.remove)
+    const requestApproval = useMutation(api.properties.requestApproval)
+
     const handleToggleAvailability = async () => {
         if (!canToggleAvailability) {
             if (hasActiveLease) {
@@ -68,41 +74,43 @@ export function PropertyActions({
         }
 
         setIsToggling(true)
-        const result = await togglePropertyAvailability(propertyId, !isAvailable)
-
-        if (result?.error) {
-            toast.error(result.error)
-        } else {
+        try {
+            await updateProperty({
+                propertyId: propertyId as Id<"properties">,
+                isAvailable: !isAvailable
+            })
             toast.success(isAvailable ? 'Property unlisted' : 'Property listed')
-            router.refresh()
+            // router.refresh() // Convex updates automatically
+        } catch (error) {
+            toast.error('Failed to update property status')
+        } finally {
+            setIsToggling(false)
         }
-        setIsToggling(false)
     }
 
     const handleRequestApproval = async () => {
         setIsRequestingApproval(true)
-        const result = await requestPropertyApproval(propertyId)
-
-        if (result?.error) {
-            toast.error(result.error)
-        } else {
+        try {
+            await requestApproval({ propertyId: propertyId as Id<"properties"> })
             toast.success('Approval request submitted successfully')
-            router.refresh()
+            // router.refresh()
+        } catch (error) {
+            toast.error('Failed to request approval')
+        } finally {
+            setIsRequestingApproval(false)
         }
-        setIsRequestingApproval(false)
     }
 
     const handleDelete = async () => {
         setIsDeleting(true)
-        const result = await deleteProperty(propertyId)
-
-        if (result?.error) {
-            toast.error(result.error)
-            setIsDeleting(false)
-        } else {
+        try {
+            await deleteProperty({ propertyId: propertyId as Id<"properties"> })
             toast.success('Property deleted successfully')
             setDeleteDialogOpen(false)
-            router.refresh()
+            router.refresh() // Might need to redirect if verifying list
+        } catch (error) {
+            toast.error('Failed to delete property')
+            setIsDeleting(false)
         }
     }
 
@@ -110,48 +118,48 @@ export function PropertyActions({
         <>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-black/60 hover:text-black hover:bg-black/5 rounded-full shadow-none">
+                        <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} />
                         <span className="sr-only">Open menu</span>
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                        <Link href={`/properties/${propertyId}`} className="flex items-center cursor-pointer">
-                            <Eye className="mr-2 h-4 w-4" />
+                <DropdownMenuContent align="end" className="rounded-xl border-black/5 shadow-none border p-1.5 min-w-[200px]">
+                    <DropdownMenuItem asChild className="rounded-lg focus:bg-black/5 cursor-pointer py-2">
+                        <Link href={`/properties/${propertyId}`} className="flex items-center font-medium">
+                            <Eye className="mr-2 h-4 w-4 text-black/60" strokeWidth={1.5} />
                             View Listing
                         </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                        <Link href={`/landlord/properties/${propertyId}/edit`} className="flex items-center cursor-pointer">
-                            <Edit className="mr-2 h-4 w-4" />
+                    <DropdownMenuItem asChild className="rounded-lg focus:bg-black/5 cursor-pointer py-2">
+                        <Link href={`/landlord/properties/${propertyId}/edit`} className="flex items-center font-medium">
+                            <Edit className="mr-2 h-4 w-4 text-black/60" strokeWidth={1.5} />
                             Edit Property
                         </Link>
                     </DropdownMenuItem>
 
                     {/* View Active Lease */}
                     {activeLeaseId && (
-                        <DropdownMenuItem asChild>
-                            <Link href={`/landlord/leases/${activeLeaseId}`} className="flex items-center cursor-pointer text-blue-600">
-                                <Eye className="mr-2 h-4 w-4" />
+                        <DropdownMenuItem asChild className="rounded-lg focus:bg-black/5 cursor-pointer py-2">
+                            <Link href={`/landlord/leases/${activeLeaseId}`} className="flex items-center font-medium">
+                                <Eye className="mr-2 h-4 w-4 text-black/60" strokeWidth={1.5} />
                                 View Lease
                             </Link>
                         </DropdownMenuItem>
                     )}
 
-                    <DropdownMenuSeparator />
+                    <DropdownMenuSeparator className="bg-black/5" />
 
                     {/* Assign Tenant - for approved properties without active lease */}
                     {canAssignTenant && (
                         <>
                             <DropdownMenuItem
                                 onClick={() => setAssignTenantDialogOpen(true)}
-                                className="text-green-600 cursor-pointer font-medium"
+                                className="rounded-lg focus:bg-black/5 cursor-pointer py-2 font-medium"
                             >
-                                <UserPlus className="mr-2 h-4 w-4" />
+                                <UserPlus className="mr-2 h-4 w-4 text-black/60" strokeWidth={1.5} />
                                 Assign Tenant
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
+                            <DropdownMenuSeparator className="bg-black/5" />
                         </>
                     )}
 
@@ -160,12 +168,12 @@ export function PropertyActions({
                         <>
                             <DropdownMenuItem
                                 onClick={() => setRejectionDialogOpen(true)}
-                                className="text-red-600 cursor-pointer"
+                                className="rounded-lg focus:bg-black/5 cursor-pointer py-2 font-medium"
                             >
-                                <AlertCircle className="mr-2 h-4 w-4" />
+                                <AlertCircle className="mr-2 h-4 w-4 text-black/60" strokeWidth={1.5} />
                                 View Rejection Reason
                             </DropdownMenuItem>
-                            <DropdownMenuSeparator />
+                            <DropdownMenuSeparator className="bg-black/5" />
                         </>
                     )}
 
@@ -174,12 +182,12 @@ export function PropertyActions({
                         <DropdownMenuItem
                             onClick={handleRequestApproval}
                             disabled={isRequestingApproval}
-                            className="text-blue-600 cursor-pointer"
+                            className="rounded-lg focus:bg-black/5 cursor-pointer py-2 font-medium"
                         >
                             {isRequestingApproval ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin text-black/60" strokeWidth={1.5} />
                             ) : (
-                                <Send className="mr-2 h-4 w-4" />
+                                <Send className="mr-2 h-4 w-4 text-black/60" strokeWidth={1.5} />
                             )}
                             Request Re-approval
                         </DropdownMenuItem>
@@ -189,26 +197,26 @@ export function PropertyActions({
                     <DropdownMenuItem
                         onClick={handleToggleAvailability}
                         disabled={isToggling || !canToggleAvailability}
-                        className={`cursor-pointer ${!canToggleAvailability ? 'opacity-50' : ''}`}
+                        className={`rounded-lg focus:bg-black/5 cursor-pointer py-2 font-medium ${!canToggleAvailability ? 'opacity-50' : ''}`}
                     >
                         {isToggling ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin text-black/60" strokeWidth={1.5} />
                         ) : isAvailable ? (
-                            <ToggleLeft className="mr-2 h-4 w-4" />
+                            <ToggleLeft className="mr-2 h-4 w-4 text-black/60" strokeWidth={1.5} />
                         ) : (
-                            <ToggleRight className="mr-2 h-4 w-4" />
+                            <ToggleRight className="mr-2 h-4 w-4 text-black/60" strokeWidth={1.5} />
                         )}
                         {isAvailable ? 'Unlist Property' : 'List Property'}
                         {!canToggleAvailability && approvalStatus === 'pending' && ' (Pending)'}
                         {!canToggleAvailability && approvalStatus === 'rejected' && ' (Rejected)'}
                     </DropdownMenuItem>
 
-                    <DropdownMenuSeparator />
+                    <DropdownMenuSeparator className="bg-black/5" />
                     <DropdownMenuItem
                         onClick={() => setDeleteDialogOpen(true)}
-                        className="text-red-600 focus:text-red-600 cursor-pointer"
+                        className="rounded-lg focus:bg-red-50 text-red-600 focus:text-red-700 cursor-pointer py-2 font-medium"
                     >
-                        <Trash2 className="mr-2 h-4 w-4" />
+                        <Trash2 className="mr-2 h-4 w-4" strokeWidth={1.5} />
                         Delete Property
                     </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -225,30 +233,35 @@ export function PropertyActions({
 
             {/* Rejection Reason Dialog */}
             <Dialog open={rejectionDialogOpen} onOpenChange={setRejectionDialogOpen}>
-                <DialogContent>
+                <DialogContent className="sm:max-w-md rounded-3xl border-black/5 shadow-none border">
                     <DialogHeader>
-                        <DialogTitle>Property Rejected</DialogTitle>
+                        <DialogTitle className="font-[family-name:var(--font-anton)] uppercase tracking-wide text-xl">Property Rejected</DialogTitle>
                         <DialogDescription>
                             Your property was not approved. Please review the reason below and make necessary changes before resubmitting.
                         </DialogDescription>
                     </DialogHeader>
-                    <Alert variant="destructive">
+                    <Alert variant="destructive" className="rounded-xl shadow-none">
                         <AlertCircle className="h-4 w-4" />
                         <AlertDescription>
                             {adminNotes || 'No specific reason provided.'}
                         </AlertDescription>
                     </Alert>
                     <DialogFooter>
-                        <Button onClick={() => setRejectionDialogOpen(false)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => setRejectionDialogOpen(false)}
+                            className="rounded-full border-black/10 font-bold uppercase tracking-wider text-xs shadow-none"
+                        >
                             Close
                         </Button>
                         <Button
-                            variant="outline"
+                            variant="default"
                             onClick={() => {
                                 setRejectionDialogOpen(false)
                                 handleRequestApproval()
                             }}
                             disabled={isRequestingApproval}
+                            className="bg-black hover:bg-black/90 text-white rounded-full font-bold uppercase tracking-wider text-xs shadow-none"
                         >
                             {isRequestingApproval && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Request Re-approval
@@ -259,9 +272,9 @@ export function PropertyActions({
 
             {/* Delete Confirmation Dialog */}
             <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <DialogContent>
+                <DialogContent className="sm:max-w-md rounded-3xl border-black/5 shadow-none border">
                     <DialogHeader>
-                        <DialogTitle>Delete Property</DialogTitle>
+                        <DialogTitle className="font-[family-name:var(--font-anton)] uppercase tracking-wide text-xl">Delete Property</DialogTitle>
                         <DialogDescription>
                             Are you sure you want to delete this property? This action cannot be undone.
                             All associated inquiries and data will also be removed.
@@ -272,6 +285,7 @@ export function PropertyActions({
                             variant="outline"
                             onClick={() => setDeleteDialogOpen(false)}
                             disabled={isDeleting}
+                            className="rounded-full border-black/10 font-bold uppercase tracking-wider text-xs shadow-none"
                         >
                             Cancel
                         </Button>
@@ -279,6 +293,7 @@ export function PropertyActions({
                             variant="destructive"
                             onClick={handleDelete}
                             disabled={isDeleting}
+                            className="rounded-full font-bold uppercase tracking-wider text-xs bg-red-600 hover:bg-red-700 shadow-none"
                         >
                             {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Delete Property

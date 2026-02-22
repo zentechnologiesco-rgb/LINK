@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Plus, Trash2, GripVertical } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export interface LeaseClause {
     id: string
@@ -140,22 +141,23 @@ export function LeaseBuilder({ initialData, onDataChange, disabled }: LeaseBuild
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
             {/* Document Title */}
-            <Card>
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">Document Details</CardTitle>
+            <Card className="border-neutral-200 shadow-sm shadow-neutral-900/5 rounded-2xl overflow-hidden bg-white">
+                <CardHeader className="pb-4 border-b border-neutral-100 bg-white">
+                    <CardTitle className="text-lg font-bold uppercase tracking-wide text-neutral-900 font-mono">Document Details</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="title">Lease Title</Label>
+                            <Label htmlFor="title" className="text-xs font-bold uppercase tracking-wide text-neutral-500">Lease Title</Label>
                             <Input
                                 id="title"
                                 value={data.title}
                                 onChange={(e) => updateData({ title: e.target.value })}
                                 disabled={disabled}
                                 placeholder="e.g., Residential Lease Agreement"
+                                className="h-12 rounded-xl border-neutral-200 focus-visible:ring-neutral-900 bg-neutral-50"
                             />
                         </div>
                     </div>
@@ -163,27 +165,28 @@ export function LeaseBuilder({ initialData, onDataChange, disabled }: LeaseBuild
             </Card>
 
             {/* Lease Clauses */}
-            <Card>
-                <CardHeader className="pb-3">
+            <Card className="border-neutral-200 shadow-sm shadow-neutral-900/5 rounded-2xl overflow-hidden bg-white">
+                <CardHeader className="pb-4 border-b border-neutral-100 bg-white">
                     <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">Lease Clauses</CardTitle>
+                        <CardTitle className="text-lg font-bold uppercase tracking-wide text-neutral-900 font-mono">Lease Clauses</CardTitle>
                         <Button
                             type="button"
                             variant="outline"
                             size="sm"
                             onClick={addClause}
                             disabled={disabled}
+                            className="bg-white border-neutral-200 hover:bg-neutral-50 text-neutral-900 font-medium rounded-lg"
                         >
                             <Plus className="h-4 w-4 mr-1" />
                             Add Clause
                         </Button>
                     </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 pt-6">
                     {data.clauses.map((clause, index) => (
-                        <div key={clause.id} className="relative border rounded-lg p-4 space-y-3">
-                            <div className="flex items-start gap-3">
-                                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 text-sm font-medium">
+                        <div key={clause.id} className="relative border border-neutral-200 rounded-xl p-4 space-y-3 bg-white hover:border-neutral-300 transition-colors group">
+                            <div className="flex items-start gap-4">
+                                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-neutral-900 text-white text-xs font-bold shrink-0">
                                     {index + 1}
                                 </div>
                                 <div className="flex-1 space-y-3">
@@ -191,7 +194,7 @@ export function LeaseBuilder({ initialData, onDataChange, disabled }: LeaseBuild
                                         value={clause.title}
                                         onChange={(e) => updateClause(clause.id, { title: e.target.value })}
                                         disabled={disabled}
-                                        className="font-medium"
+                                        className="font-bold border-transparent px-0 h-auto text-lg focus-visible:ring-0 focus-visible:border-neutral-300 rounded-none border-b hover:border-neutral-200 transition-colors text-neutral-900 placeholder:text-neutral-300"
                                         placeholder="Clause Title"
                                     />
                                     <Textarea
@@ -200,6 +203,7 @@ export function LeaseBuilder({ initialData, onDataChange, disabled }: LeaseBuild
                                         disabled={disabled}
                                         placeholder="Clause content..."
                                         rows={3}
+                                        className="resize-none border-neutral-200 focus-visible:ring-neutral-900 bg-neutral-50 rounded-xl text-neutral-600"
                                     />
                                 </div>
                                 {!clause.isRequired && (
@@ -209,15 +213,15 @@ export function LeaseBuilder({ initialData, onDataChange, disabled }: LeaseBuild
                                         size="sm"
                                         onClick={() => removeClause(clause.id)}
                                         disabled={disabled}
-                                        className="text-red-500 hover:text-red-600"
+                                        className="text-neutral-300 hover:text-red-600 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
                                     >
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
                                 )}
                             </div>
                             {clause.isRequired && (
-                                <p className="text-xs text-muted-foreground ml-11">
-                                    * Required clause (cannot be removed)
+                                <p className="text-[10px] uppercase font-bold text-neutral-300 ml-12 tracking-wider">
+                                    * Required clause
                                 </p>
                             )}
                         </div>
@@ -226,20 +230,20 @@ export function LeaseBuilder({ initialData, onDataChange, disabled }: LeaseBuild
             </Card>
 
             {/* Property Rules */}
-            <Card>
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">Property Rules & Policies</CardTitle>
+            <Card className="border-neutral-200 shadow-sm shadow-neutral-900/5 rounded-2xl overflow-hidden bg-white">
+                <CardHeader className="pb-4 border-b border-neutral-100 bg-white">
+                    <CardTitle className="text-lg font-bold uppercase tracking-wide text-neutral-900 font-mono">Property Rules & Policies</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-8 pt-6">
                     {/* Pet Policy */}
-                    <div className="space-y-2">
-                        <Label>Pet Policy</Label>
+                    <div className="space-y-3">
+                        <Label className="text-xs font-bold uppercase tracking-wide text-neutral-500">Pet Policy</Label>
                         <Select
                             value={data.petPolicy}
                             onValueChange={(value) => updateData({ petPolicy: value })}
                             disabled={disabled}
                         >
-                            <SelectTrigger>
+                            <SelectTrigger className="h-12 rounded-xl border-neutral-200 focus:ring-neutral-900 bg-neutral-50 text-neutral-900">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -253,39 +257,43 @@ export function LeaseBuilder({ initialData, onDataChange, disabled }: LeaseBuild
                         </Select>
                     </div>
 
-                    <Separator />
+                    <Separator className="bg-neutral-100" />
 
                     {/* Utilities */}
-                    <div className="space-y-3">
-                        <Label>Utilities Included in Rent</Label>
+                    <div className="space-y-4">
+                        <Label className="text-xs font-bold uppercase tracking-wide text-neutral-500">Utilities Included in Rent</Label>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                             {utilityOptions.map((utility) => (
                                 <div
                                     key={utility}
-                                    className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${data.utilitiesIncluded.includes(utility)
-                                            ? 'border-green-500 bg-green-50'
-                                            : 'border-gray-200 hover:border-gray-300'
-                                        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    className={cn(
+                                        "flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-200",
+                                        data.utilitiesIncluded.includes(utility)
+                                            ? "border-neutral-900 bg-neutral-900 text-white shadow-md transform scale-[1.02]"
+                                            : "border-neutral-200 bg-white hover:border-neutral-300 text-neutral-600 hover:bg-neutral-50",
+                                        disabled && "opacity-50 cursor-not-allowed"
+                                    )}
                                     onClick={() => !disabled && toggleUtility(utility)}
                                 >
                                     <Switch
                                         checked={data.utilitiesIncluded.includes(utility)}
                                         onCheckedChange={() => toggleUtility(utility)}
                                         disabled={disabled}
+                                        className="data-[state=checked]:bg-white data-[state=checked]:text-neutral-900"
                                     />
-                                    <span className="text-sm">{utility}</span>
+                                    <span className="text-sm font-medium">{utility}</span>
                                 </div>
                             ))}
                         </div>
                     </div>
 
-                    <Separator />
+                    <Separator className="bg-neutral-100" />
 
                     {/* Parking */}
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl border border-neutral-100">
                         <div>
-                            <Label>Parking Included</Label>
-                            <p className="text-sm text-muted-foreground">
+                            <Label className="text-sm font-bold text-neutral-900">Parking Included</Label>
+                            <p className="text-xs text-neutral-500 font-medium mt-0.5">
                                 Does this property include parking?
                             </p>
                         </div>
@@ -293,14 +301,15 @@ export function LeaseBuilder({ initialData, onDataChange, disabled }: LeaseBuild
                             checked={data.parkingIncluded}
                             onCheckedChange={(checked) => updateData({ parkingIncluded: checked })}
                             disabled={disabled}
+                            className="data-[state=checked]:bg-neutral-900"
                         />
                     </div>
 
-                    <Separator />
+                    <Separator className="bg-neutral-100" />
 
                     {/* Maintenance */}
-                    <div className="space-y-2">
-                        <Label>Maintenance Responsibility</Label>
+                    <div className="space-y-3">
+                        <Label className="text-xs font-bold uppercase tracking-wide text-neutral-500">Maintenance Responsibility</Label>
                         <Select
                             value={data.maintenanceResponsibility}
                             onValueChange={(value: 'landlord' | 'tenant' | 'shared') =>
@@ -308,7 +317,7 @@ export function LeaseBuilder({ initialData, onDataChange, disabled }: LeaseBuild
                             }
                             disabled={disabled}
                         >
-                            <SelectTrigger>
+                            <SelectTrigger className="h-12 rounded-xl border-neutral-200 focus:ring-neutral-900 bg-neutral-50 text-neutral-900">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -322,39 +331,45 @@ export function LeaseBuilder({ initialData, onDataChange, disabled }: LeaseBuild
             </Card>
 
             {/* Terms & Fees */}
-            <Card>
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">Terms & Fees</CardTitle>
+            <Card className="border-neutral-200 shadow-sm shadow-neutral-900/5 rounded-2xl overflow-hidden bg-white">
+                <CardHeader className="pb-4 border-b border-neutral-100 bg-white">
+                    <CardTitle className="text-lg font-bold uppercase tracking-wide text-neutral-900 font-mono">Terms & Fees</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <CardContent className="pt-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label htmlFor="noticePeriod">Notice Period (Days)</Label>
-                            <Input
-                                id="noticePeriod"
-                                type="number"
-                                min={7}
-                                max={90}
-                                value={data.noticePeriodDays}
-                                onChange={(e) => updateData({ noticePeriodDays: parseInt(e.target.value) || 30 })}
-                                disabled={disabled}
-                            />
-                            <p className="text-xs text-muted-foreground">
+                            <Label htmlFor="noticePeriod" className="text-xs font-bold uppercase tracking-wide text-neutral-500">Notice Period (Days)</Label>
+                            <div className="relative">
+                                <Input
+                                    id="noticePeriod"
+                                    type="number"
+                                    min={7}
+                                    max={90}
+                                    value={data.noticePeriodDays}
+                                    onChange={(e) => updateData({ noticePeriodDays: parseInt(e.target.value) || 30 })}
+                                    disabled={disabled}
+                                    className="h-12 rounded-xl border-neutral-200 focus-visible:ring-neutral-900 bg-neutral-50"
+                                />
+                            </div>
+                            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">
                                 Days required for termination notice
                             </p>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="lateFee">Late Payment Fee (%)</Label>
-                            <Input
-                                id="lateFee"
-                                type="number"
-                                min={0}
-                                max={20}
-                                value={data.lateFeePercentage}
-                                onChange={(e) => updateData({ lateFeePercentage: parseInt(e.target.value) || 0 })}
-                                disabled={disabled}
-                            />
-                            <p className="text-xs text-muted-foreground">
+                            <Label htmlFor="lateFee" className="text-xs font-bold uppercase tracking-wide text-neutral-500">Late Payment Fee (%)</Label>
+                            <div className="relative">
+                                <Input
+                                    id="lateFee"
+                                    type="number"
+                                    min={0}
+                                    max={20}
+                                    value={data.lateFeePercentage}
+                                    onChange={(e) => updateData({ lateFeePercentage: parseInt(e.target.value) || 0 })}
+                                    disabled={disabled}
+                                    className="h-12 rounded-xl border-neutral-200 focus-visible:ring-neutral-900 bg-neutral-50"
+                                />
+                            </div>
+                            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wide">
                                 Percentage of rent charged for late payment
                             </p>
                         </div>
@@ -363,17 +378,18 @@ export function LeaseBuilder({ initialData, onDataChange, disabled }: LeaseBuild
             </Card>
 
             {/* Special Conditions */}
-            <Card>
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">Special Conditions</CardTitle>
+            <Card className="border-neutral-200 shadow-sm shadow-neutral-900/5 rounded-2xl overflow-hidden bg-white">
+                <CardHeader className="pb-4 border-b border-neutral-100 bg-white">
+                    <CardTitle className="text-lg font-bold uppercase tracking-wide text-neutral-900 font-mono">Special Conditions</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                     <Textarea
                         value={data.specialConditions}
                         onChange={(e) => updateData({ specialConditions: e.target.value })}
                         disabled={disabled}
                         placeholder="Add any special conditions or notes specific to this lease agreement..."
                         rows={4}
+                        className="resize-none border-neutral-200 focus-visible:ring-neutral-900 bg-neutral-50 rounded-xl"
                     />
                 </CardContent>
             </Card>

@@ -1,14 +1,24 @@
-import { notFound, redirect } from 'next/navigation'
+'use client'
+
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
-import { createClient } from '@/lib/supabase/server'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { getAdminRequestById } from '@/lib/verification'
 import { RequestActions } from './RequestActions'
 import { ArrowLeft, User, Building2, CreditCard, ClipboardList, CheckCircle2, XCircle, Clock, Calendar, MessageSquare } from 'lucide-react'
 import { format } from 'date-fns'
+import { useQuery } from "convex/react"
+import { api } from "../../../../../../convex/_generated/api"
+import { Id } from "../../../../../../convex/_generated/dataModel"
+
+import { use } from 'react'
+
+interface Props {
+    params: Promise<{ id: string }>
+}
 
 // Status configuration
 const statusConfig = {
@@ -29,28 +39,33 @@ const statusConfig = {
     },
 }
 
-export default async function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
-    const supabase = await createClient()
-    const resolvedParams = await params
+function RequestDetailContent({ id }: { id: string }) {
+    const currentUser = useQuery(api.users.currentUser)
+    const request = useQuery(api.verification.getByIdAdmin, { requestId: id as Id<"landlordRequests"> })
 
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-        redirect('/sign-in')
+    if (currentUser === undefined || request === undefined) {
+        return (
+            <div className="p-6">
+                <div className="animate-pulse space-y-4">
+                    <div className="h-12 w-64 bg-gray-200 rounded" />
+                    <div className="grid grid-cols-3 gap-6">
+                        <div className="h-96 bg-gray-100 rounded-xl" />
+                        <div className="col-span-2 h-96 bg-gray-100 rounded-xl" />
+                    </div>
+                </div>
+            </div>
+        )
     }
 
-    // Check if user is admin
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-    if (profile?.role !== 'admin') {
-        redirect('/')
+    if (!currentUser || currentUser.role !== 'admin') {
+        return (
+            <div className="p-6">
+                <div className="text-center py-16">
+                    <p className="text-gray-500">Access denied. Admin privileges required.</p>
+                </div>
+            </div>
+        )
     }
-
-    const request = await getAdminRequestById(resolvedParams.id)
 
     if (!request) {
         notFound()
@@ -79,18 +94,18 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                                 <StatusIcon className="h-3 w-3" />
                                 {statusConfig[status]?.label || request.status}
                             </Badge>
-                            {documents?.is_resubmission && (
+                            {documents?.isResubmission && (
                                 <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
                                     Resubmission
                                 </Badge>
                             )}
                         </div>
                         <p className="text-muted-foreground mt-1">
-                            Submitted on {format(new Date(request.created_at), 'PPP p')}
+                            Submitted on {format(new Date(request._creationTime), 'PPP p')}
                         </p>
                     </div>
                     {request.status === 'pending' && (
-                        <RequestActions requestId={request.id} />
+                        <RequestActions requestId={request._id} />
                     )}
                 </div>
             </div>
@@ -106,17 +121,11 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex items-center gap-4">
-                                <div className="h-16 w-16 rounded-full bg-gray-100 relative overflow-hidden shrink-0">
-                                    {applicant?.avatar_url ? (
-                                        <Image src={applicant.avatar_url} alt="Profile" fill className="object-cover" />
-                                    ) : (
-                                        <div className="flex h-full w-full items-center justify-center text-gray-400">
-                                            <User className="h-8 w-8" />
-                                        </div>
-                                    )}
+                                <div className="h-16 w-16 rounded-full bg-gray-100 relative overflow-hidden shrink-0 flex items-center justify-center">
+                                    <User className="h-8 w-8 text-gray-400" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="font-semibold truncate">{applicant?.full_name || 'No Name'}</p>
+                                    <p className="font-semibold truncate">{applicant?.fullName || 'No Name'}</p>
                                     <p className="text-sm text-muted-foreground truncate">{applicant?.email}</p>
                                     <p className="text-sm text-muted-foreground">{applicant?.phone || 'No phone'}</p>
                                 </div>
@@ -133,11 +142,11 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                         <CardContent className="space-y-4">
                             <div>
                                 <p className="text-sm font-medium text-muted-foreground">Business Name</p>
-                                <p>{documents.business_name || 'N/A'}</p>
+                                <p>{documents.businessName || 'N/A'}</p>
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-muted-foreground">Registration Number</p>
-                                <p>{documents.business_registration || 'N/A'}</p>
+                                <p>{documents.businessRegistration || 'N/A'}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -151,11 +160,11 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                         <CardContent className="space-y-4">
                             <div>
                                 <p className="text-sm font-medium text-muted-foreground">ID Type</p>
-                                <p className="capitalize">{documents.id_type?.replace('_', ' ') || 'N/A'}</p>
+                                <p className="capitalize">{documents.idType?.replace('_', ' ') || 'N/A'}</p>
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-muted-foreground">ID Number</p>
-                                <p>{documents.id_number || 'N/A'}</p>
+                                <p>{documents.idNumber || 'N/A'}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -179,22 +188,64 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                                         )}
                                     </p>
                                 </div>
-                                {request.reviewed_at && (
+                                {request.reviewedAt && (
                                     <div>
                                         <p className="text-sm font-medium text-muted-foreground">Reviewed On</p>
-                                        <p>{format(new Date(request.reviewed_at), 'PPP p')}</p>
+                                        <p>{format(new Date(request.reviewedAt), 'PPP p')}</p>
                                     </div>
                                 )}
-                                {request.admin_notes && request.status === 'rejected' && (
+                                {(request as any).reviewer && (
+                                    <div>
+                                        <p className="text-sm font-medium text-muted-foreground">Reviewed By</p>
+                                        <p>{(request as any).reviewer.fullName || (request as any).reviewer.email}</p>
+                                    </div>
+                                )}
+                                {request.adminNotes && request.status === 'rejected' && (
                                     <div>
                                         <p className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                                             <MessageSquare className="h-4 w-4" /> Rejection Reason
                                         </p>
                                         <p className="text-sm mt-1 p-3 bg-red-50 text-red-700 rounded-md border border-red-100">
-                                            {request.admin_notes}
+                                            {request.adminNotes}
                                         </p>
                                     </div>
                                 )}
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Previous Requests History */}
+                    {(request as any).previousRequests && (request as any).previousRequests.length > 0 && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Clock className="h-5 w-5" /> History
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {(request as any).previousRequests.map((prev: any, index: number) => (
+                                    <div key={prev._id} className="relative pl-4 border-l-2 border-muted pb-1 last:pb-0">
+                                        <div className="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full bg-muted" />
+                                        <div className="mb-1">
+                                            <Badge variant="outline" className="mb-1 bg-red-50 text-red-700 border-red-200">
+                                                Rejected
+                                            </Badge>
+                                            <span className="text-xs text-muted-foreground ml-2">
+                                                {format(new Date(prev.submittedAt), 'MMM d, yyyy')}
+                                            </span>
+                                        </div>
+                                        {prev.adminNotes && (
+                                            <p className="text-sm bg-muted/50 p-2 rounded text-muted-foreground">
+                                                "{prev.adminNotes}"
+                                            </p>
+                                        )}
+                                        {prev.reviewerName && (
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                Reviewed by {prev.reviewerName}
+                                            </p>
+                                        )}
+                                    </div>
+                                ))}
                             </CardContent>
                         </Card>
                     )}
@@ -211,10 +262,10 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                             <div>
                                 <h3 className="text-sm font-medium mb-3">Front of ID</h3>
                                 <div className="relative aspect-[16/9] w-full bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                                    {documents.id_front_url ? (
-                                        <Link href={documents.id_front_url} target="_blank">
-                                            <Image
-                                                src={documents.id_front_url}
+                                    {documents.idFrontUrl ? (
+                                        <Link href={documents.idFrontUrl} target="_blank" className="block relative h-full w-full">
+                                            <OptimizedImage
+                                                src={documents.idFrontUrl}
                                                 alt="ID Front"
                                                 fill
                                                 className="object-contain hover:scale-105 transition-transform cursor-zoom-in"
@@ -233,10 +284,10 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                             <div>
                                 <h3 className="text-sm font-medium mb-3">Back of ID</h3>
                                 <div className="relative aspect-[16/9] w-full bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                                    {documents.id_back_url ? (
-                                        <Link href={documents.id_back_url} target="_blank">
-                                            <Image
-                                                src={documents.id_back_url}
+                                    {documents.idBackUrl ? (
+                                        <Link href={documents.idBackUrl} target="_blank" className="block relative h-full w-full">
+                                            <OptimizedImage
+                                                src={documents.idBackUrl}
                                                 alt="ID Back"
                                                 fill
                                                 className="object-contain hover:scale-105 transition-transform cursor-zoom-in"
@@ -255,4 +306,9 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
             </div>
         </div>
     )
+}
+
+export default function RequestDetailPage({ params }: Props) {
+    const { id } = use(params)
+    return <RequestDetailContent id={id} />
 }

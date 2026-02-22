@@ -14,11 +14,13 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { approveProperty, rejectProperty } from '../actions'
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import { useMutation } from "convex/react"
+import { api } from "../../../../../../convex/_generated/api"
+import { Id } from "../../../../../../convex/_generated/dataModel"
 
 interface PropertyApprovalActionsProps {
-    propertyId: string
+    propertyId: Id<"properties">
 }
 
 export function PropertyApprovalActions({ propertyId }: PropertyApprovalActionsProps) {
@@ -28,16 +30,20 @@ export function PropertyApprovalActions({ propertyId }: PropertyApprovalActionsP
     const [rejectionNotes, setRejectionNotes] = useState('')
     const router = useRouter()
 
+    const approveProperty = useMutation(api.admin.approveProperty)
+    const rejectProperty = useMutation(api.admin.rejectProperty)
+
     const handleApprove = async () => {
         setIsApproving(true)
-        const result = await approveProperty(propertyId)
-
-        if (result?.error) {
-            toast.error(result.error)
-            setIsApproving(false)
-        } else {
+        try {
+            await approveProperty({ propertyId })
             toast.success('Property approved successfully')
             router.refresh()
+        } catch (error) {
+            toast.error('Failed to approve property')
+            console.error(error)
+        } finally {
+            setIsApproving(false)
         }
     }
 
@@ -48,15 +54,16 @@ export function PropertyApprovalActions({ propertyId }: PropertyApprovalActionsP
         }
 
         setIsRejecting(true)
-        const result = await rejectProperty(propertyId, rejectionNotes)
-
-        if (result?.error) {
-            toast.error(result.error)
-            setIsRejecting(false)
-        } else {
+        try {
+            await rejectProperty({ propertyId, reason: rejectionNotes })
             toast.success('Property rejected')
             setRejectDialogOpen(false)
             router.refresh()
+        } catch (error) {
+            toast.error('Failed to reject property')
+            console.error(error)
+        } finally {
+            setIsRejecting(false)
         }
     }
 

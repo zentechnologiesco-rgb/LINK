@@ -1,57 +1,88 @@
+'use client'
+
 import { redirect, notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 import { PropertyForm } from '@/components/properties/PropertyForm'
-import { getPropertyById } from '@/app/(dashboard)/landlord/actions'
+import { useQuery } from "convex/react"
+import { api } from "../../../../../../../convex/_generated/api"
+import { Id } from "../../../../../../../convex/_generated/dataModel"
 
-export default async function EditPropertyPage({ params }: { params: Promise<{ id: string }> }) {
-    const supabase = await createClient()
-    const resolvedParams = await params
+import { use } from 'react'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
-    const { data: { user } } = await supabase.auth.getUser()
+interface Props {
+    params: Promise<{ id: string }>
+}
 
-    if (!user) {
-        redirect('/sign-in')
+function EditPropertyContent({ id }: { id: string }) {
+    const currentUser = useQuery(api.users.currentUser)
+    const property = useQuery(api.properties.getById, { propertyId: id as Id<"properties"> })
+
+    if (currentUser === undefined || property === undefined) {
+        return (
+            <div className="min-h-[60vh] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="h-10 w-10 rounded-full border-2 border-black/10 border-t-black animate-spin" />
+                    <p className="text-sm text-black/40 font-medium">Loading property...</p>
+                </div>
+            </div>
+        )
     }
 
-    // Check if user is landlord
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
+    if (!currentUser) {
+        return (
+            <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
+                <p className="text-black/40 font-medium mb-4">Please sign in to continue</p>
+                <Link href="/sign-in">
+                    <Button className="bg-black hover:bg-black/90 text-white rounded-full font-bold uppercase tracking-wider text-xs">
+                        Sign In
+                    </Button>
+                </Link>
+            </div>
+        )
+    }
 
-    if (profile?.role !== 'landlord' && profile?.role !== 'admin') {
+    // Check if user is landlord or admin
+    if (currentUser.role !== 'landlord' && currentUser.role !== 'admin') {
         redirect('/')
     }
-
-    const property = await getPropertyById(resolvedParams.id)
 
     if (!property) {
         notFound()
     }
 
+    // Authorization: Only the landlord who owns this property can edit
+    if (property.landlordId !== currentUser._id && currentUser.role !== 'admin') {
+        redirect('/')
+    }
+
     return (
-        <div className="min-h-screen bg-gray-50/50">
-            <main className="flex-1 py-8">
-                <PropertyForm
-                    mode="edit"
-                    propertyId={property.id}
-                    initialData={{
-                        title: property.title,
-                        description: property.description,
-                        property_type: property.property_type,
-                        price_nad: property.price_nad,
-                        address: property.address,
-                        city: property.city,
-                        bedrooms: property.bedrooms,
-                        bathrooms: property.bathrooms,
-                        size_sqm: property.size_sqm,
-                        amenities: property.amenities || [],
-                        images: property.images || [],
-                        coordinates: property.coordinates,
-                    }}
-                />
-            </main>
+        <div className="px-6 py-6">
+            <PropertyForm
+                mode="edit"
+                propertyId={property._id}
+                initialData={{
+                    title: property.title,
+                    description: property.description || '',
+                    propertyType: property.propertyType,
+                    priceNad: property.priceNad,
+                    address: property.address,
+                    city: property.city,
+                    bedrooms: property.bedrooms || 0,
+                    bathrooms: property.bathrooms || 0,
+                    sizeSqm: property.sizeSqm || 0,
+                    amenityNames: property.amenityNames || [],
+                    images: property.images || [],
+                    coordinates: property.coordinates,
+                    approvalStatus: property.approvalStatus,
+                    adminNotes: property.adminNotes,
+                }}
+            />
         </div>
     )
+}
+
+export default function EditPropertyPage({ params }: Props) {
+    const { id } = use(params)
+    return <EditPropertyContent id={id} />
 }

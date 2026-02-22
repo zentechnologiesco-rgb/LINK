@@ -1,72 +1,180 @@
-import { getSavedProperties } from '@/actions/saved-properties'
-import { PropertyCard } from '@/components/properties/PropertyCard'
-import { Button } from '@/components/ui/button'
-import Link from 'next/link'
-import { Heart } from 'lucide-react'
+"use client"
 
-export default async function SavedPropertiesPage() {
-    const { data: savedProperties, error } = await getSavedProperties()
+import { useState, useMemo } from "react"
+import { useQuery } from "convex/react"
+import { api } from "../../../../../convex/_generated/api"
+import { TrustCard } from "@/components/properties/TrustCard"
+import { cn } from "@/lib/utils"
+import {
+    Search,
+    Heart,
+    ArrowUpDown,
+} from "lucide-react"
+import Link from "next/link"
 
-    if (error) {
+const SORT_OPTIONS = [
+    { id: 'newest', label: 'Recently Saved' },
+    { id: 'price-low', label: 'Price: Low to High' },
+    { id: 'price-high', label: 'Price: High to Low' },
+]
+
+export default function SavedPropertiesPage() {
+    const savedProperties = useQuery(api.savedProperties.list)
+    const [sortBy, setSortBy] = useState("newest")
+    const [showSortMenu, setShowSortMenu] = useState(false)
+
+    // Normalize Data
+    const normalizedProperties = useMemo(() => {
+        if (!savedProperties) return []
+        return savedProperties.map((p) => ({
+            id: p._id,
+            title: p.title,
+            price: p.priceNad,
+            address: p.address,
+            city: p.city || "",
+            bedrooms: p.bedrooms ?? 0,
+            bathrooms: p.bathrooms ?? 0,
+            size: p.sizeSqm ?? 0,
+            type: p.propertyType,
+            images: p.mainImage ? [p.mainImage] : [],
+            amenities: p.amenityNames || [],
+            description: p.description,
+            coordinates: null
+        }))
+    }, [savedProperties])
+
+    // Sort logic
+    const sortedProperties = useMemo(() => {
+        let result = [...normalizedProperties]
+
+        switch (sortBy) {
+            case 'price-low':
+                result.sort((a, b) => a.price - b.price)
+                break
+            case 'price-high':
+                result.sort((a, b) => b.price - a.price)
+                break
+            default:
+                break
+        }
+
+        return result
+    }, [normalizedProperties, sortBy])
+
+    if (savedProperties === undefined) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[400px] p-6 text-center">
-                <h2 className="text-xl font-semibold mb-2">Error loading saved properties</h2>
-                <p className="text-muted-foreground mb-4">
-                    {error}
-                </p>
-                <Button asChild>
-                    <Link href="/search">Browse Properties</Link>
-                </Button>
-            </div>
-        )
-    }
-
-    if (!savedProperties || savedProperties.length === 0) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[400px] p-6 text-center">
-                <div className="bg-gray-100 p-4 rounded-full mb-4">
-                    <Heart className="h-8 w-8 text-gray-400" />
+            <div className="font-sans text-neutral-900">
+                {/* Controls Skeleton */}
+                <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-neutral-100">
+                    <div className="h-4 w-20 bg-neutral-100 rounded animate-pulse" />
+                    <div className="h-9 w-24 bg-neutral-100 rounded-lg animate-pulse" />
                 </div>
-                <h2 className="text-xl font-semibold mb-2">No saved properties yet</h2>
-                <p className="text-muted-foreground mb-6 max-w-sm">
-                    Start exploring and save properties you're interested in to easily find them later.
-                </p>
-                <Button asChild>
-                    <Link href="/search">Browse Properties</Link>
-                </Button>
+
+                {/* Grid Skeleton */}
+                <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                    {[...Array(8)].map((_, i) => (
+                        <div key={i} className="bg-white rounded-2xl border border-neutral-200/80 overflow-hidden">
+                            <div className="aspect-[4/3] bg-neutral-100 animate-pulse" />
+                            <div className="p-4 space-y-3">
+                                <div className="h-4 bg-neutral-100 rounded animate-pulse w-3/4" />
+                                <div className="h-3 bg-neutral-100 rounded animate-pulse w-1/2" />
+                                <div className="h-5 bg-neutral-100 rounded animate-pulse w-1/3 mt-4" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
         )
     }
 
     return (
-        <div className="p-6 space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight">Saved Properties</h1>
-                <p className="text-muted-foreground">
-                    Your collection of favorite homes.
-                </p>
-            </div>
+        <div className="font-sans text-neutral-900">
+            {/* Controls Bar */}
+            {normalizedProperties.length > 0 && (
+                <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-neutral-100">
+                    {/* Results Count */}
+                    <p className="text-xs text-neutral-500">
+                        {sortedProperties.length} {sortedProperties.length === 1 ? 'saved' : 'saved'}
+                    </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {savedProperties.map((property) => (
-                    <div key={property.id} className="h-full">
-                        <PropertyCard
-                            property={{
-                                id: property.id,
-                                title: property.title,
-                                price: property.price_nad,
-                                address: property.address,
-                                bedrooms: property.bedrooms,
-                                bathrooms: property.bathrooms,
-                                size: property.size_sqm,
-                                images: property.images || [],
-                                type: property.property_type,
-                                monthly_rent: property.price_nad,
-                                isSaved: true // These are all saved
-                            }}
-                        />
+                    {/* Sort Dropdown */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowSortMenu(!showSortMenu)}
+                            className={cn(
+                                "flex items-center gap-2 h-9 px-3 rounded-lg text-xs font-medium border transition-all",
+                                showSortMenu
+                                    ? "bg-neutral-900 text-white border-neutral-900"
+                                    : "bg-white border-neutral-200 text-neutral-700 hover:border-neutral-300"
+                            )}
+                        >
+                            <ArrowUpDown className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">
+                                {SORT_OPTIONS.find(o => o.id === sortBy)?.label}
+                            </span>
+                            <span className="sm:hidden">Sort</span>
+                        </button>
+
+                        {showSortMenu && (
+                            <>
+                                <div
+                                    className="fixed inset-0 z-40"
+                                    onClick={() => setShowSortMenu(false)}
+                                />
+                                <div className="absolute right-0 top-full mt-1.5 py-1 w-44 bg-white rounded-lg border border-neutral-200 shadow-lg z-50">
+                                    {SORT_OPTIONS.map((option) => (
+                                        <button
+                                            key={option.id}
+                                            onClick={() => {
+                                                setSortBy(option.id)
+                                                setShowSortMenu(false)
+                                            }}
+                                            className={cn(
+                                                "w-full text-left px-3 py-2 text-sm transition-colors",
+                                                sortBy === option.id
+                                                    ? "bg-neutral-100 text-neutral-900 font-medium"
+                                                    : "text-neutral-600 hover:bg-neutral-50"
+                                            )}
+                                        >
+                                            {option.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
                     </div>
-                ))}
+                </div>
+            )}
+
+            {/* Content Area */}
+            <div className="min-h-[300px]">
+                {sortedProperties.length > 0 ? (
+                    <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
+                        {sortedProperties.map((property) => (
+                            <TrustCard key={property.id} property={property} />
+                        ))}
+                    </div>
+                ) : (
+                    // Empty state
+                    <div className="py-20 flex flex-col items-center justify-center text-center px-4">
+                        <div className="h-14 w-14 rounded-xl bg-neutral-100 flex items-center justify-center mb-5">
+                            <Heart className="h-6 w-6 text-neutral-400" />
+                        </div>
+
+                        <h3 className="text-lg font-semibold text-neutral-900 mb-1">
+                            No saved properties yet
+                        </h3>
+                        <p className="text-sm text-neutral-500 max-w-xs mb-6">
+                            Save properties you like by tapping the heart icon. They will appear here.
+                        </p>
+
+                        <Link href="/">
+                            <button className="h-10 px-5 bg-neutral-900 hover:bg-neutral-800 text-white text-sm font-medium rounded-lg transition-colors">
+                                Browse Properties
+                            </button>
+                        </Link>
+                    </div>
+                )}
             </div>
         </div>
     )

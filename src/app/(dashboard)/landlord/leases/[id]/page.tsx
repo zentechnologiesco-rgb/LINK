@@ -1,33 +1,51 @@
+'use client'
+
 import { notFound } from 'next/navigation'
-import { getLeaseById, getLeasePayments, getSignedDocumentUrls } from '../actions'
-import { LandlordLeaseDetailClient } from './LandlordLeaseDetailClient'
+import { LeaseDetailClient } from './LeaseDetailClient'
+import { useQuery } from "convex/react"
+import { api } from "../../../../../../convex/_generated/api"
+import { Id } from "../../../../../../convex/_generated/dataModel"
 
-export default async function LandlordLeaseDetailPage({
-    params
-}: {
+import { use } from 'react'
+
+interface Props {
     params: Promise<{ id: string }>
-}) {
-    const { id } = await params
-    const [lease, payments] = await Promise.all([
-        getLeaseById(id),
-        getLeasePayments(id)
-    ])
+}
 
-    if (!lease) {
+function LandlordLeaseDetailContent({ id }: { id: string }) {
+    const lease = useQuery(api.leases.getById, { leaseId: id as Id<"leases"> })
+    const currentUser = useQuery(api.users.currentUser)
+    const payments = useQuery(api.payments.getByLease, { leaseId: id as Id<"leases"> })
+
+    if (lease === undefined || currentUser === undefined || payments === undefined) {
+        return (
+            <div className="min-h-[60vh] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="h-10 w-10 rounded-full border-2 border-black/10 border-t-black animate-spin" />
+                    <p className="text-sm font-medium text-black/40 uppercase tracking-wider">Loading lease...</p>
+                </div>
+            </div>
+        )
+    }
+
+    if (!lease || !currentUser) {
         notFound()
     }
 
-    // Generate signed URLs for tenant documents
-    let documentsWithUrls: any[] = []
-    if (lease.tenant_documents && lease.tenant_documents.length > 0) {
-        const { urls } = await getSignedDocumentUrls(lease.tenant_documents)
-        documentsWithUrls = urls || []
+    // Authorization check
+    if (lease.landlordId !== currentUser._id) {
+        notFound()
     }
 
     return (
-        <LandlordLeaseDetailClient
-            lease={{ ...lease, tenant_documents: documentsWithUrls }}
-            payments={payments}
+        <LeaseDetailClient
+            lease={lease}
+            payments={payments || []}
         />
     )
+}
+
+export default function LandlordLeaseDetailPage({ params }: Props) {
+    const { id } = use(params)
+    return <LandlordLeaseDetailContent id={id} />
 }

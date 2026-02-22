@@ -3,189 +3,209 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
+import { PullToRefresh } from '@/components/ui/pull-to-refresh'
 import { cn } from '@/lib/utils'
 import { formatDistanceToNow } from 'date-fns'
-import { Search, MoreVertical, MessageSquare } from 'lucide-react'
+import { Search, MessageSquare, ArrowLeft } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { ChatThread } from '@/components/chat/ChatThread' // Reuse existing thread component
-import { getInquiryMessages } from '@/app/(dashboard)/shared/chat/actions'
-import { getDisplayName, getInitials } from '@/lib/user-name'
+import { ChatThread } from '@/components/chat/ChatThread'
+import { getDisplayName } from '@/lib/user-name'
+import { useQuery } from "convex/react"
+import { api } from "../../../../convex/_generated/api"
+import { Id } from "../../../../convex/_generated/dataModel"
 
-interface ChatInterfaceProps {
-    user: any
-    initialInquiries: any[]
-}
-
-export function ChatInterface({ user, initialInquiries }: ChatInterfaceProps) {
+export function AuthedChatInterface() {
     const searchParams = useSearchParams()
     const router = useRouter()
     const activeId = searchParams.get('id')
 
     const [selectedInquiryId, setSelectedInquiryId] = useState<string | null>(activeId)
-    const [messages, setMessages] = useState<any[]>([])
-    const [isLoadingMessages, setIsLoadingMessages] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
+    const [showMobileChat, setShowMobileChat] = useState(false)
+    const [isRefreshing, setIsRefreshing] = useState(false)
 
-    const [inquiries, setInquiries] = useState(initialInquiries)
+    const currentUser = useQuery(api.users.currentUser)
+    const inquiries = useQuery(api.inquiries.getUserInquiries)
+    const messages = useQuery(
+        api.messages.getByInquiry,
+        selectedInquiryId ? { inquiryId: selectedInquiryId as Id<"inquiries"> } : "skip"
+    )
 
     // Filter inquiries
-    const filteredInquiries = inquiries.filter(inquiry =>
+    const filteredInquiries = (inquiries || []).filter((inquiry: any) =>
         inquiry.property?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         getDisplayName(inquiry.otherParty).toLowerCase().includes(searchQuery.toLowerCase())
     )
 
-    const selectedInquiry = inquiries.find(i => i.id === selectedInquiryId)
-
-    const fetchMessages = async () => {
-        if (!selectedInquiryId) return
-
-        try {
-            const data = await getInquiryMessages(selectedInquiryId)
-            setMessages(data)
-        } catch (error) {
-            console.error("Failed to fetch messages", error)
-        }
-    }
+    const selectedInquiry = (inquiries || []).find((i: any) => i._id === selectedInquiryId)
 
     useEffect(() => {
         if (activeId) {
             setSelectedInquiryId(activeId)
+            setShowMobileChat(true)
         }
     }, [activeId])
 
-    useEffect(() => {
-        if (selectedInquiryId) {
-            setIsLoadingMessages(true)
-            fetchMessages().finally(() => setIsLoadingMessages(false))
-        }
-    }, [selectedInquiryId])
-
-    const handleMessageSent = () => {
-        fetchMessages()
-        router.refresh()
-    }
-
-    useEffect(() => {
-        setInquiries(initialInquiries)
-    }, [initialInquiries])
-
-
     const handleSelectInquiry = (id: string) => {
         setSelectedInquiryId(id)
+        setShowMobileChat(true)
         router.push(`/chat?id=${id}`, { scroll: false })
     }
 
+    const handleBackToList = () => {
+        setShowMobileChat(false)
+        router.push('/chat', { scroll: false })
+    }
+
+    const handleRefresh = async () => {
+        setIsRefreshing(true)
+        router.refresh()
+        await new Promise(resolve => setTimeout(resolve, 500))
+        setIsRefreshing(false)
+    }
+
+    // Loading state
+    if (currentUser === undefined || inquiries === undefined) {
+        return (
+            <div className="flex h-full items-center justify-center bg-white">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="h-8 w-8 rounded-full border-2 border-neutral-900 border-t-transparent animate-spin" />
+                    <p className="text-sm text-neutral-500">Loading messages...</p>
+                </div>
+            </div>
+        )
+    }
+
     return (
-        <div className="flex flex-1 overflow-hidden">
-            {/* Sidebar List */}
-            <div className="w-80 md:w-96 border-r flex flex-col bg-slate-50/50">
-                <div className="p-4 border-b space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h2 className="font-semibold text-lg">Messages</h2>
-                        <Badge variant="secondary" className="bg-white">{filteredInquiries.length}</Badge>
-                    </div>
+        <div className="flex flex-1 overflow-hidden bg-white h-full">
+            {/* Sidebar - Conversation List */}
+            <div className={cn(
+                "w-full md:w-[340px] lg:w-[380px] border-r border-neutral-200 flex flex-col bg-white",
+                showMobileChat && "hidden md:flex"
+            )}>
+                {/* Header */}
+                <div className="p-5 border-b border-neutral-200">
+                    <h1 className="text-2xl font-semibold text-neutral-900 mb-4">
+                        Messages
+                    </h1>
                     <div className="relative">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
                         <Input
                             placeholder="Search conversations..."
-                            className="pl-9 bg-white"
+                            className="pl-10 h-10 bg-neutral-50 border-neutral-200 focus:bg-white focus:border-neutral-300 rounded-lg"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
                 </div>
 
-                <ScrollArea className="flex-1">
-                    <div className="flex flex-col gap-1 p-2">
-                        {filteredInquiries.length === 0 ? (
-                            <div className="p-8 text-center text-muted-foreground text-sm">
-                                No conversations found.
+                {/* Conversation List */}
+                <PullToRefresh onRefresh={handleRefresh} className="flex-1 overflow-y-auto">
+                    {filteredInquiries.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+                            <div className="h-16 w-16 rounded-full bg-neutral-100 flex items-center justify-center mb-4">
+                                <MessageSquare className="h-7 w-7 text-neutral-400" />
                             </div>
-                        ) : (
-                            filteredInquiries.map((inquiry) => (
+                            <p className="font-semibold text-neutral-900 mb-1">No messages</p>
+                            <p className="text-sm text-neutral-500">
+                                Start a conversation by inquiring about a property.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="py-2">
+                            {filteredInquiries.map((inquiry: any) => (
                                 <button
-                                    key={inquiry.id}
-                                    onClick={() => handleSelectInquiry(inquiry.id)}
+                                    key={inquiry._id}
+                                    onClick={() => handleSelectInquiry(inquiry._id)}
                                     className={cn(
-                                        "flex items-start gap-3 p-3 text-left rounded-lg transition-colors",
-                                        selectedInquiryId === inquiry.id
-                                            ? "bg-white shadow-sm ring-1 ring-border"
-                                            : "hover:bg-white/50"
+                                        "w-full flex items-start gap-3 px-5 py-4 text-left transition-colors border-b border-neutral-100 last:border-b-0",
+                                        selectedInquiryId === inquiry._id
+                                            ? "bg-neutral-50"
+                                            : "hover:bg-neutral-50"
                                     )}
                                 >
-                                    <Avatar className="h-10 w-10 border bg-white">
-                                        <AvatarImage src={inquiry.otherParty?.avatar_url} />
-                                        <AvatarFallback>{getInitials(inquiry.otherParty)}</AvatarFallback>
+                                    <Avatar className="h-12 w-12 shrink-0">
+                                        <AvatarImage src={inquiry.otherParty?.avatarUrl} className="object-cover" />
+                                        <AvatarFallback className="bg-neutral-200 text-neutral-600 font-medium">
+                                            {getDisplayName(inquiry.otherParty).charAt(0)}
+                                        </AvatarFallback>
                                     </Avatar>
-                                    <div className="flex-1 overflow-hidden">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <span className="font-medium text-sm truncate">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-2 mb-0.5">
+                                            <span className="font-medium text-neutral-900 truncate">
                                                 {getDisplayName(inquiry.otherParty)}
                                             </span>
-                                            <span className="text-[10px] text-muted-foreground shrink-0 ml-2">
-                                                {formatDistanceToNow(new Date(inquiry.created_at), { addSuffix: false })}
+                                            <span className="text-xs text-neutral-400 shrink-0">
+                                                {formatDistanceToNow(new Date(inquiry.updatedAt || inquiry._creationTime), { addSuffix: false })}
                                             </span>
                                         </div>
-                                        <div className="text-xs text-muted-foreground font-medium truncate mb-0.5">
+                                        <p className="text-xs text-neutral-500 truncate mb-1">
                                             {inquiry.property?.title}
-                                        </div>
-                                        <p className="text-xs text-slate-500 truncate">
-                                            {inquiry.message}
+                                        </p>
+                                        <p className="text-sm text-neutral-600 truncate">
+                                            {inquiry.lastMessage?.content || inquiry.message || 'No messages yet'}
                                         </p>
                                     </div>
                                 </button>
-                            ))
-                        )}
-                    </div>
-                </ScrollArea>
+                            ))}
+                        </div>
+                    )}
+                </PullToRefresh>
             </div>
 
             {/* Chat Thread Area */}
-            <div className="flex-1 flex flex-col bg-white overflow-hidden">
+            <div className={cn(
+                "flex-1 flex flex-col bg-white overflow-hidden",
+                !showMobileChat && "hidden md:flex"
+            )}>
                 {selectedInquiry ? (
-                    <div className="flex-1 flex flex-col h-full">
+                    <>
                         {/* Chat Header */}
-                        <div className="flex items-center justify-between p-4 border-b shrink-0">
-                            <div className="flex items-center gap-3">
-                                <Avatar className="h-10 w-10 border">
-                                    <AvatarImage src={selectedInquiry.otherParty?.avatar_url} />
-                                    <AvatarFallback>{getInitials(selectedInquiry.otherParty)}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <h3 className="font-semibold">{getDisplayName(selectedInquiry.otherParty)}</h3>
-                                    <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                        <span>{selectedInquiry.property?.title}</span>
-                                        <span>•</span>
-                                        <span className="font-medium text-green-600">N$ {selectedInquiry.property?.price_nad?.toLocaleString()}</span>
-                                    </div>
-                                </div>
+                        <div className="flex items-center gap-4 px-5 py-4 border-b border-neutral-200 bg-white">
+                            <button
+                                onClick={handleBackToList}
+                                className="md:hidden h-9 w-9 rounded-full bg-neutral-100 flex items-center justify-center hover:bg-neutral-200 transition-colors"
+                            >
+                                <ArrowLeft className="h-5 w-5 text-neutral-600" />
+                            </button>
+
+                            <Avatar className="h-10 w-10">
+                                <AvatarImage src={selectedInquiry.otherParty?.avatarUrl} className="object-cover" />
+                                <AvatarFallback className="bg-neutral-200 text-neutral-600 font-medium">
+                                    {getDisplayName(selectedInquiry.otherParty).charAt(0)}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                                <h2 className="font-medium text-neutral-900 truncate">
+                                    {getDisplayName(selectedInquiry.otherParty)}
+                                </h2>
+                                <p className="text-sm text-neutral-500 truncate">
+                                    {selectedInquiry.property?.title}
+                                </p>
                             </div>
-                            <Button variant="ghost" size="icon">
-                                <MoreVertical className="h-4 w-4" />
-                            </Button>
                         </div>
 
                         {/* Messages Thread */}
-                        <div className="flex-1 overflow-hidden p-4">
+                        <div className="flex-1 overflow-hidden bg-neutral-50">
                             <ChatThread
-                                inquiryId={selectedInquiry.id}
-                                messages={messages}
-                                currentUserId={user.id}
-                                onMessageSent={handleMessageSent}
+                                inquiryId={selectedInquiry._id}
+                                messages={messages || []}
+                                currentUserId={currentUser?._id || ''}
+                                otherParty={selectedInquiry.otherParty}
                             />
                         </div>
-                    </div>
+                    </>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground bg-slate-50/30">
-                        <div className="p-4 rounded-full bg-slate-100 mb-4">
-                            <MessageSquare className="h-8 w-8 text-slate-400" />
+                    <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-neutral-50">
+                        <div className="h-16 w-16 rounded-full bg-neutral-100 flex items-center justify-center mb-4">
+                            <MessageSquare className="h-7 w-7 text-neutral-400" />
                         </div>
-                        <p className="text-lg font-medium">Select a conversation</p>
-                        <p className="text-sm">Choose a chat from the sidebar to start messaging</p>
+                        <h2 className="text-xl font-semibold text-neutral-900 mb-2">
+                            Select a conversation
+                        </h2>
+                        <p className="text-neutral-500 max-w-sm">
+                            Choose a conversation from the sidebar to view messages and reply.
+                        </p>
                     </div>
                 )}
             </div>

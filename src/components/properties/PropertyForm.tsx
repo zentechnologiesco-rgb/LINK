@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -14,331 +14,430 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import { createProperty, updateProperty } from '@/app/(dashboard)/landlord/actions'
 import { toast } from 'sonner'
-import { Loader2, AlertCircle, Info } from 'lucide-react'
+import { ChevronLeft, Loader2, Info, Check, XCircle, Home, MapPin, Camera, FileText, Settings, Sparkles } from 'lucide-react'
 import { ImageUpload } from './ImageUpload'
 import { LocationPicker } from '@/components/maps/LocationPicker'
-import { createClient } from '@/lib/supabase/client'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-
-const AMENITIES_LIST = [
-    'Air Conditioning', 'WiFi', 'Pool', 'Gym', 'Parking',
-    'Security', 'Balcony', 'Furnished', 'Pet Friendly',
-    'Braai Area', 'Garden', 'Solar Power'
-]
+import { useMutation, useQuery } from "convex/react"
+import { api } from "../../../convex/_generated/api"
+import { Id } from "../../../convex/_generated/dataModel"
+import { cn } from '@/lib/utils'
+import { AMENITIES, PROPERTY_TYPES, PROPERTY_TYPE_LABELS, PropertyType } from '@/constants/property'
 
 interface PropertyFormProps {
     mode?: 'create' | 'edit'
-    propertyId?: string
+    propertyId?: Id<"properties">
     initialData?: {
         title?: string
         description?: string
-        property_type?: string
-        price_nad?: number
+        propertyType?: string
+        priceNad?: number
         address?: string
         city?: string
         bedrooms?: number
         bathrooms?: number
-        size_sqm?: number
-        amenities?: string[]
-        images?: string[]
+        sizeSqm?: number
+        amenityNames?: string[]
+        images?: Id<"_storage">[]
         coordinates?: { lat: number; lng: number } | null
+        approvalStatus?: string
+        adminNotes?: string
     }
 }
 
 export function PropertyForm({ mode = 'create', propertyId, initialData }: PropertyFormProps) {
+    const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
-    const [selectedAmenities, setSelectedAmenities] = useState<string[]>(initialData?.amenities || [])
-    const [images, setImages] = useState<string[]>(initialData?.images || [])
+    const [selectedAmenities, setSelectedAmenities] = useState<string[]>(initialData?.amenityNames || [])
+    const [images, setImages] = useState<Id<"_storage">[]>(initialData?.images || [])
     const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(
         initialData?.coordinates || null
     )
-    const [userId, setUserId] = useState<string | null>(null)
     const [address, setAddress] = useState(initialData?.address || '')
-    const router = useRouter()
 
-    // Get user ID for image upload - only run once on mount
-    useEffect(() => {
-        async function getUser() {
-            const supabase = createClient()
-            const { data: { user } } = await supabase.auth.getUser()
-            if (user) {
-                setUserId(user.id)
-            }
-        }
-        getUser()
-    }, []) // Empty dependency array - run only on mount
+    // Form field states
+    const [title, setTitle] = useState(initialData?.title || '')
+    const [propertyType, setPropertyType] = useState(initialData?.propertyType || 'apartment')
+    const [priceNad, setPriceNad] = useState(initialData?.priceNad?.toString() || '')
+    const [city, setCity] = useState(initialData?.city || '')
+    const [bedrooms, setBedrooms] = useState(initialData?.bedrooms?.toString() || '1')
+    const [bathrooms, setBathrooms] = useState(initialData?.bathrooms?.toString() || '1')
+    const [sizeSqm, setSizeSqm] = useState(initialData?.sizeSqm?.toString() || '')
+    const [description, setDescription] = useState(initialData?.description || '')
 
-    async function handleSubmit(formData: FormData) {
-        // Validate images
+    const currentUser = useQuery(api.users.currentUser)
+    const createProperty = useMutation(api.properties.create)
+    const updateProperty = useMutation(api.properties.update)
+
+    async function handleSubmit(e: React.FormEvent) {
+        e.preventDefault()
+
         if (images.length === 0) {
             toast.error('Please upload at least one property image')
             return
         }
 
+        if (!title || !priceNad || !city || !address) {
+            toast.error('Please fill in all required fields')
+            return
+        }
+
+        if (!coordinates) {
+            toast.error('Please select a location on the map')
+            return
+        }
+
         setIsLoading(true)
-        // Add amenities to formData
-        formData.set('amenities', selectedAmenities.join(','))
-        // Add images to formData
-        formData.set('images', JSON.stringify(images))
-        // Add coordinates to formData
-        formData.set('coordinates', JSON.stringify(coordinates))
-        // Update address if from map
-        if (address) {
-            formData.set('address', address)
-        }
 
-        let result
-        if (mode === 'edit' && propertyId) {
-            result = await updateProperty(propertyId, formData)
-        } else {
-            result = await createProperty(formData)
-        }
+        try {
+            const propertyData = {
+                title,
+                description: description || undefined,
+                propertyType,
+                address,
+                city,
+                coordinates: coordinates!,
+                priceNad: Number(priceNad),
+                bedrooms: bedrooms ? Number(bedrooms) : undefined,
+                bathrooms: bathrooms ? Number(bathrooms) : undefined,
+                sizeSqm: sizeSqm ? Number(sizeSqm) : undefined,
+                amenityNames: selectedAmenities,
+                images,
+            }
 
-        if (result?.error) {
-            toast.error(result.error)
+            if (mode === 'edit' && propertyId) {
+                await updateProperty({ propertyId, ...propertyData })
+                toast.success('Property updated successfully!')
+            } else {
+                await createProperty(propertyData)
+                toast.success('Property created successfully! It will be reviewed by our team.')
+            }
+
+            router.push('/landlord/properties')
+        } catch (error) {
+            console.error('Error saving property:', error)
+            toast.error('Failed to save property. Please try again.')
+        } finally {
             setIsLoading(false)
-        } else {
-            toast.success(mode === 'edit' ? 'Property updated successfully!' : 'Property created successfully!')
         }
     }
 
-    const handleAmenityChange = (amenity: string, checked: boolean) => {
-        if (checked) {
-            setSelectedAmenities([...selectedAmenities, amenity])
-        } else {
-            setSelectedAmenities(selectedAmenities.filter(a => a !== amenity))
-        }
+    const handleAmenityChange = (amenityName: string) => {
+        setSelectedAmenities((prev) =>
+            prev.includes(amenityName)
+                ? prev.filter((name) => name !== amenityName)
+                : [...prev, amenityName]
+        )
     }
 
     const handleAddressFromMap = (newAddress: string) => {
         setAddress(newAddress)
     }
 
+    if (currentUser === undefined) {
+        return (
+            <div className="min-h-[60vh] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                    <div className="h-8 w-8 rounded-full border-2 border-neutral-200 border-t-neutral-900 animate-spin" />
+                    <p className="text-sm text-neutral-400 font-medium">Loading...</p>
+                </div>
+            </div>
+        )
+    }
+
     return (
-        <div className="max-w-3xl mx-auto py-8 px-4">
+        <div className="max-w-2xl mx-auto pb-24">
+            {/* Header */}
             <div className="mb-8">
-                <h1 className="text-2xl font-bold">
-                    {mode === 'edit' ? 'Edit Property' : 'List a New Property'}
+                <Link
+                    href="/landlord/properties"
+                    className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900 transition-colors mb-4"
+                >
+                    <ChevronLeft className="h-4 w-4" />
+                    Properties
+                </Link>
+                <h1 className="text-2xl font-semibold text-neutral-900">
+                    {mode === 'edit' ? 'Edit Property' : 'New Property'}
                 </h1>
-                <p className="text-muted-foreground">
+                <p className="text-sm text-neutral-500 mt-1">
                     {mode === 'edit'
-                        ? 'Update your property details below.'
-                        : 'Fill in the details below to publish your listing.'}
+                        ? 'Update your property details.'
+                        : 'Add a new property to your portfolio.'}
                 </p>
             </div>
 
-            {mode === 'create' && (
-                <Alert className="mb-6 border-blue-200 bg-blue-50">
-                    <Info className="h-4 w-4 text-blue-600" />
-                    <AlertDescription className="text-blue-700">
-                        Your property will be submitted for approval. Once approved by our team, you'll be able to list it publicly.
-                    </AlertDescription>
-                </Alert>
+            {/* Rejection Banner */}
+            {mode === 'edit' && initialData?.approvalStatus === 'rejected' && (
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-100 mb-6">
+                    <XCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                    <div>
+                        <p className="font-semibold text-red-900 text-sm">Submission Rejected</p>
+                        <p className="text-sm text-red-700 mt-1">
+                            {initialData.adminNotes || "This property was rejected by the admin team."}
+                        </p>
+                        <p className="text-xs text-red-600 mt-2 flex items-center gap-1">
+                            <Info className="h-3 w-3" />
+                            Update and save to resubmit for review.
+                        </p>
+                    </div>
+                </div>
             )}
 
-            <form action={handleSubmit} className="space-y-8">
-                {/* Property Images */}
-                <div className="space-y-4">
-                    <h2 className="text-lg font-semibold border-b pb-2">Property Images</h2>
-                    <p className="text-sm text-muted-foreground">
-                        Upload high-quality photos of your property. The first image will be the main photo.
-                    </p>
-                    {userId ? (
+            <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Images Section */}
+                <section className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-100 bg-neutral-50">
+                        <Camera className="h-4 w-4 text-neutral-500" />
+                        <h2 className="text-sm font-semibold text-neutral-900">Photos</h2>
+                        <span className="text-xs text-neutral-400 ml-auto">Max 15</span>
+                    </div>
+                    <div className="p-4">
                         <ImageUpload
-                            userId={userId}
-                            maxImages={6}
+                            maxImages={15}
                             onImagesChange={setImages}
                             initialImages={initialData?.images || []}
                         />
-                    ) : (
-                        <div className="h-32 flex items-center justify-center bg-gray-100 rounded-lg">
-                            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-                        </div>
-                    )}
-                </div>
-
-                {/* Basic Info */}
-                <div className="space-y-4">
-                    <h2 className="text-lg font-semibold border-b pb-2">Basic Information</h2>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="title">Property Title</Label>
-                        <Input
-                            id="title"
-                            name="title"
-                            placeholder="e.g. Modern 2-Bedroom Apartment in CBD"
-                            defaultValue={initialData?.title || ''}
-                            required
-                            minLength={5}
-                        />
                     </div>
+                </section>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="property_type">Property Type</Label>
-                            <Select name="property_type" required defaultValue={initialData?.property_type || 'apartment'}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="apartment">Apartment</SelectItem>
-                                    <SelectItem value="house">House</SelectItem>
-                                    <SelectItem value="room">Room</SelectItem>
-                                    <SelectItem value="studio">Studio</SelectItem>
-                                    <SelectItem value="penthouse">Penthouse</SelectItem>
-                                    <SelectItem value="commercial">Commercial</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="price_nad">Monthly Rent (N$)</Label>
-                            <Input
-                                id="price_nad"
-                                name="price_nad"
-                                type="number"
-                                placeholder="8500"
-                                defaultValue={initialData?.price_nad || ''}
-                                required
-                                min={0}
-                            />
-                        </div>
+                {/* Basic Info Section */}
+                <section className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-100 bg-neutral-50">
+                        <FileText className="h-4 w-4 text-neutral-500" />
+                        <h2 className="text-sm font-semibold text-neutral-900">Basic Info</h2>
                     </div>
-                </div>
-
-                {/* Location */}
-                <div className="space-y-4">
-                    <h2 className="text-lg font-semibold border-b pb-2">Location</h2>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="city">City</Label>
+                    <div className="p-4 space-y-4">
+                        <div>
+                            <Label htmlFor="title" className="text-xs font-medium text-neutral-600 mb-1.5 block">
+                                Property Title
+                            </Label>
                             <Input
-                                id="city"
-                                name="city"
-                                placeholder="Windhoek"
-                                defaultValue={initialData?.city || ''}
+                                id="title"
+                                placeholder="e.g. Modern 2-Bedroom Apartment"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
                                 required
+                                minLength={5}
+                                className="h-11 rounded-lg bg-neutral-50 border-neutral-200"
                             />
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="address">Address</Label>
-                            <Input
-                                id="address"
-                                name="address"
-                                placeholder="123 Independence Ave"
-                                value={address}
-                                onChange={(e) => setAddress(e.target.value)}
-                                required
-                            />
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <Label className="text-xs font-medium text-neutral-600 mb-1.5 block">
+                                    Property Type
+                                </Label>
+                                <Select value={propertyType} onValueChange={setPropertyType}>
+                                    <SelectTrigger className="h-11 rounded-lg bg-neutral-50 border-neutral-200">
+                                        <SelectValue placeholder="Select type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {PROPERTY_TYPES.map((type) => (
+                                            <SelectItem key={type} value={type}>
+                                                {PROPERTY_TYPE_LABELS[type]}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label htmlFor="price_nad" className="text-xs font-medium text-neutral-600 mb-1.5 block">
+                                    Monthly Rent (N$)
+                                </Label>
+                                <Input
+                                    id="price_nad"
+                                    type="number"
+                                    placeholder="8500"
+                                    value={priceNad}
+                                    onChange={(e) => setPriceNad(e.target.value)}
+                                    required
+                                    min={0}
+                                    className="h-11 rounded-lg bg-neutral-50 border-neutral-200 font-semibold"
+                                />
+                            </div>
                         </div>
                     </div>
+                </section>
 
-                    <div className="space-y-2">
-                        <Label>Pin Location on Map</Label>
-                        <p className="text-xs text-muted-foreground mb-2">
-                            Search for your address or click on the map to set the exact location.
-                        </p>
-                        <LocationPicker
-                            initialCoordinates={coordinates}
-                            onLocationChange={setCoordinates}
-                            onAddressChange={handleAddressFromMap}
-                        />
+                {/* Location Section */}
+                <section className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-100 bg-neutral-50">
+                        <MapPin className="h-4 w-4 text-neutral-500" />
+                        <h2 className="text-sm font-semibold text-neutral-900">Location</h2>
                     </div>
-                </div>
-
-                {/* Specifications */}
-                <div className="space-y-4">
-                    <h2 className="text-lg font-semibold border-b pb-2">Specifications</h2>
-
-                    <div className="grid grid-cols-3 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="bedrooms">Bedrooms</Label>
-                            <Input
-                                id="bedrooms"
-                                name="bedrooms"
-                                type="number"
-                                defaultValue={initialData?.bedrooms ?? 1}
-                                min={0}
-                                required
-                            />
+                    <div className="p-4 space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <Label htmlFor="city" className="text-xs font-medium text-neutral-600 mb-1.5 block">
+                                    City
+                                </Label>
+                                <Input
+                                    id="city"
+                                    placeholder="Windhoek"
+                                    value={city}
+                                    onChange={(e) => setCity(e.target.value)}
+                                    required
+                                    className="h-11 rounded-lg bg-neutral-50 border-neutral-200"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="address" className="text-xs font-medium text-neutral-600 mb-1.5 block">
+                                    Address
+                                </Label>
+                                <Input
+                                    id="address"
+                                    placeholder="123 Main Street"
+                                    value={address}
+                                    onChange={(e) => setAddress(e.target.value)}
+                                    required
+                                    className="h-11 rounded-lg bg-neutral-50 border-neutral-200"
+                                />
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="bathrooms">Bathrooms</Label>
-                            <Input
-                                id="bathrooms"
-                                name="bathrooms"
-                                type="number"
-                                defaultValue={initialData?.bathrooms ?? 1}
-                                min={0}
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="size_sqm">Size (m²)</Label>
-                            <Input
-                                id="size_sqm"
-                                name="size_sqm"
-                                type="number"
-                                placeholder="50"
-                                defaultValue={initialData?.size_sqm || ''}
-                                min={0}
-                                required
-                            />
+
+                        <div>
+                            <Label className="text-xs font-medium text-neutral-600 mb-1.5 block">
+                                Pin on Map
+                            </Label>
+                            <div className="rounded-lg overflow-hidden border border-neutral-200">
+                                <LocationPicker
+                                    initialCoordinates={coordinates}
+                                    onLocationChange={setCoordinates}
+                                    onAddressChange={handleAddressFromMap}
+                                />
+                            </div>
+                            <p className="text-xs text-neutral-400 mt-1.5">
+                                Click on the map to set the exact location.
+                            </p>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                {/* Description & Amenities */}
-                <div className="space-y-4">
-                    <h2 className="text-lg font-semibold border-b pb-2">Details</h2>
+                {/* Specs Section */}
+                <section className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-100 bg-neutral-50">
+                        <Settings className="h-4 w-4 text-neutral-500" />
+                        <h2 className="text-sm font-semibold text-neutral-900">Specifications</h2>
+                    </div>
+                    <div className="p-4">
+                        <div className="grid grid-cols-3 gap-3">
+                            <div>
+                                <Label htmlFor="bedrooms" className="text-xs font-medium text-neutral-600 mb-1.5 block">
+                                    Bedrooms
+                                </Label>
+                                <Input
+                                    id="bedrooms"
+                                    type="number"
+                                    value={bedrooms}
+                                    onChange={(e) => setBedrooms(e.target.value)}
+                                    min={0}
+                                    required
+                                    className="h-11 rounded-lg bg-neutral-50 border-neutral-200 text-center"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="bathrooms" className="text-xs font-medium text-neutral-600 mb-1.5 block">
+                                    Bathrooms
+                                </Label>
+                                <Input
+                                    id="bathrooms"
+                                    type="number"
+                                    value={bathrooms}
+                                    onChange={(e) => setBathrooms(e.target.value)}
+                                    min={0}
+                                    required
+                                    className="h-11 rounded-lg bg-neutral-50 border-neutral-200 text-center"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="size_sqm" className="text-xs font-medium text-neutral-600 mb-1.5 block">
+                                    Size (m²)
+                                </Label>
+                                <Input
+                                    id="size_sqm"
+                                    type="number"
+                                    placeholder="50"
+                                    value={sizeSqm}
+                                    onChange={(e) => setSizeSqm(e.target.value)}
+                                    min={0}
+                                    required
+                                    className="h-11 rounded-lg bg-neutral-50 border-neutral-200 text-center"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="description">Description</Label>
+                {/* Description Section */}
+                <section className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-100 bg-neutral-50">
+                        <FileText className="h-4 w-4 text-neutral-500" />
+                        <h2 className="text-sm font-semibold text-neutral-900">Description</h2>
+                    </div>
+                    <div className="p-4">
                         <Textarea
                             id="description"
-                            name="description"
-                            placeholder="Describe the property features, nearby amenities, etc."
-                            className="h-32"
-                            defaultValue={initialData?.description || ''}
+                            placeholder="Describe your property, nearby amenities, transportation..."
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
                             required
                             minLength={20}
+                            className="min-h-[120px] rounded-lg bg-neutral-50 border-neutral-200 resize-none"
                         />
                     </div>
+                </section>
 
-                    <div className="space-y-2">
-                        <Label>Amenities</Label>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                            {AMENITIES_LIST.map((amenity) => (
-                                <div key={amenity} className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id={`amenity-${amenity}`}
-                                        checked={selectedAmenities.includes(amenity)}
-                                        onCheckedChange={(checked) => handleAmenityChange(amenity, checked as boolean)}
-                                    />
-                                    <label
-                                        htmlFor={`amenity-${amenity}`}
-                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                {/* Amenities Section */}
+                <section className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-100 bg-neutral-50">
+                        <Sparkles className="h-4 w-4 text-neutral-500" />
+                        <h2 className="text-sm font-semibold text-neutral-900">Amenities</h2>
+                    </div>
+                    <div className="p-4">
+                        <div className="flex flex-wrap gap-2">
+                            {AMENITIES.map((amenity) => {
+                                const isSelected = selectedAmenities.includes(amenity.name)
+                                return (
+                                    <button
+                                        key={amenity.id}
+                                        type="button"
+                                        onClick={() => handleAmenityChange(amenity.name)}
+                                        className={cn(
+                                            "inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all border",
+                                            isSelected
+                                                ? 'bg-neutral-900 text-white border-neutral-900'
+                                                : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'
+                                        )}
                                     >
-                                        {amenity}
-                                    </label>
-                                </div>
-                            ))}
+                                        {isSelected && <Check className="h-3 w-3" />}
+                                        {amenity.name}
+                                    </button>
+                                )
+                            })}
                         </div>
                     </div>
-                </div>
+                </section>
 
-                <div className="flex gap-4 pt-4">
-                    <Link href="/landlord/properties" className="w-full">
-                        <Button type="button" variant="outline" className="w-full">Cancel</Button>
+                {/* Action Buttons - Sticky on mobile */}
+                <div className="sticky bottom-0 bg-white/90 backdrop-blur-sm border-t border-neutral-100 -mx-4 px-4 py-4 mt-8 flex flex-col sm:flex-row gap-3 sm:justify-end">
+                    <Link href="/landlord/properties" className="sm:order-1">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full sm:w-auto h-11 rounded-lg border-neutral-200"
+                        >
+                            Cancel
+                        </Button>
                     </Link>
-                    <Button type="submit" className="w-full bg-black hover:bg-zinc-800 text-white" disabled={isLoading}>
+                    <Button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full sm:w-auto sm:order-2 h-11 bg-neutral-900 hover:bg-neutral-800 text-white rounded-lg font-medium"
+                    >
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {isLoading
                             ? (mode === 'edit' ? 'Saving...' : 'Creating...')
-                            : (mode === 'edit' ? 'Save Changes' : 'Create Listing')}
+                            : (mode === 'edit' ? 'Save Changes' : 'Create Property')}
                     </Button>
                 </div>
             </form>
