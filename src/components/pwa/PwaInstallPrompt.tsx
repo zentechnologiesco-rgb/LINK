@@ -214,79 +214,76 @@ export function PwaInstallPrompt() {
     <Dialog open={isOpen} onOpenChange={(nextOpen) => !nextOpen && dismissPrompt()}>
       <DialogContent
         showCloseButton={false}
-        className="top-auto right-4 bottom-4 left-4 max-w-none translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-[32px] border border-white/10 bg-[#0A0A0A] p-0 shadow-[0_0_40px_rgba(0,0,0,0.5)] sm:left-1/2 sm:right-auto sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-[360px] sm:-translate-x-1/2 sm:-translate-y-1/2"
+        className="top-1/2 left-1/2 right-auto bottom-auto -translate-x-1/2 -translate-y-1/2 w-[calc(100%-24px)] max-w-[360px] gap-0 overflow-hidden rounded-[24px] border border-neutral-200/80 bg-white p-0 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]"
       >
-        <div className="flex flex-col items-center p-8 pb-6 text-center relative overflow-hidden">
-          {/* Background glow effects */}
-          <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-[#C4F135]/20 rounded-full blur-[60px] pointer-events-none" />
-          <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#C4F135]/10 rounded-full blur-[60px] pointer-events-none" />
-
-          {/* Minimalist App Icon */}
-          <div className="relative flex h-[72px] w-[72px] items-center justify-center rounded-[22px] bg-gradient-to-b from-neutral-800 to-neutral-900 border border-white/10 shadow-xl z-10 mb-6">
-            <Smartphone className="h-8 w-8 text-[#C4F135]" />
+        {/* Compact content */}
+        <div className="px-5 pt-5 pb-4">
+          {/* Top row: icon + text */}
+          <div className="flex items-start gap-3.5 mb-5">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-neutral-900">
+              <Smartphone className="h-5 w-5 text-[#C4F135]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-[17px] font-[900] leading-tight tracking-[-0.01em] text-neutral-900">
+                Get the LINK app
+              </DialogTitle>
+              <DialogDescription className="text-[13px] font-semibold leading-snug text-neutral-400 mt-1">
+                Faster browsing, one tap from home screen.
+              </DialogDescription>
+            </div>
           </div>
 
-          <DialogTitle className="text-[26px] font-[900] leading-tight tracking-[-0.02em] text-white mb-3 z-10">
-            Get the full<br />experience
-          </DialogTitle>
-          <DialogDescription className="text-[15px] font-medium leading-relaxed text-white/60 mb-8 z-10 px-2">
-            Experience LINK at its best. Faster, smoother, and just one tap away on your home screen.
-          </DialogDescription>
-
-          {/* iOS Manual Instructions */}
+          {/* Manual install tips — only shown when needed */}
           {showManualTips && (
-            <div className="w-full rounded-[24px] bg-white/5 border border-white/10 p-5 mb-6 text-left z-10 animate-in fade-in zoom-in-95 duration-200">
+            <div className="rounded-2xl bg-neutral-50 border border-neutral-100 p-4 mb-4 text-left animate-in fade-in zoom-in-95 duration-200">
               {isIOS ? (
-                <div className="flex items-start gap-4">
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10">
-                    <Share2 className="h-4 w-4 text-white" />
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-200">
+                    <Share2 className="h-3.5 w-3.5 text-neutral-600" />
                   </div>
-                  <p className="text-[14px] leading-relaxed text-white/80 font-medium">
-                    Tap the <span className="font-bold text-white">Share</span> button below
-                    then select <span className="font-bold text-white">Add to Home Screen</span>.
+                  <p className="text-[13px] leading-relaxed text-neutral-500 font-medium">
+                    Tap <span className="font-bold text-neutral-900">Share</span> then{' '}
+                    <span className="font-bold text-neutral-900">Add to Home Screen</span>.
                   </p>
                 </div>
               ) : (
-                <div className="flex items-start gap-4">
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10">
-                    <Smartphone className="h-4 w-4 text-white" />
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-200">
+                    <Smartphone className="h-3.5 w-3.5 text-neutral-600" />
                   </div>
-                  <p className="text-[14px] leading-relaxed text-white/80 font-medium">
-                    Open your browser menu and tap{' '}
-                    <span className="font-bold text-white">Install app</span> or{' '}
-                    <span className="font-bold text-white">Add to Home Screen</span>.
+                  <p className="text-[13px] leading-relaxed text-neutral-500 font-medium">
+                    Open browser menu → <span className="font-bold text-neutral-900">Install app</span> or{' '}
+                    <span className="font-bold text-neutral-900">Add to Home Screen</span>.
                   </p>
                 </div>
               )}
             </div>
           )}
 
-          <div className="flex w-full flex-col gap-3 z-10 mt-auto">
+          {/* Actions */}
+          <div className="flex items-center gap-2.5">
+            <button
+              className="h-12 flex-1 rounded-full text-[14px] font-bold text-neutral-400 hover:text-neutral-900 hover:bg-neutral-50 transition-all active:scale-[0.97]"
+              onClick={() => dismissPrompt()}
+            >
+              Not now
+            </button>
             {!showManualTips ? (
               <Button
-                className="h-14 w-full rounded-[20px] bg-[#C4F135] text-[16px] font-[900] tracking-tight text-black hover:bg-[#b0d930] shadow-[0_0_20px_rgba(196,241,53,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className="h-12 flex-[2] rounded-full bg-neutral-900 text-[14px] font-[800] tracking-tight text-white hover:bg-neutral-800 active:scale-[0.97] transition-all"
                 disabled={isInstalling}
                 onClick={handleInstallClick}
               >
-                <Download className="mr-2 h-[22px] w-[22px]" />
-                {isInstalling ? 'Installing...' : 'Install LINK App'}
+                <Download className="mr-1.5 h-4 w-4" />
+                {isInstalling ? 'Installing...' : 'Install'}
               </Button>
             ) : (
               <Button
-                className="h-14 w-full rounded-[20px] bg-white text-[16px] font-[900] tracking-tight text-black hover:bg-neutral-200 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className="h-12 flex-[2] rounded-full bg-neutral-900 text-[14px] font-[800] tracking-tight text-white hover:bg-neutral-800 active:scale-[0.97] transition-all"
                 onClick={() => dismissPrompt()}
               >
                 Got it
               </Button>
-            )}
-
-            {!showManualTips && (
-              <button
-                className="h-12 w-full rounded-full text-[15px] font-bold text-white/40 hover:text-white transition-colors"
-                onClick={() => dismissPrompt()}
-              >
-                Keep using browser
-              </button>
             )}
           </div>
         </div>
