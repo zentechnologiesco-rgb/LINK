@@ -2,14 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { Download, Globe, Share2, Smartphone } from 'lucide-react'
+import { Download, Share2, Smartphone } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 
@@ -211,98 +210,84 @@ export function PwaInstallPrompt() {
     return null
   }
 
-  const installButtonLabel = isInstallReady ? 'Install app' : isIOS ? 'Show install steps' : 'Install tips'
-
   return (
     <Dialog open={isOpen} onOpenChange={(nextOpen) => !nextOpen && dismissPrompt()}>
       <DialogContent
         showCloseButton={false}
-        className="top-auto right-4 bottom-4 left-4 max-w-none translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-[28px] border-0 p-0 shadow-[0_30px_80px_rgba(0,0,0,0.24)] sm:left-1/2 sm:right-auto sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2"
+        className="top-auto right-4 bottom-4 left-4 max-w-none translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-[32px] border border-white/10 bg-[#0A0A0A] p-0 shadow-[0_0_40px_rgba(0,0,0,0.5)] sm:left-1/2 sm:right-auto sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-[360px] sm:-translate-x-1/2 sm:-translate-y-1/2"
       >
-        <DialogHeader className="gap-0">
-          <div className="bg-neutral-950 px-6 pt-6 pb-5 text-white">
-            <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#a9ff3c] text-neutral-950">
-                <Smartphone className="h-6 w-6" />
-              </div>
-              <div className="space-y-1 text-left">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#a9ff3c]/80">
-                  Mobile Mode
-                </p>
-                <DialogTitle className="text-xl font-black tracking-tight text-white">
-                  Continue on the website or install LINK
-                </DialogTitle>
-              </div>
-            </div>
-            <DialogDescription className="text-left text-sm leading-6 text-white/70">
-              Install LINK to open it from your home screen with a cleaner app-style shell and
-              faster return visits.
-            </DialogDescription>
-          </div>
-        </DialogHeader>
+        <div className="flex flex-col items-center p-8 pb-6 text-center relative overflow-hidden">
+          {/* Background glow effects */}
+          <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-[#C4F135]/20 rounded-full blur-[60px] pointer-events-none" />
+          <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#C4F135]/10 rounded-full blur-[60px] pointer-events-none" />
 
-        <div className="space-y-4 bg-white px-6 py-6">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-3xl border border-black/10 bg-neutral-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-black/40">
-                Website
-              </p>
-              <div className="mt-3 flex items-center gap-2 text-black">
-                <Globe className="h-4 w-4" />
-                <p className="text-sm font-semibold">Keep browsing in the browser.</p>
-              </div>
-            </div>
-            <div className="rounded-3xl border border-black/10 bg-neutral-950 p-4 text-white">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
-                Installed App
-              </p>
-              <div className="mt-3 flex items-center gap-2 text-white">
-                <Download className="h-4 w-4 text-[#a9ff3c]" />
-                <p className="text-sm font-semibold">Add LINK to your home screen.</p>
-              </div>
-            </div>
+          {/* Minimalist App Icon */}
+          <div className="relative flex h-[72px] w-[72px] items-center justify-center rounded-[22px] bg-gradient-to-b from-neutral-800 to-neutral-900 border border-white/10 shadow-xl z-10 mb-6">
+            <Smartphone className="h-8 w-8 text-[#C4F135]" />
           </div>
 
-          {(isIOS || showManualTips || !isInstallReady) && (
-            <div className="rounded-3xl border border-black/10 bg-neutral-50 p-4 text-left">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-black/40">
-                Install Help
-              </p>
+          <DialogTitle className="text-[26px] font-[900] leading-tight tracking-[-0.02em] text-white mb-3 z-10">
+            Get the full<br />experience
+          </DialogTitle>
+          <DialogDescription className="text-[15px] font-medium leading-relaxed text-white/60 mb-8 z-10 px-2">
+            Experience LINK at its best. Faster, smoother, and just one tap away on your home screen.
+          </DialogDescription>
+
+          {/* iOS Manual Instructions */}
+          {showManualTips && (
+            <div className="w-full rounded-[24px] bg-white/5 border border-white/10 p-5 mb-6 text-left z-10 animate-in fade-in zoom-in-95 duration-200">
               {isIOS ? (
-                <p className="mt-2 flex items-start gap-2 text-sm leading-6 text-black/60">
-                  <Share2 className="mt-1 h-4 w-4 shrink-0 text-black" />
-                  On iPhone or iPad, open your browser share menu and choose{' '}
-                  <span className="font-semibold text-black">Add to Home Screen</span>.
-                </p>
+                <div className="flex items-start gap-4">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10">
+                    <Share2 className="h-4 w-4 text-white" />
+                  </div>
+                  <p className="text-[14px] leading-relaxed text-white/80 font-medium">
+                    Tap the <span className="font-bold text-white">Share</span> button below
+                    then select <span className="font-bold text-white">Add to Home Screen</span>.
+                  </p>
+                </div>
               ) : (
-                <p className="mt-2 text-sm leading-6 text-black/60">
-                  Some browsers wait until the visitor has spent a little time on the site before
-                  enabling install. If the install sheet is not ready yet, keep browsing for a
-                  moment, then use your browser menu and choose{' '}
-                  <span className="font-semibold text-black">Install app</span> or{' '}
-                  <span className="font-semibold text-black">Add to Home Screen</span>.
-                </p>
+                <div className="flex items-start gap-4">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10">
+                    <Smartphone className="h-4 w-4 text-white" />
+                  </div>
+                  <p className="text-[14px] leading-relaxed text-white/80 font-medium">
+                    Open your browser menu and tap{' '}
+                    <span className="font-bold text-white">Install app</span> or{' '}
+                    <span className="font-bold text-white">Add to Home Screen</span>.
+                  </p>
+                </div>
               )}
             </div>
           )}
 
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button
-              variant="outline"
-              className="h-11 flex-1 rounded-full border-neutral-200 text-sm font-semibold"
-              onClick={() => dismissPrompt()}
-            >
-              <Globe className="h-4 w-4" />
-              Continue on website
-            </Button>
-            <Button
-              className="h-11 flex-1 rounded-full bg-neutral-950 text-sm font-semibold text-white hover:bg-neutral-800"
-              disabled={isInstalling}
-              onClick={handleInstallClick}
-            >
-              <Download className="h-4 w-4" />
-              {isInstalling ? 'Opening install...' : installButtonLabel}
-            </Button>
+          <div className="flex w-full flex-col gap-3 z-10 mt-auto">
+            {!showManualTips ? (
+              <Button
+                className="h-14 w-full rounded-[20px] bg-[#C4F135] text-[16px] font-[900] tracking-tight text-black hover:bg-[#b0d930] shadow-[0_0_20px_rgba(196,241,53,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all"
+                disabled={isInstalling}
+                onClick={handleInstallClick}
+              >
+                <Download className="mr-2 h-[22px] w-[22px]" />
+                {isInstalling ? 'Installing...' : 'Install LINK App'}
+              </Button>
+            ) : (
+              <Button
+                className="h-14 w-full rounded-[20px] bg-white text-[16px] font-[900] tracking-tight text-black hover:bg-neutral-200 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                onClick={() => dismissPrompt()}
+              >
+                Got it
+              </Button>
+            )}
+
+            {!showManualTips && (
+              <button
+                className="h-12 w-full rounded-full text-[15px] font-bold text-white/40 hover:text-white transition-colors"
+                onClick={() => dismissPrompt()}
+              >
+                Keep using browser
+              </button>
+            )}
           </div>
         </div>
       </DialogContent>
