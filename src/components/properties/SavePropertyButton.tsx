@@ -121,23 +121,32 @@ export function SavePropertyButton({
     }
 
     return (
-        <>
+        <div onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+        }}>
             <Button
                 size="icon"
                 variant="secondary"
                 className={cn(
-                    "h-8 w-8 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white transition-all hover:scale-105",
-                    isSaved ? "text-red-500 bg-white" : "text-gray-700",
+                    "h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-white shadow-sm hover:bg-neutral-50 border border-neutral-100 transition-all hover:scale-105 active:scale-95",
+                    isSaved ? "text-red-500" : "text-black",
                     className
                 )}
                 onClick={handleToggle}
                 disabled={isLoading}
             >
-                <Heart className={cn("h-4 w-4 transition-colors", isSaved ? "fill-current" : "")} />
+                <Heart 
+                    className={cn(
+                        "h-5 w-5 transition-all duration-300", 
+                        isSaved ? "fill-current scale-110" : "text-black"
+                    )} 
+                    strokeWidth={2.5}
+                />
                 <span className="sr-only">{isSaved ? 'Unsave property' : 'Save property'}</span>
             </Button>
             {LoginDialog}
-        </>
+        </div>
     )
 }
 

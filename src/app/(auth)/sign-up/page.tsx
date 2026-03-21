@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, Suspense, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { Eye, EyeOff, ArrowLeft, Loader2 } from 'lucide-react'
 import { useAuthActions } from "@convex-dev/auth/react"
+import { useUser } from '@/components/providers/UserProvider'
 
 function SignUpContent() {
     const [isLoading, setIsLoading] = useState(false)
@@ -16,9 +17,15 @@ function SignUpContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const { signIn } = useAuthActions()
+    const { isAuthenticated, isLoading: authLoading } = useUser()
 
-    // Get the redirect URL from query params
     const redirectUrl = searchParams.get('redirect')
+
+    useEffect(() => {
+        if (isAuthenticated && !authLoading) {
+            router.push(redirectUrl ? decodeURIComponent(redirectUrl) : '/')
+        }
+    }, [isAuthenticated, authLoading, router, redirectUrl])
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
@@ -34,7 +41,6 @@ function SignUpContent() {
             return
         }
 
-        // Add additional fields expected by the profile function
         formData.set("name", `${firstName} ${surname}`)
         formData.set("role", "tenant")
         formData.set("flow", "signUp")
@@ -42,8 +48,7 @@ function SignUpContent() {
         try {
             await signIn("password", formData)
             router.refresh()
-            // Redirect to the original page if redirect param exists, otherwise go to home
-            router.push(redirectUrl ? decodeURIComponent(redirectUrl) : '/')
+            // Redirect handled by useEffect or router.push in Convex
         } catch (error) {
             console.error(error)
             toast.error(error instanceof Error ? error.message : 'Sign up failed')
@@ -51,50 +56,51 @@ function SignUpContent() {
         }
     }
 
-    return (
-        <div className="min-h-screen bg-neutral-50 relative overflow-hidden flex flex-col font-sans">
-            {/* Ambient Background */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-[20%] -right-[10%] w-[600px] h-[600px] rounded-full bg-blue-100/50 blur-3xl opacity-50 mix-blend-multiply animate-blob" />
-                <div className="absolute -top-[20%] -left-[10%] w-[500px] h-[500px] rounded-full bg-purple-100/50 blur-3xl opacity-50 mix-blend-multiply animate-blob animation-delay-2000" />
-                <div className="absolute top-[20%] left-[20%] w-[400px] h-[400px] rounded-full bg-emerald-100/50 blur-3xl opacity-50 mix-blend-multiply animate-blob animation-delay-4000" />
+    if (authLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white">
+                <Loader2 className="h-8 w-8 animate-spin text-neutral-900" />
             </div>
+        )
+    }
 
+    return (
+        <div className="min-h-screen bg-white relative overflow-hidden flex flex-col font-sans selection:bg-neutral-200">
             {/* Header */}
-            <header className="relative z-10 flex items-center justify-between px-6 py-6 border-b border-transparent">
+            <header className="relative z-10 flex items-center justify-between px-6 py-6 sm:px-10">
                 <Link
                     href="/"
-                    className="flex items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-all hover:-translate-x-1 p-2 -ml-2 rounded-full hover:bg-white/50"
+                    className="flex items-center justify-center w-11 h-11 border border-neutral-200 text-neutral-900 transition-all rounded-full hover:bg-neutral-50 active:scale-95"
                 >
-                    <ArrowLeft className="h-5 w-5" />
+                    <ArrowLeft className="h-5 w-5" strokeWidth={2.5} />
                 </Link>
-                <div className="font-[family-name:var(--font-anton)] text-2xl tracking-wide text-neutral-900 absolute left-1/2 -translate-x-1/2">
+                <Link href="/" className="font-[900] text-3xl tracking-tighter text-neutral-900 absolute left-1/2 -translate-x-1/2">
                     LINK
-                </div>
-                <div className="w-9" />
+                </Link>
+                <div className="w-11" />
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 flex flex-col justify-center px-6 pb-12 relative z-10">
-                <div className="max-w-md mx-auto w-full space-y-8">
+            <main className="flex-1 flex flex-col justify-center px-6 pb-12 relative z-10 w-full max-w-[500px] mx-auto">
+                <div className="w-full space-y-8">
                     {/* Header Text */}
-                    <div className="space-y-2 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
-                        <h1 className="text-3xl sm:text-4xl font-bold text-neutral-900 tracking-tight">
+                    <div className="space-y-3">
+                        <h1 className="text-[36px] sm:text-[44px] font-[900] text-neutral-900 tracking-[-0.03em] leading-tight text-center">
                             Create account
                         </h1>
-                        <p className="text-neutral-500 text-lg">
+                        <p className="text-neutral-500 text-[17px] font-semibold text-center mt-2">
                             Join Link to find your perfect home
                         </p>
                     </div>
 
                     {/* Form Card */}
-                    <div className="bg-white/80 backdrop-blur-xl border border-white/20 shadow-xl shadow-neutral-900/5 rounded-3xl p-6 sm:p-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-150 ring-1 ring-black/5">
+                    <div className="bg-white border border-neutral-200/60 rounded-[32px] p-6 sm:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="space-y-5">
                                 {/* Name Fields */}
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2 group">
-                                        <Label htmlFor="firstName" className="text-sm font-medium text-neutral-700 ml-1 transition-colors group-focus-within:text-neutral-900">
+                                    <div className="space-y-2.5">
+                                        <Label htmlFor="firstName" className="text-[14px] font-[900] text-neutral-900 tracking-tight ml-1">
                                             First name
                                         </Label>
                                         <Input
@@ -104,11 +110,11 @@ function SignUpContent() {
                                             placeholder="John"
                                             required
                                             disabled={isLoading}
-                                            className="h-12 sm:h-14 rounded-2xl bg-neutral-50/50 border-transparent hover:bg-neutral-50 focus:bg-white focus:border-neutral-200 focus:ring-4 focus:ring-neutral-100 transition-all font-medium placeholder:text-neutral-400"
+                                            className="h-14 rounded-2xl bg-[#F8F9FA] border border-neutral-200 hover:border-neutral-300 focus:bg-white focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 transition-all font-semibold placeholder:text-neutral-400 placeholder:font-medium px-5 text-[16px]"
                                         />
                                     </div>
-                                    <div className="space-y-2 group">
-                                        <Label htmlFor="surname" className="text-sm font-medium text-neutral-700 ml-1 transition-colors group-focus-within:text-neutral-900">
+                                    <div className="space-y-2.5">
+                                        <Label htmlFor="surname" className="text-[14px] font-[900] text-neutral-900 tracking-tight ml-1">
                                             Surname
                                         </Label>
                                         <Input
@@ -118,14 +124,14 @@ function SignUpContent() {
                                             placeholder="Doe"
                                             required
                                             disabled={isLoading}
-                                            className="h-12 sm:h-14 rounded-2xl bg-neutral-50/50 border-transparent hover:bg-neutral-50 focus:bg-white focus:border-neutral-200 focus:ring-4 focus:ring-neutral-100 transition-all font-medium placeholder:text-neutral-400"
+                                            className="h-14 rounded-2xl bg-[#F8F9FA] border border-neutral-200 hover:border-neutral-300 focus:bg-white focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 transition-all font-semibold placeholder:text-neutral-400 placeholder:font-medium px-5 text-[16px]"
                                         />
                                     </div>
                                 </div>
 
                                 {/* Email */}
-                                <div className="space-y-2 group">
-                                    <Label htmlFor="email" className="text-sm font-medium text-neutral-700 ml-1 transition-colors group-focus-within:text-neutral-900">
+                                <div className="space-y-2.5">
+                                    <Label htmlFor="email" className="text-[14px] font-[900] text-neutral-900 tracking-tight ml-1">
                                         Email Address
                                     </Label>
                                     <Input
@@ -135,13 +141,13 @@ function SignUpContent() {
                                         placeholder="name@example.com"
                                         required
                                         disabled={isLoading}
-                                        className="h-12 sm:h-14 rounded-2xl bg-neutral-50/50 border-transparent hover:bg-neutral-50 focus:bg-white focus:border-neutral-200 focus:ring-4 focus:ring-neutral-100 transition-all font-medium placeholder:text-neutral-400"
+                                        className="h-14 rounded-2xl bg-[#F8F9FA] border border-neutral-200 hover:border-neutral-300 focus:bg-white focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 transition-all font-semibold placeholder:text-neutral-400 placeholder:font-medium px-5 text-[16px]"
                                     />
                                 </div>
 
                                 {/* Password */}
-                                <div className="space-y-2 group">
-                                    <Label htmlFor="password" className="text-sm font-medium text-neutral-700 ml-1 transition-colors group-focus-within:text-neutral-900">
+                                <div className="space-y-2.5">
+                                    <Label htmlFor="password" className="text-[14px] font-[900] text-neutral-900 tracking-tight ml-1">
                                         Password
                                     </Label>
                                     <div className="relative">
@@ -152,32 +158,33 @@ function SignUpContent() {
                                             required
                                             minLength={6}
                                             disabled={isLoading}
-                                            className="h-12 sm:h-14 rounded-2xl bg-neutral-50/50 border-transparent hover:bg-neutral-50 focus:bg-white focus:border-neutral-200 focus:ring-4 focus:ring-neutral-100 transition-all font-medium pr-12"
+                                            className="h-14 rounded-2xl bg-[#F8F9FA] border border-neutral-200 hover:border-neutral-300 focus:bg-white focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 transition-all font-semibold placeholder:text-neutral-400 placeholder:font-medium px-5 text-[16px] pr-12"
+                                            placeholder="Create a password"
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700 transition-colors p-1"
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-900 transition-colors p-1"
                                         >
                                             {showPassword ? (
-                                                <EyeOff className="h-5 w-5" />
+                                                <EyeOff className="h-5 w-5" strokeWidth={2.5} />
                                             ) : (
-                                                <Eye className="h-5 w-5" />
+                                                <Eye className="h-5 w-5" strokeWidth={2.5} />
                                             )}
                                         </button>
                                     </div>
-                                    <p className="text-xs text-neutral-400 ml-1">Must be at least 6 characters</p>
+                                    <p className="text-[13px] text-neutral-400 font-semibold ml-1">Must be at least 6 characters</p>
                                 </div>
                             </div>
-
+                            
                             {/* Terms */}
-                            <p className="text-sm text-neutral-500 text-center px-4">
+                            <p className="text-[13px] font-semibold text-neutral-500 text-center px-4 pt-2">
                                 By creating an account, you agree to our{' '}
-                                <Link href="/terms" className="text-neutral-900 font-medium hover:underline">
+                                <Link href="/terms" className="text-neutral-900 font-bold hover:underline decoration-2 underline-offset-2 decoration-[#C4F135]">
                                     Terms
                                 </Link>{' '}
                                 and{' '}
-                                <Link href="/privacy" className="text-neutral-900 font-medium hover:underline">
+                                <Link href="/privacy" className="text-neutral-900 font-bold hover:underline decoration-2 underline-offset-2 decoration-[#C4F135]">
                                     Privacy Policy
                                 </Link>.
                             </p>
@@ -186,7 +193,7 @@ function SignUpContent() {
                             <Button
                                 type="submit"
                                 disabled={isLoading}
-                                className="w-full h-12 sm:h-14 bg-neutral-900 hover:bg-neutral-800 text-white font-semibold text-lg rounded-2xl shadow-lg shadow-neutral-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
+                                className="w-full h-14 bg-[#C4F135] hover:bg-[#b5e02a] text-black font-[900] text-[17px] rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center mt-8 border-0 shadow-none"
                             >
                                 {isLoading ? (
                                     <>
@@ -198,19 +205,19 @@ function SignUpContent() {
                                 )}
                             </Button>
                         </form>
+                    </div>
 
-                        {/* Sign In Link */}
-                        <div className="text-center pt-6 mt-2">
-                            <p className="text-neutral-500 font-medium">
-                                Already have an account?{' '}
-                                <Link
-                                    href={redirectUrl ? `/sign-in?redirect=${encodeURIComponent(redirectUrl)}` : '/sign-in'}
-                                    className="text-neutral-900 font-bold hover:underline decoration-2 underline-offset-4"
-                                >
-                                    Sign in instead
-                                </Link>
-                            </p>
-                        </div>
+                    {/* Sign In Link */}
+                    <div className="text-center pt-2">
+                        <p className="text-neutral-500 font-semibold text-[15px]">
+                            Already have an account?{' '}
+                            <Link
+                                href={redirectUrl ? `/sign-in?redirect=${encodeURIComponent(redirectUrl)}` : '/sign-in'}
+                                className="text-neutral-900 font-[900] hover:underline decoration-2 underline-offset-4 decoration-[#C4F135]"
+                            >
+                                Sign in instead
+                            </Link>
+                        </p>
                     </div>
                 </div>
             </main>
@@ -221,7 +228,7 @@ function SignUpContent() {
 export default function SignUpPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+            <div className="min-h-screen flex items-center justify-center bg-white">
                 <Loader2 className="h-8 w-8 animate-spin text-neutral-900" />
             </div>
         }>

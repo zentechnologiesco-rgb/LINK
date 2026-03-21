@@ -20,7 +20,7 @@ const QUALITY_PRESETS: Record<ImageQualityPreset, number> = {
 
 interface OptimizedImageProps extends Omit<ImageProps, 'onLoad' | 'onError' | 'quality'> {
     containerClassName?: string
-    aspectRatio?: 'video' | 'square' | '4/3' | '3/2' | '16/9'
+    aspectRatio?: 'video' | 'square' | '4/3' | '3/4' | '3/2' | '16/9'
     showSkeleton?: boolean
     /** Quality preset - determines compression level */
     qualityPreset?: ImageQualityPreset
@@ -32,6 +32,7 @@ const aspectRatioClasses = {
     'video': 'aspect-video',
     'square': 'aspect-square',
     '4/3': 'aspect-[4/3]',
+    '3/4': 'aspect-[3/4]',
     '3/2': 'aspect-[3/2]',
     '16/9': 'aspect-[16/9]',
 }

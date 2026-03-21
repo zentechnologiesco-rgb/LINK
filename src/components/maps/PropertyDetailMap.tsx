@@ -155,8 +155,8 @@ export function PropertyDetailMap({ coordinates, address }: PropertyDetailMapPro
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
                     border: 2px solid white;
+                    outline: 1px solid rgba(0,0,0,0.1);
                     cursor: pointer;
                     transition: transform 0.2s;
                     font-size: 14px;
@@ -231,6 +231,7 @@ export function PropertyDetailMap({ coordinates, address }: PropertyDetailMapPro
                 bearing: -17.6,
                 antialias: true,
                 interactive: true,
+                attributionControl: false,
             })
 
             map.current.addControl(new mapboxgl.NavigationControl(), 'top-right')
@@ -297,8 +298,8 @@ export function PropertyDetailMap({ coordinates, address }: PropertyDetailMapPro
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
                         border: 3px solid white;
+                        outline: 1px solid rgba(0,0,0,0.1);
                         z-index: 100;
                     ">
                         <svg 
@@ -379,7 +380,7 @@ export function PropertyDetailMap({ coordinates, address }: PropertyDetailMapPro
     return (
         <div className="space-y-3">
             {/* Map Container */}
-            <div className="relative w-full h-80 sm:h-96 rounded-xl overflow-hidden border border-neutral-200 shadow-sm">
+            <div className="relative w-full h-80 sm:h-96 rounded-xl overflow-hidden border border-neutral-200">
                 <div ref={mapContainer} className="w-full h-full" />
 
                 {/* Loading overlay */}
@@ -391,7 +392,7 @@ export function PropertyDetailMap({ coordinates, address }: PropertyDetailMapPro
 
                 {/* POI Loading indicator */}
                 {isLoadingPois && mapLoaded && (
-                    <div className="absolute top-4 left-4 bg-white/95 backdrop-blur rounded-lg px-3 py-2 shadow-lg flex items-center gap-2">
+                    <div className="absolute top-4 left-4 bg-white/95 backdrop-blur rounded-lg px-3 py-2 border border-neutral-200 flex items-center gap-2">
                         <Loader2 className="h-3.5 w-3.5 animate-spin text-neutral-500" />
                         <span className="text-xs font-medium text-neutral-600">Finding nearby places...</span>
                     </div>

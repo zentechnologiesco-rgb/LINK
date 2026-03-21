@@ -5,7 +5,7 @@ import { api } from "./_generated/api";
 import { TEMPLATES } from "./emailTemplates";
 import { validateFile, ALLOWED_IMAGE_TYPES, ALLOWED_DOCUMENT_TYPES } from "./files";
 
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = process.env.SITE_URL || "http://localhost:3000";
 
 // Create a new lease
 export const create = mutation({
@@ -364,9 +364,15 @@ export const getForLandlord = query({
             leases.map(async (lease) => {
                 const property = await ctx.db.get(lease.propertyId);
                 const tenant = await ctx.db.get(lease.tenantId);
+
+                let imageUrl = null;
+                if (property?.images && property.images.length > 0) {
+                    imageUrl = await ctx.storage.getUrl(property.images[0]);
+                }
+
                 return {
                     ...lease,
-                    property: property ? { title: property.title, address: property.address } : null,
+                    property: property ? { title: property.title, address: property.address, imageUrl } : null,
                     tenant: tenant ? { fullName: tenant.fullName, email: tenant.email } : null,
                 };
             })
@@ -396,9 +402,15 @@ export const getForTenant = query({
             leases.map(async (lease) => {
                 const property = await ctx.db.get(lease.propertyId);
                 const landlord = await ctx.db.get(lease.landlordId);
+
+                let imageUrl = null;
+                if (property?.images && property.images.length > 0) {
+                    imageUrl = await ctx.storage.getUrl(property.images[0]);
+                }
+
                 return {
                     ...lease,
-                    property: property ? { title: property.title, address: property.address } : null,
+                    property: property ? { title: property.title, address: property.address, imageUrl } : null,
                     landlord: landlord ? { fullName: landlord.fullName, email: landlord.email } : null,
                 };
             })

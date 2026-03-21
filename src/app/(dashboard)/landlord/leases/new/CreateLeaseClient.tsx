@@ -165,7 +165,7 @@ export function CreateLeaseClient() {
         )
     }
 
-    const availableProperties = properties.filter(p => p.isAvailable || p.approvalStatus === 'approved')
+    const availableProperties = properties.filter(p => p.isAvailable && p.approvalStatus === 'approved')
 
     return (
         <div className="font-sans pb-24">

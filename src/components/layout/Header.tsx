@@ -91,60 +91,144 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                 className={cn(
                     'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
                     isScrolled
-                        ? 'bg-white/80 backdrop-blur-md border-b border-neutral-200/60'
-                        : 'bg-transparent border-b border-transparent'
+                        ? 'bg-white/90 backdrop-blur-md border-b border-neutral-100'
+                        : 'bg-white border-b border-transparent'
                 )}
             >
-                <div className="max-w-[2000px] mx-auto px-4 md:px-6">
-                    <div className="flex items-center justify-between h-16 md:h-20">
-                        {/* Logo */}
-                        <Link
-                            href="/"
-                            className="flex items-center gap-2 shrink-0"
-                        >
-                            <span className="font-[family-name:var(--font-anton)] text-2xl md:text-3xl tracking-wide text-black">
-                                LINK
-                            </span>
-                        </Link>
-
-                        {/* Right Side */}
-                        <div className="flex items-center gap-2 md:gap-3">
-                            {/* Become a Host - Desktop */}
-                            {user && currentRole === 'tenant' && (
-                                <Link href="/become-landlord">
-                                    <Button
-                                        variant="ghost"
-                                        className="rounded-full text-sm font-medium hover:bg-gray-100"
-                                    >
-                                        Become a Host
-                                    </Button>
-                                </Link>
-                            )}
-
-                            {/* User Menu */}
-                            {isLoading ? (
-                                <div className="h-10 w-10 rounded-full bg-gray-100 animate-pulse" />
-                            ) : user ? (
+                <div className="max-w-[1200px] mx-auto px-4 sm:px-5">
+                    <div className="flex items-center h-16 md:h-20">
+                        {/* Left Side: Hamburger Menu */}
+                        <div className="flex-1 flex justify-start">
+                            {user && (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <button className="flex items-center gap-2 p-1 pr-2 md:pr-3 rounded-full hover:bg-neutral-100 transition-all border border-transparent hover:border-neutral-200 relative">
-                                            <Menu className="h-4 w-4 ml-2 text-neutral-600" />
-                                            <Avatar className="h-8 w-8 border-none">
-                                                <AvatarImage src={user.avatarUrl} alt={user.email || ''} className="object-cover" />
-                                                <AvatarFallback className="bg-gray-900 text-white font-medium text-xs">
-                                                    {getInitials(user) || user.email?.charAt(0).toUpperCase()}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            {/* Notification badge on avatar */}
+                                        <button className="relative outline-none">
+                                            <div className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors">
+                                                <Menu className="h-6 w-6 text-neutral-900" />
+                                            </div>
+                                            {/* Notification badge on hamburger */}
                                             {totalNotifications > 0 && (
-                                                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in duration-200">
+                                                <span className="absolute top-0 right-0 h-4.5 w-4.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white z-10">
                                                     {totalNotifications > 9 ? '9+' : totalNotifications}
                                                 </span>
                                             )}
                                         </button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent
-                                        className="w-64 p-2 rounded-2xl border border-black/5 bg-white shadow-xl shadow-black/10 mt-2"
+                                        className="w-64 p-2 rounded-[20px] border border-neutral-100 bg-white shadow-xl mt-2"
+                                        align="start"
+                                    >
+                                        {currentRole === 'admin' && (
+                                            <DropdownMenuItem
+                                                className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium focus:bg-neutral-50"
+                                                onClick={() => router.push(getDashboardLink())}
+                                            >
+                                                <LayoutDashboard className="mr-3 h-4 w-4 opacity-70" />
+                                                Dashboard
+                                            </DropdownMenuItem>
+                                        )}
+
+                                        {currentRole === 'tenant' && (
+                                            <>
+                                                <DropdownMenuItem
+                                                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium focus:bg-neutral-50"
+                                                    onClick={() => router.push('/tenant/saved')}
+                                                >
+                                                    <Heart className="mr-3 h-4 w-4 opacity-70" />
+                                                    Saved Properties
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium focus:bg-neutral-50"
+                                                    onClick={() => router.push('/tenant/leases')}
+                                                >
+                                                    <div className="flex items-center flex-1">
+                                                        <FileText className="mr-3 h-4 w-4 opacity-70" />
+                                                        My Leases
+                                                    </div>
+                                                    {leaseActionCount > 0 && (
+                                                        <span className="h-5 min-w-[20px] px-1.5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center ml-2">
+                                                            {leaseActionCount}
+                                                        </span>
+                                                    )}
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
+
+                                        {currentRole === 'landlord' && (
+                                            <>
+                                                <DropdownMenuItem
+                                                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium focus:bg-neutral-50"
+                                                    onClick={() => router.push('/landlord/properties')}
+                                                >
+                                                    <Building2 className="mr-3 h-4 w-4 opacity-70" />
+                                                    My Properties
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium focus:bg-neutral-50"
+                                                    onClick={() => router.push('/landlord/leases')}
+                                                >
+                                                    <div className="flex items-center flex-1">
+                                                        <FileText className="mr-3 h-4 w-4 opacity-70" />
+                                                        Leases
+                                                    </div>
+                                                    {leaseActionCount > 0 && (
+                                                        <span className="h-5 min-w-[20px] px-1.5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center ml-2">
+                                                            {leaseActionCount}
+                                                        </span>
+                                                    )}
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
+
+                                        <DropdownMenuItem
+                                            className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium focus:bg-neutral-50"
+                                            onClick={() => router.push('/chat')}
+                                        >
+                                            <div className="flex items-center flex-1">
+                                                <MessageSquare className="mr-3 h-4 w-4 opacity-70" />
+                                                Messages
+                                            </div>
+                                            {unreadCount > 0 && (
+                                                <span className="h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center ml-2">
+                                                    {unreadCount > 99 ? '99+' : unreadCount}
+                                                </span>
+                                            )}
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            )}
+                        </div>
+
+                        {/* Center: Logo */}
+                        <div className="flex-1 flex justify-center">
+                            <Link
+                                href="/"
+                                className="flex items-center"
+                            >
+                                <span className="font-bold text-2xl md:text-[28px] tracking-tight text-neutral-900">
+                                    Link.
+                                </span>
+                            </Link>
+                        </div>
+
+                        {/* Right Side: Avatar */}
+                        <div className="flex-1 flex justify-end">
+                            {isLoading ? (
+                                <div className="h-10 w-10 rounded-full bg-gray-100 animate-pulse" />
+                            ) : user ? (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button className="relative outline-none">
+                                            <Avatar className="h-9 w-9 sm:h-10 sm:h-10 border-2 border-white shadow-sm ring-1 ring-neutral-100">
+                                                <AvatarImage src={user.avatarUrl} alt={user.email || ''} className="object-cover" />
+                                                <AvatarFallback className="bg-neutral-900 text-white font-medium text-xs">
+                                                    {getInitials(user) || user.email?.charAt(0).toUpperCase()}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                        className="w-64 p-2 rounded-[20px] border border-neutral-100 bg-white shadow-xl mt-2"
                                         align="end"
                                     >
                                         <div className="px-3 py-2 mb-1">
@@ -156,127 +240,10 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                             </p>
                                         </div>
 
-                                        <DropdownMenuSeparator className="bg-black/5" />
-
-                                        {/* Dashboard - Admin only (landlords/tenants go directly to their first page) */}
-                                        {currentRole === 'admin' && (
-                                            <DropdownMenuItem
-                                                className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
-                                                onClick={() => router.push(getDashboardLink())}
-                                            >
-                                                <LayoutDashboard className="mr-3 h-4 w-4 opacity-70" />
-                                                Dashboard
-                                            </DropdownMenuItem>
-                                        )}
-
-                                        {/* Tenant-specific links */}
-                                        {currentRole === 'tenant' && (
-                                            <>
-                                                <DropdownMenuItem
-                                                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
-                                                    onClick={() => router.push('/tenant/saved')}
-                                                >
-                                                    <Heart className="mr-3 h-4 w-4 opacity-70" />
-                                                    Saved Properties
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
-                                                    onClick={() => router.push('/tenant/leases')}
-                                                >
-                                                    <div className="flex items-center flex-1">
-                                                        <FileText className="mr-3 h-4 w-4 opacity-70" />
-                                                        My Leases
-                                                    </div>
-                                                    {leaseActionCount > 0 && (
-                                                        <span className="h-5 min-w-[20px] px-1.5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                                                            {leaseActionCount}
-                                                        </span>
-                                                    )}
-                                                </DropdownMenuItem>
-                                            </>
-                                        )}
-
-                                        {/* Landlord-specific links */}
-                                        {currentRole === 'landlord' && (
-                                            <>
-                                                <DropdownMenuItem
-                                                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
-                                                    onClick={() => router.push('/landlord/properties')}
-                                                >
-                                                    <Building2 className="mr-3 h-4 w-4 opacity-70" />
-                                                    My Properties
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
-                                                    onClick={() => router.push('/landlord/leases')}
-                                                >
-                                                    <div className="flex items-center flex-1">
-                                                        <FileText className="mr-3 h-4 w-4 opacity-70" />
-                                                        Leases
-                                                    </div>
-                                                    {leaseActionCount > 0 && (
-                                                        <span className="h-5 min-w-[20px] px-1.5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                                                            {leaseActionCount}
-                                                        </span>
-                                                    )}
-                                                </DropdownMenuItem>
-                                            </>
-                                        )}
-
-                                        {/* Admin-specific links */}
-                                        {currentRole === 'admin' && (
-                                            <>
-                                                <DropdownMenuItem
-                                                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
-                                                    onClick={() => router.push('/admin/properties')}
-                                                >
-                                                    <Building2 className="mr-3 h-4 w-4 opacity-70" />
-                                                    Manage Properties
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
-                                                    onClick={() => router.push('/admin/landlord-requests')}
-                                                >
-                                                    <User className="mr-3 h-4 w-4 opacity-70" />
-                                                    Verification Queue
-                                                </DropdownMenuItem>
-                                            </>
-                                        )}
-
-                                        {/* Messages - All Roles with badge */}
-                                        <DropdownMenuItem
-                                            className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
-                                            onClick={() => router.push('/chat')}
-                                        >
-                                            <div className="flex items-center flex-1">
-                                                <MessageSquare className="mr-3 h-4 w-4 opacity-70" />
-                                                Messages
-                                            </div>
-                                            {unreadCount > 0 && (
-                                                <span className="h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                                                    {unreadCount > 99 ? '99+' : unreadCount}
-                                                </span>
-                                            )}
-                                        </DropdownMenuItem>
-
-                                        {/* Payments - Coming Soon */}
-                                        <DropdownMenuItem
-                                            className="rounded-xl px-3 py-2.5 text-sm font-medium text-black/40 flex items-center justify-between cursor-not-allowed hover:bg-transparent"
-                                            onClick={(e) => e.preventDefault()}
-                                        >
-                                            <div className="flex items-center">
-                                                <Wallet className="mr-3 h-4 w-4 opacity-70" />
-                                                Payments
-                                            </div>
-                                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-black/40 bg-black/5 px-1.5 py-0.5 rounded">
-                                                Soon
-                                            </span>
-                                        </DropdownMenuItem>
-
-                                        <DropdownMenuSeparator className="bg-black/5" />
+                                        <DropdownMenuSeparator className="bg-neutral-100" />
 
                                         <DropdownMenuItem
-                                            className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-black focus:bg-gray-100 transition-colors"
+                                            className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium focus:bg-neutral-50"
                                             onClick={() => router.push('/settings')}
                                         >
                                             <Settings className="mr-3 h-4 w-4 opacity-70" />
@@ -285,7 +252,7 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
 
                                         <DropdownMenuItem
                                             onClick={handleSignOut}
-                                            className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-black/80 focus:text-red-600 focus:bg-red-50 transition-colors"
+                                            className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-red-600 focus:bg-red-50"
                                         >
                                             <LogOut className="mr-3 h-4 w-4 opacity-70" />
                                             Sign Out
@@ -293,21 +260,14 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             ) : (
-                                <div className="flex items-center gap-2">
-                                    <Link href="/sign-in">
-                                        <Button
-                                            variant="ghost"
-                                            className="rounded-full text-sm font-medium hover:bg-gray-100"
-                                        >
-                                            Sign In
-                                        </Button>
-                                    </Link>
-                                    <Link href="/sign-up" className="hidden md:block">
-                                        <Button className="rounded-full bg-black hover:bg-gray-800 text-white text-sm font-medium px-5">
-                                            Sign Up
-                                        </Button>
-                                    </Link>
-                                </div>
+                                <Link href="/sign-in">
+                                    <Button
+                                        variant="outline"
+                                        className="rounded-full text-xs font-semibold px-4 border-neutral-200 hover:bg-neutral-50"
+                                    >
+                                        Sign In
+                                    </Button>
+                                </Link>
                             )}
                         </div>
                     </div>
