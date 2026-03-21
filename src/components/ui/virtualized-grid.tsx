@@ -2,7 +2,6 @@
 
 import { useRef, useState, useEffect, useCallback, useMemo } from "react"
 import { useInView } from "@/hooks/useOptimisticQuery"
-import { PropertyGridSkeleton } from "@/components/ui/skeleton"
 
 interface VirtualizedGridProps<T> {
     items: T[]

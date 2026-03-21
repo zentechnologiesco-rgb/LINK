@@ -10,4 +10,11 @@ crons.daily(
     api.leases.checkExpired
 );
 
+// Mark overdue payments every day at 1 AM
+crons.daily(
+    "Mark overdue payments",
+    { hourUTC: 1, minuteUTC: 0 },
+    api.payments.markOverdue
+);
+
 export default crons;

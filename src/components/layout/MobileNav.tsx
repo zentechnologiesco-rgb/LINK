@@ -40,11 +40,6 @@ const adminNavItems: NavItem[] = [
     { label: 'Profile', href: '/settings', icon: User },
 ]
 
-const guestNavItems: NavItem[] = [
-    { label: 'Home', href: '/', icon: Home },
-    { label: 'Sign In', href: '/sign-in', icon: User },
-]
-
 export function MobileNav({ user, userRole }: MobileNavProps) {
     const pathname = usePathname()
     const currentRole = userRole || user?.role
@@ -62,12 +57,11 @@ export function MobileNav({ user, userRole }: MobileNavProps) {
     )
     const leaseActionCount = typeof leaseActionCountQuery === 'number' ? leaseActionCountQuery : 0
 
-    let items: NavItem[] = guestNavItems
-    if (user) {
-        if (currentRole === 'landlord') items = landlordNavItems
-        else if (currentRole === 'admin') items = adminNavItems
-        else items = tenantNavItems
-    }
+    if (!user) return null
+
+    let items: NavItem[] = tenantNavItems
+    if (currentRole === 'landlord') items = landlordNavItems
+    else if (currentRole === 'admin') items = adminNavItems
 
     const getBadgeCount = (badgeType?: 'messages' | 'leases') => {
         if (badgeType === 'messages') return unreadCount
@@ -78,11 +72,15 @@ export function MobileNav({ user, userRole }: MobileNavProps) {
     return (
         <>
             {/* Spacer to prevent content from being hidden behind nav */}
-            <div className="h-16 md:hidden" />
+            <div className="h-24 md:hidden" />
 
-            {/* Fixed Bottom Navigation */}
-            <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-t border-neutral-100 md:hidden">
-                <div className="flex items-center justify-around h-16 px-2">
+            {/* Floating Bottom Navigation */}
+            <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 md:hidden">
+                <div
+                    className={cn(
+                        "flex items-center bg-neutral-100 rounded-full p-1.5 border border-neutral-200",
+                    )}
+                >
                     {items.map((item) => {
                         const isActive = item.href === '/'
                             ? pathname === '/'
@@ -96,35 +94,39 @@ export function MobileNav({ user, userRole }: MobileNavProps) {
                                 key={item.href}
                                 href={item.href}
                                 className={cn(
-                                    'flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-all duration-200 relative',
+                                    'relative flex items-center justify-center rounded-full transition-all duration-300 ease-out',
                                     isActive
-                                        ? 'text-neutral-900'
-                                        : 'text-neutral-400 hover:text-neutral-600'
+                                        ? 'bg-white h-14 px-5 gap-2.5'
+                                        : 'h-14 w-14 text-neutral-400 hover:text-neutral-600 active:scale-90'
                                 )}
                             >
-                                <div className="relative">
+                                <div className="relative flex items-center justify-center">
                                     <Icon
                                         className={cn(
-                                            'h-5 w-5 transition-all duration-200',
-                                            isActive && 'scale-105'
+                                            'h-[22px] w-[22px] transition-all duration-300',
+                                            isActive
+                                                ? 'text-neutral-900'
+                                                : 'text-neutral-400'
                                         )}
                                         strokeWidth={isActive ? 2.5 : 2}
+                                        {...(isActive && item.icon === Home ? { fill: 'currentColor' } : {})}
                                     />
                                     {hasBadge && (
                                         <span className={cn(
-                                            "absolute -top-1 -right-1 h-4 w-4 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in duration-200",
+                                            "absolute -top-1.5 -right-1.5 h-4 min-w-[16px] px-0.5 text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-neutral-100 animate-in zoom-in duration-200",
                                             item.badgeType === 'leases' ? 'bg-amber-500' : 'bg-red-500'
                                         )}>
                                             {badgeCount > 9 ? '9+' : badgeCount}
                                         </span>
                                     )}
                                 </div>
-                                <span className={cn(
-                                    'text-[10px]',
-                                    isActive ? 'font-bold' : 'font-medium'
-                                )}>
-                                    {item.label}
-                                </span>
+
+                                {/* Label shown only when active */}
+                                {isActive && (
+                                    <span className="text-[13px] font-bold text-neutral-900 whitespace-nowrap animate-in fade-in slide-in-from-left-1 duration-200">
+                                        {item.label}
+                                    </span>
+                                )}
                             </Link>
                         )
                     })}

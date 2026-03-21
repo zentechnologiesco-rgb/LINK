@@ -82,7 +82,7 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
         setIsSubmitting(true)
         try {
             await landlordDecision({
-                leaseId: lease.id || lease._id,
+                leaseId: lease._id,
                 approved: true,
                 signatureData: landlordSignature || undefined
             })
@@ -103,7 +103,7 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
         setIsSubmitting(true)
         try {
             await landlordDecision({
-                leaseId: lease.id || lease._id,
+                leaseId: lease._id,
                 approved: false,
                 notes
             })
@@ -124,7 +124,7 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
         setIsSubmitting(true)
         try {
             await requestRevision({
-                leaseId: lease.id || lease._id,
+                leaseId: lease._id,
                 notes
             })
             toast.success('Revision requested. Tenant will be notified.')
@@ -149,10 +149,10 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
         }
     }
 
-    const tenantSignature = lease.tenant_signature_data || lease.tenantSignatureData
-    const signedAt = lease.signed_at || lease.signedAt
-    const startDate = format(new Date(lease.start_date || lease.startDate), 'MMM d, yyyy')
-    const endDate = format(new Date(lease.end_date || lease.endDate), 'MMM d, yyyy')
+    const tenantSignature = lease.tenantSignatureData
+    const signedAt = lease.signedAt
+    const startDate = format(new Date(lease.startDate), 'MMM d, yyyy')
+    const endDate = format(new Date(lease.endDate), 'MMM d, yyyy')
 
     return (
         <div className="font-sans text-neutral-900 pb-24">
@@ -224,7 +224,7 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
                         <div className="bg-neutral-50 rounded-lg p-3">
                             <p className="text-xs text-neutral-500 mb-0.5">Monthly Rent</p>
                             <p className="text-lg font-bold text-neutral-900">
-                                N${(lease.monthly_rent || lease.monthlyRent)?.toLocaleString()}
+                                N${(lease.monthlyRent)?.toLocaleString()}
                             </p>
                         </div>
                         <div className="bg-neutral-50 rounded-lg p-3">
@@ -362,10 +362,10 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
                         <div className="px-4 pb-4 pt-0">
                             <LeaseStatusTimeline
                                 status={lease.status}
-                                createdAt={lease.created_at || lease._creationTime}
-                                sentAt={lease.sent_at || lease.sentAt}
+                                createdAt={lease._creationTime}
+                                sentAt={lease.sentAt}
                                 signedAt={signedAt}
-                                approvedAt={lease.approved_at || lease.approvedAt}
+                                approvedAt={lease.approvedAt}
                             />
                         </div>
                     )}
@@ -408,9 +408,9 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
                                     phone: lease.tenant.phone,
                                 } : undefined}
                                 leaseTerms={{
-                                    startDate: lease.start_date || lease.startDate,
-                                    endDate: lease.end_date || lease.endDate,
-                                    monthlyRent: lease.monthly_rent || lease.monthlyRent,
+                                    startDate: lease.startDate,
+                                    endDate: lease.endDate,
+                                    monthlyRent: lease.monthlyRent,
                                     deposit: lease.deposit,
                                 }}
                                 tenantSignature={tenantSignature}
@@ -441,7 +441,7 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
                             <div className="px-4 pb-4 pt-0 space-y-2">
                                 {payments.map((payment: any) => (
                                     <div
-                                        key={payment.id || payment._id}
+                                        key={payment._id}
                                         className="flex items-center justify-between p-3 rounded-lg bg-neutral-50"
                                     >
                                         <div className="flex items-center gap-3">
@@ -458,7 +458,7 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
                                             <div>
                                                 <p className="text-sm font-medium text-neutral-900 capitalize">{payment.type}</p>
                                                 <p className="text-xs text-neutral-500">
-                                                    Due: {format(new Date(payment.due_date || payment.dueDate), 'MMM d, yyyy')}
+                                                    Due: {format(new Date(payment.dueDate), 'MMM d, yyyy')}
                                                 </p>
                                             </div>
                                         </div>
@@ -468,7 +468,7 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
                                             </p>
                                             {payment.status === 'pending' && (
                                                 <button
-                                                    onClick={() => handleMarkPaid(payment.id || payment._id)}
+                                                    onClick={() => handleMarkPaid(payment._id)}
                                                     className="text-xs text-emerald-600 font-medium hover:underline"
                                                 >
                                                     Mark Paid
@@ -507,9 +507,9 @@ export function LeaseDetailClient({ lease, payments }: LeaseDetailClientProps) {
                                     phone: lease.tenant.phone,
                                 } : { fullName: '', email: '' },
                                 leaseTerms: {
-                                    startDate: lease.start_date || lease.startDate,
-                                    endDate: lease.end_date || lease.endDate,
-                                    monthlyRent: lease.monthly_rent || lease.monthlyRent,
+                                    startDate: lease.startDate,
+                                    endDate: lease.endDate,
+                                    monthlyRent: lease.monthlyRent,
                                     deposit: lease.deposit,
                                 },
                                 tenantSignature: tenantSignature,

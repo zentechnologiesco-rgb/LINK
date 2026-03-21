@@ -4,6 +4,7 @@ import './globals.css'
 import { Toaster } from '@/components/ui/sonner'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ConvexClientProvider } from '@/components/providers/ConvexClientProvider'
+import { PwaInstallPrompt } from '@/components/pwa/PwaInstallPrompt'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 
@@ -15,8 +16,19 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  applicationName: 'LINK',
   title: 'LINK - Property Rental Platform',
   description: 'Modern, end-to-end property rental platform for Namibia.',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'LINK',
+  },
+  formatDetection: {
+    telephone: false,
+  },
   // Add OpenGraph for better sharing performance
   openGraph: {
     title: 'LINK - Property Rental Platform',
@@ -44,7 +56,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
-  themeColor: '#ffffff',
+  themeColor: '#050505',
 }
 
 export default function RootLayout({
@@ -70,6 +82,7 @@ export default function RootLayout({
           <AppLayout>
             {children}
           </AppLayout>
+          <PwaInstallPrompt />
           <Toaster />
         </ConvexClientProvider>
         <Analytics />

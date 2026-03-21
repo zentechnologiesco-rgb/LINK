@@ -515,3 +515,20 @@ html {
 .property-detail-marker {
   z-index: 100 !important;
 }
+
+/* Property Detail Mobile View - Stuttle Design */
+.property-detail-mobile {
+  /* Hide the floating MobileNav on property detail page */
+}
+
+/* When property detail mobile view is active, hide the MobileNav spacer and nav */
+.property-detail-mobile ~ nav,
+.property-detail-mobile ~ div.h-24 {
+  display: none;
+}
+
+/* Hide Mapbox Branding */
+.mapboxgl-ctrl-logo,
+.mapboxgl-ctrl-attrib {
+  display: none !important;
+}

@@ -88,7 +88,8 @@ export function PropertyMap({
                 zoom: zoom,
                 pitch: 45, // Tilt for 3D view
                 bearing: -17.6, // Slight rotation for visual interest
-                antialias: true // Smoother 3D buildings
+                antialias: true, // Smoother 3D buildings
+                attributionControl: false
             })
 
             map.current.addControl(new mapboxgl.NavigationControl(), 'top-right')
@@ -331,7 +332,7 @@ export function PropertyMap({
             })
                 .setLngLat((features[0].geometry as GeoJSON.Point).coordinates as [number, number])
                 .setHTML(`
-                    <div style="width: 220px; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.15);">
+                    <div style="width: 220px; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
                         <div style="height: 120px; width: 100%; background-color: #f3f4f6; position: relative;">
                             <img src="${props.image}" style="width: 100%; height: 100%; object-fit: cover;" alt="${props.title}" onerror="this.src='/placeholder.jpg'" />
                         </div>
@@ -453,7 +454,7 @@ export function PropertyMap({
 
             {/* Cluster Legend */}
             {mapLoaded && (
-                <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur rounded-xl border border-neutral-200 p-3 shadow-lg">
+                <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur rounded-xl border border-neutral-200 p-3">
                     <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-2">Properties</p>
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1.5">
@@ -483,7 +484,7 @@ export function PropertyMap({
             {mapLoaded && (
                 <button
                     onClick={() => setIs3D(!is3D)}
-                    className={`absolute top-4 left-4 px-3 py-2 rounded-lg border shadow-lg transition-all duration-300 flex items-center gap-2 font-semibold text-xs ${is3D
+                    className={`absolute top-4 left-4 px-3 py-2 rounded-lg border transition-all duration-300 flex items-center gap-2 font-semibold text-xs ${is3D
                             ? 'bg-neutral-900 text-white border-neutral-900 hover:bg-neutral-800'
                             : 'bg-white/95 backdrop-blur text-neutral-700 border-neutral-200 hover:bg-neutral-50'
                         }`}

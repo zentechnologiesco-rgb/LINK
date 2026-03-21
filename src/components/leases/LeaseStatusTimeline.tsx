@@ -17,10 +17,10 @@ import { cn } from '@/lib/utils'
 
 interface LeaseStatusTimelineProps {
     status: string
-    createdAt: string
-    sentAt?: string | null
-    signedAt?: string | null
-    approvedAt?: string | null
+    createdAt: string | number
+    sentAt?: string | number | null
+    signedAt?: string | number | null
+    approvedAt?: string | number | null
 }
 
 const statusConfig: Record<string, {
