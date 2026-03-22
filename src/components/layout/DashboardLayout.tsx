@@ -76,7 +76,7 @@ export function DashboardLayout({ children, title = 'Dashboard', user }: Dashboa
     }
 
     return (
-        <div className="min-h-screen bg-[#fafafa]">
+        <div className="min-h-screen bg-white font-sans text-neutral-900">
             {/* Unified Top Header - Matches Home Page */}
             <Header user={user} isLoading={!user} />
 

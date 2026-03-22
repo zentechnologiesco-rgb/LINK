@@ -206,7 +206,7 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                 className="flex items-center"
                             >
                                 <span className="font-bold text-2xl md:text-[28px] tracking-tight text-neutral-900">
-                                    Link.
+                                    LINK
                                 </span>
                             </Link>
                         </div>

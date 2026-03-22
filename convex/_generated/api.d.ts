@@ -18,6 +18,7 @@ import type * as emails from "../emails.js";
 import type * as files from "../files.js";
 import type * as http from "../http.js";
 import type * as inquiries from "../inquiries.js";
+import type * as leaseTemplates from "../leaseTemplates.js";
 import type * as leases from "../leases.js";
 import type * as messages from "../messages.js";
 import type * as payments from "../payments.js";
@@ -44,6 +45,7 @@ declare const fullApi: ApiFromModules<{
   files: typeof files;
   http: typeof http;
   inquiries: typeof inquiries;
+  leaseTemplates: typeof leaseTemplates;
   leases: typeof leases;
   messages: typeof messages;
   payments: typeof payments;

@@ -13,12 +13,13 @@ import {
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { useMutation } from "convex/react"
+import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 
 interface SavePropertyButtonProps {
     propertyId: string
+    landlordId?: string
     initialSaved?: boolean
     className?: string
     variant?: 'default' | 'icon'
@@ -26,13 +27,24 @@ interface SavePropertyButtonProps {
 
 export function SavePropertyButton({
     propertyId,
+    landlordId,
     initialSaved = false,
     className,
     variant = 'icon'
 }: SavePropertyButtonProps) {
-    const [isSaved, setIsSaved] = useState(initialSaved)
+    const user = useQuery(api.users.currentUser)
+    const serverIsSaved = useQuery(api.savedProperties.isSaved, { propertyId: propertyId as Id<"properties"> })
+    const [localIsSaved, setLocalIsSaved] = useState<boolean | null>(null)
     const [isLoading, setIsLoading] = useState(false)
     const [showLoginDialog, setShowLoginDialog] = useState(false)
+
+    // Hide the heart if the user is the landlord of this exact property.
+    if (user && landlordId && user._id === landlordId) {
+        return null;
+    }
+
+    // Sync the derived real state
+    const isSaved = localIsSaved !== null ? localIsSaved : (serverIsSaved ?? initialSaved)
 
     const toggleSave = useMutation(api.savedProperties.toggle)
 
@@ -40,28 +52,37 @@ export function SavePropertyButton({
         e.preventDefault() // Prevent link navigation if inside a card link
         e.stopPropagation()
 
-        if (isLoading) return
+        if (isLoading || serverIsSaved === undefined) return
 
         // Optimistic update
         const newState = !isSaved
-        setIsSaved(newState)
+        setLocalIsSaved(newState)
         setIsLoading(true)
 
         try {
             const result = await toggleSave({ propertyId: propertyId as Id<"properties"> })
-            setIsSaved(result)
-            toast.success(result ? 'Property saved' : 'Property removed from saved')
+            setLocalIsSaved(result)
+            toast.success(result ? 'Property saved to favorites' : 'Property removed from favorites')
         } catch (error) {
             // Revert if error
-            setIsSaved(!newState)
+            setLocalIsSaved(serverIsSaved)
 
-            if (error instanceof Error && error.message.includes('Authentication')) {
-                setShowLoginDialog(true)
+            if (error instanceof Error) {
+                if (error.message.includes('Authentication') || error.message.includes('Unauthenticated')) {
+                    setShowLoginDialog(true)
+                } else if (error.message.includes('OwnerCannotSave')) {
+                    toast.error('You cannot save your own property')
+                } else {
+                    toast.error('Something went wrong. Please try again.')
+                }
             } else {
-                toast.error('Something went wrong')
+                toast.error('An unexpected error occurred.')
             }
         } finally {
+            // Once the mutation finishes, we could clear localIsSaved and rely purely on serverIsSaved.
+            // But preserving it until the next server change is safer (Convex usually updates immediately).
             setIsLoading(false)
+            setLocalIsSaved(null)
         }
     }
 
@@ -139,7 +160,7 @@ export function SavePropertyButton({
                 <Heart 
                     className={cn(
                         "h-5 w-5 transition-all duration-300", 
-                        isSaved ? "fill-current scale-110" : "text-black"
+                        isSaved ? "fill-[#FF385C] text-[#FF385C] scale-110" : "text-black"
                     )} 
                     strokeWidth={2.5}
                 />

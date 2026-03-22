@@ -127,6 +127,7 @@ export default defineSchema({
         id: v.string(),
         title: v.string(),
         content: v.string(),
+        isMandatory: v.optional(v.boolean()),
       }))),
       specialConditions: v.optional(v.string()),
     })),
@@ -141,6 +142,23 @@ export default defineSchema({
     terms: v.optional(v.any()),
     tenantSignature: v.optional(v.any()),
     landlordSignature: v.optional(v.any()),
+    // Rental Rules (structured, drive system behavior)
+    templateId: v.optional(v.id("leaseTemplates")),
+    rentDueDay: v.optional(v.number()),
+    gracePeriodDays: v.optional(v.number()),
+    lateFeeType: v.optional(v.union(v.literal("percentage"), v.literal("fixed"))),
+    lateFeeAmount: v.optional(v.number()),
+    paymentFrequency: v.optional(v.union(v.literal("monthly"), v.literal("weekly"), v.literal("biweekly"))),
+    // Property Rules
+    petPolicy: v.optional(v.string()),
+    utilitiesIncluded: v.optional(v.array(v.string())),
+    parkingIncluded: v.optional(v.boolean()),
+    maintenanceResponsibility: v.optional(v.string()),
+    noticePeriodDays: v.optional(v.number()),
+    maxOccupants: v.optional(v.number()),
+    smokingAllowed: v.optional(v.boolean()),
+    sublettingAllowed: v.optional(v.boolean()),
+    // Status & Tracking
     status: v.union(
       v.literal("draft"),
       v.literal("sent_to_tenant"),
@@ -154,11 +172,44 @@ export default defineSchema({
     sentAt: v.optional(v.number()),
     signedAt: v.optional(v.number()),
     approvedAt: v.optional(v.number()),
+    activatedAt: v.optional(v.number()),
+    terminatedAt: v.optional(v.number()),
+    terminationReason: v.optional(v.string()),
   })
     .index("by_propertyId", ["propertyId"])
     .index("by_tenantId", ["tenantId"])
     .index("by_landlordId", ["landlordId"])
     .index("by_status", ["status"]),
+
+  // Lease Templates (reusable configurations for landlords with many properties)
+  leaseTemplates: defineTable({
+    landlordId: v.id("users"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    // Rental Rules
+    rentDueDay: v.optional(v.number()),
+    gracePeriodDays: v.optional(v.number()),
+    lateFeeType: v.optional(v.union(v.literal("percentage"), v.literal("fixed"))),
+    lateFeeAmount: v.optional(v.number()),
+    paymentFrequency: v.optional(v.union(v.literal("monthly"), v.literal("weekly"), v.literal("biweekly"))),
+    // Property Rules
+    petPolicy: v.optional(v.string()),
+    utilitiesIncluded: v.optional(v.array(v.string())),
+    parkingIncluded: v.optional(v.boolean()),
+    maintenanceResponsibility: v.optional(v.string()),
+    noticePeriodDays: v.optional(v.number()),
+    maxOccupants: v.optional(v.number()),
+    smokingAllowed: v.optional(v.boolean()),
+    sublettingAllowed: v.optional(v.boolean()),
+    // Custom clauses stored with the template
+    customClauses: v.optional(v.array(v.object({
+      id: v.string(),
+      title: v.string(),
+      content: v.string(),
+    }))),
+    isDefault: v.optional(v.boolean()),
+  })
+    .index("by_landlordId", ["landlordId"]),
 
   // Payments
   payments: defineTable({

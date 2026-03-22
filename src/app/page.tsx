@@ -4,6 +4,7 @@ import { useState, useMemo, Suspense, lazy } from "react"
 import { useQuery } from "convex/react"
 import { useRouter } from "next/navigation"
 import { api } from "../../convex/_generated/api"
+import type { Id } from "../../convex/_generated/dataModel"
 import { Header } from "@/components/layout/Header"
 import { MobileNav } from "@/components/layout/MobileNav"
 import { PullToRefresh } from "@/components/ui/pull-to-refresh"
@@ -17,7 +18,6 @@ import {
 } from "@/components/ui/sheet"
 import {
     Search,
-    MapPin,
     SlidersHorizontal,
     Map as MapIcon,
 } from "lucide-react"
@@ -35,7 +35,7 @@ const PropertyMap = lazy(() => import("@/components/maps/PropertyMap").then(m =>
 
 // --- Types ---
 interface Property {
-    id: string
+    id: Id<"properties">
     title: string
     price: number
     address: string
@@ -93,6 +93,7 @@ export default function HomePage() {
             images: p.imageUrls ?? [],
             amenities: p.amenityNames || [],
             coordinates: p.coordinates ?? null,
+            landlordId: p.landlordId,
         }))
     }, [properties])
 
@@ -171,9 +172,9 @@ export default function HomePage() {
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             placeholder="Search"
-                                            className="bg-transparent border-none outline-none font-extrabold text-[15px] sm:text-[17px] text-black placeholder:text-neutral-400 w-full truncate h-5 sm:h-6"
+                                            className="bg-transparent border-none outline-none font-medium text-[15px] sm:text-[17px] text-black placeholder:text-neutral-400 w-full truncate h-5 sm:h-6"
                                         />
-                                        <p className="text-[12px] sm:text-[13px] text-neutral-500 font-semibold tracking-tight pointer-events-none truncate leading-none mt-1 sm:mt-1.5">
+                                        <p className="text-[12px] sm:text-[13px] text-neutral-500 font-medium tracking-tight pointer-events-none truncate leading-none mt-1 sm:mt-1.5">
                                             Search for a home
                                         </p>
                                     </div>
@@ -187,7 +188,7 @@ export default function HomePage() {
                                     <button
                                         onClick={() => setViewMode(viewMode === 'grid' ? 'map' : 'grid')}
                                         className={cn(
-                                            "h-12 w-12 sm:w-auto sm:h-[52px] sm:px-6 rounded-full flex items-center justify-center gap-2.5 transition-all font-bold text-[15px] group",
+                                            "h-12 w-12 sm:w-auto sm:h-[52px] sm:px-6 rounded-full flex items-center justify-center gap-2.5 transition-all font-medium text-[15px] group",
                                             viewMode === 'map' ? "bg-neutral-900 text-white" : "bg-transparent text-black hover:bg-neutral-100"
                                         )}
                                     >
@@ -220,7 +221,7 @@ export default function HomePage() {
                                             )}>
                                                 <SlidersHorizontal className="w-[18px] h-[18px] group-hover:scale-110 transition-transform" strokeWidth={2.5} />
                                                 {activeFilterCount > 0 && (
-                                                    <span className="absolute -top-1 -right-1 w-[22px] h-[22px] bg-red-500 text-white text-[11px] font-black rounded-full flex items-center justify-center ring-2 ring-white shadow-sm">
+                                                    <span className="absolute -top-1 -right-1 w-[22px] h-[22px] bg-red-500 text-white text-[11px] font-semibold rounded-full flex items-center justify-center ring-2 ring-white shadow-sm">
                                                         {activeFilterCount}
                                                     </span>
                                                 )}
@@ -228,9 +229,9 @@ export default function HomePage() {
                                         </SheetTrigger>
                                         <SheetContent side="right" className="!w-[85%] sm:!w-[400px] overflow-hidden bg-white p-0 sm:rounded-l-[32px] border-l-0 flex flex-col shadow-[0_0_40px_rgba(0,0,0,0.1)]">
                                             <div className="flex items-center gap-3 px-6 py-5 border-b border-neutral-100">
-                                                <SheetTitle className="text-xl font-bold text-neutral-900">Filters</SheetTitle>
+                                                <SheetTitle className="text-xl font-semibold text-neutral-900">Filters</SheetTitle>
                                                 {activeFilterCount > 0 && (
-                                                    <button onClick={clearFilters} className="text-xs font-semibold text-neutral-400 hover:text-neutral-900 ml-auto transition-colors">
+                                                    <button onClick={clearFilters} className="text-xs font-medium text-neutral-400 hover:text-neutral-900 ml-auto transition-colors">
                                                         Reset
                                                     </button>
                                                 )}
@@ -238,33 +239,33 @@ export default function HomePage() {
                                             <div className="flex-1 px-6 py-7 space-y-8 overflow-y-auto">
                                                 {/* Filters Content ... same as before but styled a bit cleaner */}
                                                 <div className="space-y-4">
-                                                    <label className="text-[11px] font-black text-neutral-900 uppercase tracking-widest">Price Range</label>
+                                                    <label className="text-[11px] font-semibold text-neutral-900 uppercase tracking-widest">Price Range</label>
                                                     <div className="grid grid-cols-2 gap-3">
                                                         <input
                                                             type="number"
                                                             placeholder="Min"
                                                             value={priceRange.min}
                                                             onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value })}
-                                                            className="w-full h-12 px-4 bg-neutral-50 rounded-2xl text-sm font-semibold outline-none focus:ring-1 focus:ring-neutral-200"
+                                                            className="w-full h-12 px-4 bg-neutral-50 rounded-2xl text-sm font-medium outline-none focus:ring-1 focus:ring-neutral-200"
                                                         />
                                                         <input
                                                             type="number"
                                                             placeholder="Max"
                                                             value={priceRange.max}
                                                             onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value })}
-                                                            className="w-full h-12 px-4 bg-neutral-50 rounded-2xl text-sm font-semibold outline-none focus:ring-1 focus:ring-neutral-200"
+                                                            className="w-full h-12 px-4 bg-neutral-50 rounded-2xl text-sm font-medium outline-none focus:ring-1 focus:ring-neutral-200"
                                                         />
                                                     </div>
                                                 </div>
                                                 <div className="space-y-4">
-                                                    <label className="text-[11px] font-black text-neutral-900 uppercase tracking-widest">Bedrooms</label>
+                                                    <label className="text-[11px] font-semibold text-neutral-900 uppercase tracking-widest">Bedrooms</label>
                                                     <div className="flex flex-wrap gap-2">
                                                         {[null, 1, 2, 3, 4].map((num) => (
                                                             <button
                                                                 key={`bed-${num}`}
                                                                 onClick={() => setMinBedrooms(num)}
                                                                 className={cn(
-                                                                    "h-11 px-5 rounded-2xl text-xs sm:text-sm font-bold transition-all",
+                                                                    "h-11 px-5 rounded-2xl text-xs sm:text-sm font-medium transition-all",
                                                                     minBedrooms === num
                                                                         ? "bg-neutral-900 text-white"
                                                                         : "bg-neutral-50 text-neutral-600 hover:bg-neutral-100"
@@ -278,7 +279,7 @@ export default function HomePage() {
                                             </div>
                                             <div className="p-6 border-t border-neutral-100 safe-area-bottom">
                                                 <SheetClose asChild>
-                                                    <button className="w-full h-14 bg-neutral-900 text-white rounded-[20px] font-bold text-[15px] hover:bg-neutral-800 transition-all active:scale-[0.98]">
+                                                    <button className="w-full h-14 bg-neutral-900 text-white rounded-[20px] font-medium text-[15px] hover:bg-neutral-800 transition-all active:scale-[0.98]">
                                                         Show {filtered.length} properties
                                                     </button>
                                                 </SheetClose>
@@ -300,7 +301,7 @@ export default function HomePage() {
                                         <div className="h-full w-full bg-neutral-50 animate-pulse flex items-center justify-center">
                                             <div className="flex flex-col items-center gap-3 text-neutral-400">
                                                 <MapIcon className="w-8 h-8" />
-                                                <span className="text-sm font-semibold">Preparing results map...</span>
+                                                <span className="text-sm font-medium">Preparing results map...</span>
                                             </div>
                                         </div>
                                     }>
@@ -315,14 +316,14 @@ export default function HomePage() {
                                                 <Button
                                                     variant="secondary"
                                                     onClick={() => setSelectedPropertyType(null)}
-                                                    className="rounded-full shadow-sm hover:shadow-md transition-all font-bold"
+                                                    className="rounded-full shadow-sm hover:shadow-md transition-all font-medium"
                                                 >
                                                     &larr; Back
                                                 </Button>
-                                                <h2 className="text-xl sm:text-2xl font-bold tracking-tight capitalize">
+                                                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight capitalize">
                                                     {selectedPropertyType.endsWith('s') ? selectedPropertyType : `${selectedPropertyType}s`}
                                                 </h2>
-                                                <span className="text-neutral-500 font-semibold bg-neutral-100 px-3 py-1 rounded-full text-sm">
+                                                <span className="text-neutral-500 font-medium bg-neutral-100 px-3 py-1 rounded-full text-sm">
                                                     {filtered.length}
                                                 </span>
                                             </div>
@@ -344,9 +345,9 @@ export default function HomePage() {
                                                         <div className="w-20 h-20 rounded-full bg-neutral-50 flex items-center justify-center mb-6">
                                                             <Search className="w-8 h-8 text-neutral-300" />
                                                         </div>
-                                                        <h3 className="text-xl font-bold text-neutral-900">No matches found</h3>
+                                                        <h3 className="text-xl font-semibold text-neutral-900">No matches found</h3>
                                                         <p className="text-neutral-500 mt-2">No properties match your current filters.</p>
-                                                        <Button variant="link" onClick={clearFilters} className="text-black font-bold mt-4 underline">
+                                                        <Button variant="link" onClick={clearFilters} className="text-black font-medium mt-4 underline">
                                                             Clear filters
                                                         </Button>
                                                     </div>
@@ -360,9 +361,9 @@ export default function HomePage() {
                                                     <div className="w-20 h-20 rounded-full bg-neutral-50 flex items-center justify-center mb-6">
                                                         <Search className="w-8 h-8 text-neutral-300" />
                                                     </div>
-                                                    <h3 className="text-xl font-bold text-neutral-900">No matches found</h3>
+                                                    <h3 className="text-xl font-semibold text-neutral-900">No matches found</h3>
                                                     <p className="text-neutral-500 mt-2">Try adjusting your filters or search terms.</p>
-                                                    <Button variant="link" onClick={clearFilters} className="text-black font-bold mt-4 underline">
+                                                    <Button variant="link" onClick={clearFilters} className="text-black font-medium mt-4 underline">
                                                         Clear all filters
                                                     </Button>
                                                 </div>
@@ -371,13 +372,13 @@ export default function HomePage() {
                                                     <div key={type} className="w-full">
                                                         <div className="flex justify-between items-end mb-3 px-0">
                                                             <div>
-                                                                <h2 className="text-xl sm:text-2xl font-bold tracking-tight capitalize">
+                                                                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight capitalize">
                                                                     {type.endsWith('s') ? type : `${type}s`}
                                                                 </h2>
                                                             </div>
                                                             {props.length > 4 && (
                                                                 <button
-                                                                    className="font-bold text-[15px] sm:text-base text-black hover:text-neutral-600 transition-colors pb-1 flex items-center gap-1.5 group"
+                                                                    className="font-medium text-[15px] sm:text-base text-black hover:text-neutral-600 transition-colors pb-1 flex items-center gap-1.5 group"
                                                                     onClick={() => setSelectedPropertyType(type)}
                                                                 >
                                                                     View more

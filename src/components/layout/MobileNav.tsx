@@ -21,6 +21,7 @@ interface NavItem {
 
 const tenantNavItems: NavItem[] = [
     { label: 'Home', href: '/', icon: Home },
+    { label: 'Saved', href: '/tenant/saved', icon: Heart },
     { label: 'Leases', href: '/tenant/leases', icon: FileText, badgeType: 'leases' },
     { label: 'Messages', href: '/chat', icon: MessageSquare, badgeType: 'messages' },
     { label: 'Profile', href: '/settings', icon: User },

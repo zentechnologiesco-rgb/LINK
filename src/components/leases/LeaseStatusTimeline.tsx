@@ -37,8 +37,6 @@ const statusConfig: Record<string, {
     terminated: { icon: AlertTriangle, label: 'Terminated' },
 }
 
-const statusOrder = ['draft', 'sent_to_tenant', 'tenant_signed', 'approved']
-
 export function LeaseStatusTimeline({
     status,
     createdAt,
@@ -46,7 +44,17 @@ export function LeaseStatusTimeline({
     signedAt,
     approvedAt
 }: LeaseStatusTimelineProps) {
-    const currentStatusIndex = Math.max(statusOrder.indexOf(status), 0)
+    const currentStatusIndexMap: Record<string, number> = {
+        draft: 0,
+        sent_to_tenant: 1,
+        tenant_signed: 2,
+        revision_requested: 2,
+        approved: 3,
+        rejected: 2,
+        terminated: 3,
+        expired: 3,
+    }
+    const currentStatusIndex = currentStatusIndexMap[status] ?? 0
     const config = statusConfig[status] || statusConfig.draft
 
     const steps = [
@@ -66,11 +74,16 @@ export function LeaseStatusTimeline({
                 </Badge>
             </div>
 
+            {status === 'revision_requested' && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">Returned For Changes</p>
+                    <p className="mt-1 text-sm text-amber-800">The landlord reviewed the submission and asked the tenant to update documents and sign again.</p>
+                </div>
+            )}
+
             {/* Timeline */}
             <div className="relative pl-1">
                 {steps.map((step, index) => {
-                    const stepIndex = statusOrder.indexOf(step.key)
-
                     const isPast = index < currentStatusIndex
                     const isActive = index === currentStatusIndex
                     // const isFuture = index > currentStatusIndex

@@ -1,7 +1,7 @@
 'use client'
 
 import { notFound } from 'next/navigation'
-import { LeaseDetailClient } from './LeaseDetailClient'
+import { TenantLeaseDetailClient } from './TenantLeaseDetailClient'
 import { useQuery } from "convex/react"
 import { api } from "../../../../../../convex/_generated/api"
 import { Id } from "../../../../../../convex/_generated/dataModel"
@@ -36,7 +36,7 @@ function TenantLeaseDetailContent({ id }: { id: string }) {
         notFound()
     }
 
-    return <LeaseDetailClient lease={lease} />
+    return <TenantLeaseDetailClient leaseId={lease._id} />
 }
 
 export default function TenantLeaseDetailPage({ params }: Props) {

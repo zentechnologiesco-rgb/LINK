@@ -37,6 +37,84 @@ export const LEASE_STATUS_COLORS: Record<LeaseStatus, string> = {
     terminated: 'bg-red-100 text-red-700',
 }
 
+// ── Pet Policies ──
+export const PET_POLICIES = [
+    'no_pets',
+    'cats_only',
+    'dogs_only',
+    'small_pets',
+    'all_pets',
+    'negotiable',
+] as const
+
+export type PetPolicy = (typeof PET_POLICIES)[number]
+
+export const PET_POLICY_LABELS: Record<PetPolicy, string> = {
+    no_pets: 'No Pets',
+    cats_only: 'Cats Only',
+    dogs_only: 'Dogs Only',
+    small_pets: 'Small Pets',
+    all_pets: 'All Pets',
+    negotiable: 'Negotiable',
+}
+
+export const PET_POLICY_ICONS: Record<PetPolicy, string> = {
+    no_pets: '🚫',
+    cats_only: '🐱',
+    dogs_only: '🐕',
+    small_pets: '🐹',
+    all_pets: '🐾',
+    negotiable: '💬',
+}
+
+// ── Utilities ──
+export const UTILITY_OPTIONS = [
+    'Electricity',
+    'Water',
+    'Gas',
+    'Internet',
+    'Trash',
+    'Sewage',
+] as const
+
+// ── Payment Frequency ──
+export const PAYMENT_FREQUENCIES = ['monthly', 'weekly', 'biweekly'] as const
+export type PaymentFrequency = (typeof PAYMENT_FREQUENCIES)[number]
+
+export const PAYMENT_FREQUENCY_LABELS: Record<PaymentFrequency, string> = {
+    monthly: 'Monthly',
+    weekly: 'Weekly',
+    biweekly: 'Bi-Weekly',
+}
+
+// ── Late Fee Types ──
+export const LATE_FEE_TYPES = ['percentage', 'fixed'] as const
+export type LateFeeType = (typeof LATE_FEE_TYPES)[number]
+
+export const LATE_FEE_TYPE_LABELS: Record<LateFeeType, string> = {
+    percentage: '% of Rent',
+    fixed: 'Fixed Amount',
+}
+
+// ── Maintenance Responsibility ──
+export const MAINTENANCE_OPTIONS = ['landlord', 'tenant', 'shared'] as const
+export type MaintenanceOption = (typeof MAINTENANCE_OPTIONS)[number]
+
+export const MAINTENANCE_LABELS: Record<MaintenanceOption, string> = {
+    landlord: 'Landlord',
+    tenant: 'Tenant',
+    shared: 'Shared',
+}
+
+// ── Lease Duration Presets ──
+export const DURATION_PRESETS = [
+    { label: '6 months', months: 6 },
+    { label: '12 months', months: 12 },
+    { label: '18 months', months: 18 },
+    { label: '24 months', months: 24 },
+] as const
+
+// ── Payment Constants ──
 export const PAYMENT_STATUSES = ['pending', 'paid', 'overdue'] as const
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number]
 
@@ -64,6 +142,7 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
     eft: 'EFT',
 }
 
+// ── Deposit Constants ──
 export const DEPOSIT_STATUSES = [
     'pending',
     'held',
@@ -82,6 +161,7 @@ export const DEPOSIT_STATUS_LABELS: Record<DepositStatus, string> = {
     forfeited: 'Forfeited',
 }
 
+// ── Required Documents ──
 export const REQUIRED_TENANT_DOCUMENTS = [
     'id_front',
     'id_back',
