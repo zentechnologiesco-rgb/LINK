@@ -40,7 +40,7 @@ export const TEMPLATES = {
             <h1>Revision Requested</h1>
             <p>The landlord has requested changes to your lease submission for <strong>${address}</strong>.</p>
             <p><strong>Reason:</strong> ${reason}</p>
-            <p>Please simple updates and sign again:</p>
+            <p>Please make the requested updates and sign again:</p>
             <a href="${url}" style="display: inline-block; padding: 12px 24px; background-color: #000; color: #fff; text-decoration: none; border-radius: 6px;">Update Submission</a>
         `
     })

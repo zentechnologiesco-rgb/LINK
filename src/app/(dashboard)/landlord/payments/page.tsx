@@ -1,225 +1,350 @@
 'use client'
 
 import { useState } from 'react'
-import { useQuery } from "convex/react"
-import { api } from "../../../../../convex/_generated/api"
+import Link from 'next/link'
+import { useMutation, useQuery } from 'convex/react'
+import { api } from '../../../../../convex/_generated/api'
+import { Id } from '../../../../../convex/_generated/dataModel'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import {
-    ArrowUpRight,
     AlertCircle,
     CheckCircle2,
     Clock,
+    FileText,
     Search,
-    Filter,
-    Wallet
+    Wallet,
 } from 'lucide-react'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import Link from 'next/link'
+
+const currencyFormatter = new Intl.NumberFormat('en-NA', {
+    style: 'currency',
+    currency: 'NAD',
+    maximumFractionDigits: 0,
+})
+
+const dateFormatter = new Intl.DateTimeFormat('en-NA', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+})
+
+const formatCurrency = (amount: number) => currencyFormatter.format(amount)
+const formatDate = (value: string) => dateFormatter.format(new Date(value))
+
+type Filter = 'all' | 'paid' | 'pending' | 'overdue'
 
 export default function LandlordPaymentsPage() {
     const payments = useQuery(api.payments.getForLandlord)
     const stats = useQuery(api.payments.getLandlordStats)
-    const [filter, setFilter] = useState<'all' | 'paid' | 'pending' | 'overdue'>('all')
+    const recordPayment = useMutation(api.payments.record)
 
-    if (!payments || !stats) {
+    const [filter, setFilter] = useState<Filter>('all')
+    const [search, setSearch] = useState('')
+    const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null)
+    const [paymentMethod, setPaymentMethod] = useState('bank_transfer')
+    const [paymentNotes, setPaymentNotes] = useState('')
+    const [isSaving, setIsSaving] = useState(false)
+
+    if (payments === undefined || stats === undefined) {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <div className="h-10 w-10 rounded-full border-2 border-black/10 border-t-black animate-spin" />
-                    <p className="text-sm text-black/40 font-medium">Loading payments...</p>
+                    <p className="text-sm text-black/40 font-medium">Loading payments…</p>
                 </div>
             </div>
         )
     }
 
-    const filteredPayments = payments.filter(p => {
-        if (filter === 'all') return true
-        return p.status === filter
+    const filteredPayments = payments.filter((payment) => {
+        const matchesFilter = filter === 'all' || payment.status === filter
+        const searchValue = search.trim().toLowerCase()
+        const haystack = [
+            payment.lease?.tenant?.fullName,
+            payment.lease?.tenant?.email,
+            payment.lease?.property?.title,
+            payment.lease?.property?.address,
+        ].filter(Boolean).join(' ').toLowerCase()
+
+        return matchesFilter && (!searchValue || haystack.includes(searchValue))
     })
 
+    const selectedPayment = selectedPaymentId
+        ? payments.find((payment) => payment._id === selectedPaymentId) ?? null
+        : null
+
+    const openItems = payments.filter((payment) => payment.status !== 'paid')
+    const overdueItems = openItems.filter((payment) => payment.status === 'overdue')
+    const nextDue = [...openItems].sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0] ?? null
+
+    const handleRecordPayment = async () => {
+        if (!selectedPayment) return
+
+        setIsSaving(true)
+        try {
+            await recordPayment({
+                paymentId: selectedPayment._id as Id<"payments">,
+                paymentMethod,
+                notes: paymentNotes || undefined,
+            })
+            toast.success('Payment recorded.')
+            setSelectedPaymentId(null)
+            setPaymentNotes('')
+            setPaymentMethod('bank_transfer')
+        } catch (error: unknown) {
+            toast.error(error instanceof Error ? error.message : 'Could not record payment')
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
     return (
-        <div className="relative min-h-[80vh]">
-            {/* Overlay */}
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-sm rounded-[3rem]">
-                <div className="bg-black text-white p-12 rounded-[2.5rem] text-center shadow-2xl max-w-lg mx-4 border border-white/10">
-                    <div className="h-16 w-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                        <Clock className="h-8 w-8 text-white" />
-                    </div>
-                    <h2 className="font-[family-name:var(--font-anton)] text-4xl mb-4 tracking-wide uppercase">Coming Soon</h2>
-                    <p className="text-white/60 font-medium">
-                        We're putting the final touches on the advanced payment dashboard. Check back shortly for updates.
-                    </p>
+        <div className="space-y-6 pb-8">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">Rent Ledger</p>
+                    <h1 className="mt-2 text-3xl font-semibold tracking-tight text-neutral-900">Payments</h1>
+                    <p className="mt-1 text-sm text-neutral-500">Track what has been collected, what is due next, and what needs follow-up.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Link href="/landlord/leases">
+                        <Button variant="outline" className="h-10 rounded-xl border-neutral-200">Open Leases</Button>
+                    </Link>
+                    <Link href="/landlord/leases/new">
+                        <Button className="h-10 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800">New Lease</Button>
+                    </Link>
                 </div>
             </div>
 
-            {/* Existing Content (Blurred & Disabled) */}
-            <div className="px-4 py-8 md:px-6 md:py-10 max-w-[2000px] mx-auto pb-24 opacity-40 pointer-events-none filter blur-[2px] UserSelect-none">
-                {/* Header */}
-                <div className="flex justify-end mb-12">
-                    <div className="flex items-center gap-3">
-                        <Button variant="outline" className="rounded-full h-12 px-6 font-bold uppercase tracking-wider text-xs border-black/10 hover:bg-black/5 hover:text-black transition-all">
-                            <Filter className="mr-2 h-4 w-4" />
-                            Export Report
-                        </Button>
+            <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+                <HeroCard
+                    title={nextDue ? `Next due ${formatDate(nextDue.dueDate)}` : 'No open balance'}
+                    body={nextDue ? `${nextDue.lease?.tenant?.fullName || 'Tenant'} owes ${formatCurrency(nextDue.amount)}` : 'All tracked payments are up to date.'}
+                    icon={Wallet}
+                />
+                <StatCard label="Collected" value={formatCurrency(stats.totalCollected)} tone="dark" icon={CheckCircle2} />
+                <StatCard label="Pending" value={formatCurrency(stats.pending)} tone="default" icon={Clock} />
+                <StatCard label="Overdue" value={formatCurrency(stats.overdue)} tone="danger" icon={AlertCircle} />
+            </div>
+
+            {overdueItems.length > 0 && (
+                <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+                    <div className="flex items-start gap-3">
+                        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+                        <div>
+                            <p className="text-sm font-semibold text-red-900">{overdueItems.length} payment{overdueItems.length === 1 ? '' : 's'} need attention</p>
+                            <p className="mt-1 text-sm text-red-700">Late fees are now auto-created when rent goes overdue. Record incoming payments here to keep tenant balances accurate.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="rounded-3xl border border-neutral-200 bg-white p-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex flex-wrap gap-2">
+                        {(['all', 'paid', 'pending', 'overdue'] as Filter[]).map((value) => (
+                            <button
+                                key={value}
+                                type="button"
+                                onClick={() => setFilter(value)}
+                                className={cn(
+                                    'h-10 rounded-xl px-4 text-sm font-medium capitalize transition-colors',
+                                    filter === value
+                                        ? 'bg-neutral-900 text-white'
+                                        : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                                )}
+                            >
+                                {value}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="relative w-full lg:w-[360px]">
+                        <Label htmlFor="payment-search" className="sr-only">Search payments</Label>
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                        <Input
+                            id="payment-search"
+                            name="payment_search"
+                            value={search}
+                            onChange={(event) => setSearch(event.target.value)}
+                            placeholder="Search tenant or property…"
+                            autoComplete="off"
+                            className="h-11 rounded-xl border-neutral-200 pl-10"
+                        />
                     </div>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-                    <StatCard
-                        label="Total Collected"
-                        value={stats.totalCollected}
-                        icon={Wallet}
-                        highlight
-                    />
-                    <StatCard
-                        label="Pending Income"
-                        value={stats.pending}
-                        icon={Clock}
-                    />
-                    <StatCard
-                        label="Overdue Payments"
-                        value={stats.overdue}
-                        icon={AlertCircle}
-                        isError={stats.overdue > 0}
-                    />
-                </div>
-
-                {/* Content Area */}
-                <div className="bg-white rounded-[2.5rem] border border-black/5 shadow-2xl shadow-black/5 overflow-hidden">
-                    {/* Filters */}
-                    <div className="p-8 border-b border-black/5 flex flex-col md:flex-row items-center justify-between gap-6">
-                        <div className="flex items-center gap-2 p-1.5 bg-black/[0.03] rounded-full">
-                            {['all', 'paid', 'pending', 'overdue'].map((f) => (
-                                <button
-                                    key={f}
-                                    className={cn(
-                                        "px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300",
-                                        filter === f
-                                            ? "bg-black text-white shadow-lg shadow-black/10"
-                                            : "text-black/40 hover:text-black hover:bg-black/5"
-                                    )}
-                                >
-                                    {f}
-                                </button>
-                            ))}
+                <div className="mt-5 space-y-3">
+                    {filteredPayments.length === 0 ? (
+                        <div className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 px-4 py-10 text-center text-sm text-neutral-500">
+                            No payments match the current filter.
                         </div>
-
-                        <div className="relative w-full md:w-auto min-w-[300px]">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-black/30" />
-                            <Input
-                                placeholder="Search by tenant or property..."
-                                className="pl-11 h-12 rounded-full border-black/5 bg-black/[0.02] focus-visible:ring-black/5 text-sm font-medium placeholder:text-black/30 w-full"
-                            />
-                        </div>
-                    </div>
-
-                    {/* List */}
-                    <div className="divide-y divide-black/5">
-                        {filteredPayments.length === 0 ? (
-                            <div className="py-24 text-center">
-                                <div className="h-16 w-16 bg-black/[0.03] rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                    <Wallet className="h-6 w-6 text-black/20" />
-                                </div>
-                                <h3 className="font-[family-name:var(--font-anton)] text-xl text-black/40 uppercase tracking-wide">No payments found</h3>
-                            </div>
-                        ) : (
-                            filteredPayments.map((payment) => (
-                                <div key={payment._id} className="p-6 md:p-8 hover:bg-black/[0.01] transition-colors group flex flex-col md:flex-row md:items-center justify-between gap-6">
-                                    <div className="flex items-start gap-5">
-                                        <div className={cn(
-                                            "h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 border",
-                                            payment.status === 'paid' ? "bg-black text-white border-black" :
-                                                payment.status === 'overdue' ? "bg-white text-black border-black/10" :
-                                                    "bg-black/[0.03] text-black/60 border-transparent"
-                                        )}>
-                                            {payment.status === 'paid' && <CheckCircle2 className="h-6 w-6" />}
-                                            {payment.status === 'pending' && <Clock className="h-6 w-6" />}
-                                            {payment.status === 'overdue' && <AlertCircle className="h-6 w-6" />}
-                                        </div>
-
-                                        <div>
-                                            <div className="flex items-center gap-3 mb-1">
-                                                <h3 className="font-bold text-lg text-black">
-                                                    {payment.lease?.tenant?.fullName || 'Unknown Tenant'}
-                                                </h3>
-                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/[0.05] text-black/50 uppercase tracking-wider">
-                                                    {payment.type}
-                                                </span>
-                                            </div>
-                                            <p className="text-sm font-medium text-black/40">
-                                                {payment.lease?.property?.title || 'Unknown Property'} • Due {new Date(payment.dueDate).toLocaleDateString()}
+                    ) : (
+                        filteredPayments.map((payment) => (
+                            <div key={payment._id} className="rounded-2xl border border-neutral-200 p-4">
+                                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                    <div className="min-w-0">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <p className="text-sm font-semibold text-neutral-900">
+                                                {payment.lease?.tenant?.fullName || 'Unknown tenant'}
                                             </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between md:justify-end gap-8 pl-[4.75rem] md:pl-0">
-                                        <div className="text-right">
-                                            <p className="font-[family-name:var(--font-anton)] text-2xl text-black">
-                                                N$ {payment.amount.toLocaleString()}
-                                            </p>
-                                            <p className={cn(
-                                                "text-[10px] font-bold uppercase tracking-widest",
-                                                payment.status === 'paid' ? "text-black/40" :
-                                                    payment.status === 'overdue' ? "text-black font-extrabold" :
-                                                        "text-black/40"
+                                            <span className={cn(
+                                                'rounded-full px-2.5 py-1 text-xs font-semibold capitalize',
+                                                payment.status === 'paid' && 'bg-emerald-100 text-emerald-700',
+                                                payment.status === 'pending' && 'bg-neutral-100 text-neutral-600',
+                                                payment.status === 'overdue' && 'bg-red-100 text-red-700',
                                             )}>
-                                                {payment.status === 'paid' ? `Paid on ${new Date(payment.paidAt!).toLocaleDateString()}` : payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                                                {payment.status}
+                                            </span>
+                                            <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium capitalize text-neutral-600">
+                                                {payment.type.replace('_', ' ')}
+                                            </span>
+                                        </div>
+                                        <p className="mt-1 text-sm text-neutral-500">
+                                            {payment.lease?.property?.title || 'Unknown property'}
+                                            {payment.lease?.property?.address ? ` • ${payment.lease.property.address}` : ''}
+                                        </p>
+                                        <p className="mt-1 text-xs text-neutral-400">
+                                            Due {formatDate(payment.dueDate)}
+                                            {payment.notes ? ` • ${payment.notes}` : ''}
+                                        </p>
+                                    </div>
+
+                                    <div className="flex flex-col gap-3 lg:items-end">
+                                        <div className="text-right">
+                                            <p className="text-lg font-semibold text-neutral-900">{formatCurrency(payment.amount)}</p>
+                                            <p className="text-xs text-neutral-500">
+                                                {payment.status === 'paid' && payment.paidAt
+                                                    ? `Paid ${formatDate(new Date(payment.paidAt).toISOString())}`
+                                                    : 'Awaiting receipt'}
                                             </p>
                                         </div>
-
-                                        <Button size="icon" variant="ghost" className="h-10 w-10 rounded-full hover:bg-black hover:text-white transition-colors">
-                                            <ArrowUpRight className="h-5 w-5" />
-                                        </Button>
+                                        <div className="flex flex-wrap gap-2 lg:justify-end">
+                                            <Link href={`/landlord/leases/${payment.lease?.id}`}>
+                                                <Button variant="outline" className="h-9 rounded-xl border-neutral-200">
+                                                    View Lease
+                                                </Button>
+                                            </Link>
+                                            {payment.status !== 'paid' && (
+                                                <Button className="h-9 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800" onClick={() => setSelectedPaymentId(payment._id)}>
+                                                    Record Payment
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            ))
-                        )}
-                    </div>
+                            </div>
+                        ))
+                    )}
                 </div>
             </div>
+
+            <Dialog open={Boolean(selectedPayment)} onOpenChange={(open) => !open && setSelectedPaymentId(null)}>
+                <DialogContent className="rounded-3xl sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-semibold">Record Payment</DialogTitle>
+                    </DialogHeader>
+
+                    {selectedPayment && (
+                        <div className="space-y-5">
+                            <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                                <p className="text-sm font-semibold text-neutral-900">
+                                    {selectedPayment.lease?.tenant?.fullName || 'Tenant'}
+                                </p>
+                                <p className="mt-1 text-sm text-neutral-500">
+                                    {selectedPayment.lease?.property?.title || 'Property'} • {formatCurrency(selectedPayment.amount)}
+                                </p>
+                                <p className="mt-1 text-xs text-neutral-400">
+                                    Due {formatDate(selectedPayment.dueDate)}
+                                </p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="payment-method">Payment method</Label>
+                                <select
+                                    id="payment-method"
+                                    name="payment_method"
+                                    value={paymentMethod}
+                                    onChange={(event) => setPaymentMethod(event.target.value)}
+                                    className="h-11 w-full rounded-xl border border-neutral-200 bg-white px-3 text-sm"
+                                >
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                    <option value="eft">EFT</option>
+                                    <option value="cash">Cash</option>
+                                </select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="payment-notes">Notes</Label>
+                                <Input
+                                    id="payment-notes"
+                                    name="payment_notes"
+                                    value={paymentNotes}
+                                    onChange={(event) => setPaymentNotes(event.target.value)}
+                                    placeholder="Optional receipt or reference…"
+                                    autoComplete="off"
+                                    className="h-11 rounded-xl border-neutral-200"
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2">
+                                <Button variant="outline" className="h-10 rounded-xl border-neutral-200" onClick={() => setSelectedPaymentId(null)}>
+                                    Cancel
+                                </Button>
+                                <Button className="h-10 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800" onClick={handleRecordPayment} disabled={isSaving}>
+                                    {isSaving ? <Clock className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+                                    Save Payment
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
 
-function StatCard({ label, value, icon: Icon, highlight, isError }: { label: string; value: number; icon: any; highlight?: boolean; isError?: boolean }) {
+function HeroCard({ title, body, icon: Icon }: { title: string; body: string; icon: React.ElementType }) {
+    return (
+        <div className="rounded-3xl bg-neutral-950 p-5 text-white">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10">
+                <Icon className="h-5 w-5" />
+            </div>
+            <p className="mt-5 text-lg font-semibold tracking-tight">{title}</p>
+            <p className="mt-1 text-sm text-white/65">{body}</p>
+        </div>
+    )
+}
+
+function StatCard({
+    label,
+    value,
+    tone,
+    icon: Icon,
+}: {
+    label: string
+    value: string
+    tone: 'dark' | 'default' | 'danger'
+    icon: React.ElementType
+}) {
     return (
         <div className={cn(
-            "p-8 rounded-[2rem] border transition-all duration-300 relative overflow-hidden group",
-            highlight
-                ? "bg-black border-black text-white shadow-xl shadow-black/20"
-                : "bg-white border-black/5 text-black hover:border-black/10 hover:shadow-xl hover:shadow-black/5"
+            'rounded-3xl border p-5',
+            tone === 'dark' && 'border-neutral-950 bg-neutral-950 text-white',
+            tone === 'default' && 'border-neutral-200 bg-white text-neutral-900',
+            tone === 'danger' && 'border-red-200 bg-red-50 text-red-800',
         )}>
-            <div className="relative z-10">
-                <div className="flex items-start justify-between mb-8">
-                    <p className={cn(
-                        "text-[10px] font-bold uppercase tracking-widest",
-                        highlight ? "text-white/60" : "text-black/40"
-                    )}>
-                        {label}
-                    </p>
-                    <div className={cn(
-                        "h-10 w-10 rounded-full flex items-center justify-center",
-                        highlight ? "bg-white/10 text-white" : "bg-black/5 text-black/40 group-hover:bg-black group-hover:text-white transition-colors"
-                    )}>
-                        <Icon className="h-5 w-5" />
-                    </div>
-                </div>
-
-                <p className={cn(
-                    "font-[family-name:var(--font-anton)] text-5xl",
-                    isError ? "text-black" : (highlight ? "text-white" : "text-black")
-                )}>
-                    N$ {value.toLocaleString()}
+            <div className="flex items-center justify-between gap-3">
+                <p className={cn('text-xs font-semibold uppercase tracking-[0.18em]', tone === 'dark' ? 'text-white/60' : 'text-current/70')}>
+                    {label}
                 </p>
+                <Icon className="h-4 w-4" />
             </div>
+            <p className="mt-5 text-2xl font-semibold tracking-tight">{value}</p>
         </div>
     )
 }

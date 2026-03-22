@@ -1,20 +1,17 @@
 "use client"
 
-import { memo } from "react"
+import { memo, type MouseEvent } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import type { Id } from "../../../convex/_generated/dataModel"
 import { cn } from "@/lib/utils"
 import { SavePropertyButton } from "@/components/properties/SavePropertyButton"
-import {
-    MapPin,
-    Star,
-    Heart,
-} from "lucide-react"
+import { X } from "lucide-react"
 
 
 export interface TrustCardProps {
     property: {
-        id: string
+        id: Id<"properties">
         title: string
         price: number
         address: string
@@ -27,13 +24,21 @@ export interface TrustCardProps {
         amenities: string[]
         description?: string
         coordinates?: { lat: number; lng: number } | null
+        landlordId?: string
     }
     /** Set to true for above-the-fold cards (first 4-8 visible) for faster initial load */
     priority?: boolean
+    actionType?: 'save' | 'remove' | 'none'
+    onRemove?: (propertyId: Id<"properties">, event: MouseEvent<HTMLButtonElement>) => void
 }
 
 // Immersive full-image property card — inspired by Stuttle.
-export const TrustCard = memo(function TrustCard({ property, priority = false }: TrustCardProps) {
+export const TrustCard = memo(function TrustCard({
+    property,
+    priority = false,
+    actionType = 'save',
+    onRemove,
+}: TrustCardProps) {
     const imageSrc = property.images.length > 0 ? property.images[0] : '/window.svg'
 
     return (
@@ -64,66 +69,81 @@ export const TrustCard = memo(function TrustCard({ property, priority = false }:
                          {/* Top gradient for readability of white icons */}
                          <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/30 to-transparent" />
                          {/* Bottom gradient for text focus */}
-                         <div className="absolute inset-x-0 bottom-0 h-full bg-gradient-to-t from-black/95 via-black/40 to-transparent md:from-black/70 md:via-black/20 pt-[50%]" />
+                         <div className="absolute inset-x-0 bottom-0 h-full bg-gradient-to-t from-black/95 via-black/40 to-transparent pt-[50%] md:hidden" />
                     </div>
 
-                    <div className="absolute top-3 right-3 z-20 flex justify-end items-center pointer-events-none">
-                        {/* Save Button Circle */}
-                        <div className="pointer-events-auto">
-                            <SavePropertyButton
-                                propertyId={property.id}
-                                className="h-8 w-8 sm:h-10 sm:w-10 bg-white hover:bg-neutral-50 border-neutral-100 shadow-sm transition-all text-black p-0"
-                            />
+                    {actionType !== 'none' && (
+                        <div className="absolute top-3 right-3 z-20 flex justify-end items-center pointer-events-none">
+                            <div className="pointer-events-auto">
+                                {actionType === 'save' ? (
+                                    <SavePropertyButton
+                                        propertyId={property.id}
+                                        landlordId={property.landlordId}
+                                        className="h-8 w-8 sm:h-10 sm:w-10 bg-white hover:bg-neutral-50 border-neutral-100 shadow-sm transition-all text-black p-0"
+                                    />
+                                ) : (
+                                    <button
+                                        onClick={(event) => onRemove?.(property.id, event)}
+                                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-white hover:bg-neutral-50 border border-neutral-100 shadow-sm transition-all flex items-center justify-center text-neutral-900"
+                                        title="Remove from history"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Bottom Content Area */}
-                    <div className="absolute inset-x-0 bottom-0 z-20 p-3 pt-24 pb-4 flex flex-col justify-end">
-                        {/* Title — Extrabold, large, tight leading. Hidden on desktop (md+) inside the card. */}
-                        <h3 className="md:hidden text-white text-[20px] sm:text-[22px] font-[900] leading-[1.05] tracking-[-0.02em] mb-2 drop-shadow-md line-clamp-2">
+                    <div className="absolute inset-x-0 bottom-0 z-20 p-3 pt-24 pb-4 flex flex-col justify-end md:hidden">
+                        <h3 className="text-white text-[19px] sm:text-[21px] font-semibold leading-tight tracking-[-0.02em] mb-1.5 drop-shadow-md">
                             {property.title}
                         </h3>
-
-                        {/* Middle row: Inline Rating & Location */}
-                        <div className="flex items-center gap-2.5 mb-2">
-                            <div className="flex items-center gap-1.5">
-                                <Star className="w-[14px] h-[14px] text-[#FACC15] fill-[#FACC15]" />
-                                <span className="text-white/90 text-[13px] font-bold">5.0</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <MapPin className="w-[14px] h-[14px] text-white/70 shadow-black" strokeWidth={2} />
-                                <span className="text-white/90 text-[13px] font-semibold truncate max-w-[120px]">
-                                    {property.city}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Bottom row: Neon Price */}
-                        <div className="flex items-center justify-between mt-1">
-                            <div className="flex items-baseline">
-                                <span className="text-[#C4F135] text-[22px] sm:text-[24px] font-[900] leading-none tracking-[-0.03em] drop-shadow-sm">
-                                    N${property.price.toLocaleString()}
-                                </span>
-                                <span className="text-[#C4F135] text-[12px] font-bold ml-1 drop-shadow-sm">
-                                    /month
-                                </span>
-                            </div>
+                        <div className="flex items-baseline gap-1 drop-shadow-sm">
+                            <span className="text-[13px] font-medium truncate text-white">
+                                {property.city}
+                            </span>
+                            <span className="text-[13px] font-medium text-white/60">
+                                ·
+                            </span>
+                            <span className="text-[14px] font-semibold leading-none text-white">
+                                N${property.price.toLocaleString()}
+                            </span>
+                            <span className="text-[11px] font-medium text-white/70">
+                                /month
+                            </span>
                         </div>
                     </div>
                 </div>
             </div>
-            {/* Desktop Title — Shown only on md+ below the card */}
-            <div className="hidden md:block mt-2.5 px-0.5">
-                <h3 className="text-neutral-900 text-[15px] font-extrabold leading-tight tracking-tight line-clamp-1 hover:text-black transition-colors">
+            {/* Desktop content sits below the image for a cleaner card layout. */}
+            <div className="hidden md:block mt-2.5 px-0.5 space-y-1">
+                <h3 className="text-neutral-900 text-[15px] font-semibold leading-tight tracking-tight hover:text-black transition-colors">
                     {property.title}
                 </h3>
+                <div className="flex items-baseline gap-1">
+                    <span className="text-[13px] font-medium truncate text-neutral-700">
+                        {property.city}
+                    </span>
+                    <span className="text-[13px] font-medium text-neutral-400">
+                        ·
+                    </span>
+                    <span className="text-[14px] font-semibold leading-none text-neutral-900">
+                        N${property.price.toLocaleString()}
+                    </span>
+                    <span className="text-[11px] font-medium text-neutral-500">
+                        /month
+                    </span>
+                </div>
             </div>
         </Link>
     )
 }, (prevProps, nextProps) => {
     return prevProps.property.id === nextProps.property.id &&
         prevProps.property.price === nextProps.property.price &&
-        prevProps.property.images[0] === nextProps.property.images[0]
+        prevProps.property.images[0] === nextProps.property.images[0] &&
+        prevProps.actionType === nextProps.actionType &&
+        prevProps.onRemove === nextProps.onRemove
 })
 
 TrustCard.displayName = 'TrustCard'

@@ -4,9 +4,9 @@ import { useState, useMemo } from "react"
 import { useQuery } from "convex/react"
 import { api } from "../../../../../convex/_generated/api"
 import { TrustCard } from "@/components/properties/TrustCard"
+import { PropertyCardSkeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import {
-    Search,
     Heart,
     ArrowUpDown,
 } from "lucide-react"
@@ -39,7 +39,8 @@ export default function SavedPropertiesPage() {
             images: p.mainImage ? [p.mainImage] : [],
             amenities: p.amenityNames || [],
             description: p.description,
-            coordinates: null
+            coordinates: null,
+            landlordId: p.landlordId,
         }))
     }, [savedProperties])
 
@@ -63,23 +64,21 @@ export default function SavedPropertiesPage() {
 
     if (savedProperties === undefined) {
         return (
-            <div className="font-sans text-neutral-900">
-                {/* Controls Skeleton */}
-                <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-neutral-100">
-                    <div className="h-4 w-20 bg-neutral-100 rounded animate-pulse" />
-                    <div className="h-9 w-24 bg-neutral-100 rounded-lg animate-pulse" />
+            <div className="font-sans text-neutral-900 w-full animate-in fade-in duration-500">
+                {/* Header Skeleton */}
+                <div className="flex items-end justify-between mb-8 sm:mb-10 px-2 mt-4 sm:mt-6">
+                    <div className="space-y-3">
+                        <div className="h-10 w-[200px] sm:w-[280px] bg-neutral-100 rounded-xl animate-pulse" />
+                        <div className="h-5 w-[140px] bg-neutral-100 rounded-md animate-pulse" />
+                    </div>
+                    <div className="h-[42px] sm:h-[52px] w-[100px] sm:w-[160px] bg-neutral-100 rounded-full animate-pulse" />
                 </div>
 
                 {/* Grid Skeleton */}
-                <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                    {[...Array(8)].map((_, i) => (
-                        <div key={i} className="bg-white rounded-2xl border border-neutral-200/80 overflow-hidden">
-                            <div className="aspect-[4/3] bg-neutral-100 animate-pulse" />
-                            <div className="p-4 space-y-3">
-                                <div className="h-4 bg-neutral-100 rounded animate-pulse w-3/4" />
-                                <div className="h-3 bg-neutral-100 rounded animate-pulse w-1/2" />
-                                <div className="h-5 bg-neutral-100 rounded animate-pulse w-1/3 mt-4" />
-                            </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6 mt-6">
+                    {Array.from({ length: 10 }).map((_, i) => (
+                        <div key={i} className="w-full">
+                            <PropertyCardSkeleton />
                         </div>
                     ))}
                 </div>
@@ -88,27 +87,31 @@ export default function SavedPropertiesPage() {
     }
 
     return (
-        <div className="font-sans text-neutral-900">
+        <div className="font-sans text-neutral-900 w-full animate-in fade-in duration-500">
             {/* Controls Bar */}
-            {normalizedProperties.length > 0 && (
-                <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-neutral-100">
-                    {/* Results Count */}
-                    <p className="text-xs text-neutral-500">
-                        {sortedProperties.length} {sortedProperties.length === 1 ? 'saved' : 'saved'}
+            <div className="flex items-end justify-between mb-8 sm:mb-10 px-2 mt-4 sm:mt-6">
+                <div>
+                    <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-neutral-900 mb-1.5 sm:mb-2">
+                        My Favorites
+                    </h1>
+                    <p className="text-neutral-500 font-semibold text-[14px] sm:text-[15px]">
+                        {sortedProperties.length} {sortedProperties.length === 1 ? 'saved property' : 'saved properties'}
                     </p>
+                </div>
 
-                    {/* Sort Dropdown */}
+                {/* Sort Dropdown */}
+                {normalizedProperties.length > 0 && (
                     <div className="relative">
                         <button
                             onClick={() => setShowSortMenu(!showSortMenu)}
                             className={cn(
-                                "flex items-center gap-2 h-9 px-3 rounded-lg text-xs font-medium border transition-all",
+                                "h-[42px] sm:h-[52px] px-4 sm:px-6 rounded-full flex items-center justify-center gap-2.5 transition-all font-bold text-[14px] sm:text-[15px] border group outline-none",
                                 showSortMenu
-                                    ? "bg-neutral-900 text-white border-neutral-900"
-                                    : "bg-white border-neutral-200 text-neutral-700 hover:border-neutral-300"
+                                    ? "bg-black text-white border-black"
+                                    : "bg-white text-black border-neutral-200/80 hover:border-black/20 hover:bg-neutral-50"
                             )}
                         >
-                            <ArrowUpDown className="w-3.5 h-3.5" />
+                            <ArrowUpDown className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2.5} />
                             <span className="hidden sm:inline">
                                 {SORT_OPTIONS.find(o => o.id === sortBy)?.label}
                             </span>
@@ -121,7 +124,7 @@ export default function SavedPropertiesPage() {
                                     className="fixed inset-0 z-40"
                                     onClick={() => setShowSortMenu(false)}
                                 />
-                                <div className="absolute right-0 top-full mt-1.5 py-1 w-44 bg-white rounded-lg border border-neutral-200 shadow-lg z-50">
+                                <div className="absolute right-0 top-full mt-2 py-2 w-[220px] bg-white rounded-2xl border border-neutral-100 shadow-[0_8px_30px_rgb(0,0,0,0.08)] z-50 overflow-hidden text-[15px] font-semibold">
                                     {SORT_OPTIONS.map((option) => (
                                         <button
                                             key={option.id}
@@ -130,10 +133,10 @@ export default function SavedPropertiesPage() {
                                                 setShowSortMenu(false)
                                             }}
                                             className={cn(
-                                                "w-full text-left px-3 py-2 text-sm transition-colors",
+                                                "w-full text-left px-5 py-3 transition-colors",
                                                 sortBy === option.id
-                                                    ? "bg-neutral-100 text-neutral-900 font-medium"
-                                                    : "text-neutral-600 hover:bg-neutral-50"
+                                                    ? "bg-neutral-50 text-black font-bold"
+                                                    : "text-neutral-500 hover:text-black hover:bg-neutral-50"
                                             )}
                                         >
                                             {option.label}
@@ -143,33 +146,33 @@ export default function SavedPropertiesPage() {
                             </>
                         )}
                     </div>
-                </div>
-            )}
+                )}
+            </div>
 
             {/* Content Area */}
-            <div className="min-h-[300px]">
+            <div className="min-h-[400px]">
                 {sortedProperties.length > 0 ? (
-                    <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
-                        {sortedProperties.map((property) => (
-                            <TrustCard key={property.id} property={property} />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6 mt-6 pb-20">
+                        {sortedProperties.map((property, idx) => (
+                            <TrustCard key={property.id} property={property} priority={idx < 4} />
                         ))}
                     </div>
                 ) : (
-                    // Empty state
-                    <div className="py-20 flex flex-col items-center justify-center text-center px-4">
-                        <div className="h-14 w-14 rounded-xl bg-neutral-100 flex items-center justify-center mb-5">
-                            <Heart className="h-6 w-6 text-neutral-400" />
+                    // Empty state (Premium design matching the feed)
+                    <div className="py-24 sm:py-32 flex flex-col items-center justify-center text-center px-4 mt-6">
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-red-50/80 flex items-center justify-center mb-6 sm:mb-8 border border-red-100 shadow-sm">
+                            <Heart className="w-8 h-8 sm:w-10 sm:h-10 text-[#FF385C]" strokeWidth={2.5} />
                         </div>
 
-                        <h3 className="text-lg font-semibold text-neutral-900 mb-1">
+                        <h3 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 mb-3 tracking-tight">
                             No saved properties yet
                         </h3>
-                        <p className="text-sm text-neutral-500 max-w-xs mb-6">
-                            Save properties you like by tapping the heart icon. They will appear here.
+                        <p className="text-neutral-500 font-medium text-[15px] sm:text-[16px] max-w-[380px] mb-8 sm:mb-10 leading-relaxed">
+                            Save properties you love by tapping the heart icon. They will appear right here for easy access.
                         </p>
 
                         <Link href="/">
-                            <button className="h-10 px-5 bg-neutral-900 hover:bg-neutral-800 text-white text-sm font-medium rounded-lg transition-colors">
+                            <button className="h-14 sm:h-[60px] px-8 sm:px-10 bg-black text-white rounded-full font-bold text-[15px] sm:text-[16px] hover:bg-neutral-800 transition-all active:scale-[0.98]">
                                 Browse Properties
                             </button>
                         </Link>

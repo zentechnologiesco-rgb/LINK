@@ -86,13 +86,13 @@ export const list = query({
 
         const propertiesWithImages = await Promise.all(
             filtered.map(async (property) => {
-                let imageUrls: string[] = [];
+                const imageUrls: string[] = [];
                 if (property.images && property.images.length > 0) {
                     for (const imageId of property.images) {
                         try {
                             const url = await ctx.storage.getUrl(imageId);
                             if (url) imageUrls.push(url);
-                        } catch (error) {
+                        } catch {
                             // Ignore invalid image IDs
                         }
                     }
@@ -174,13 +174,13 @@ export const getByLandlord = query({
         // Resolve image URLs for each property
         const propertiesWithImages = await Promise.all(
             properties.map(async (property) => {
-                let imageUrls: string[] = [];
+                const imageUrls: string[] = [];
                 if (property.images && property.images.length > 0) {
                     for (const imageId of property.images) {
                         try {
                             const url = await ctx.storage.getUrl(imageId);
                             if (url) imageUrls.push(url);
-                        } catch (error) {
+                        } catch {
                             // Ignore invalid image IDs
                         }
                     }
@@ -297,15 +297,39 @@ export const update = mutation({
         }
 
         const cleanedData = Object.fromEntries(
-            Object.entries(updateData).filter(([_, v]) => v !== undefined)
+            Object.entries(updateData).filter(([, v]) => v !== undefined)
         );
 
-        await ctx.db.patch(propertyId, {
-            ...cleanedData,
-            approvalStatus: "pending",
-            approvalRequestedAt: Date.now(),
-            adminNotes: undefined, // Clear rejection reason
-        });
+        const approvalSensitiveFields = [
+            "title",
+            "description",
+            "propertyType",
+            "address",
+            "city",
+            "coordinates",
+            "priceNad",
+            "bedrooms",
+            "bathrooms",
+            "sizeSqm",
+            "amenityNames",
+            "petPolicy",
+            "utilitiesIncluded",
+            "images",
+            "videos",
+        ];
+
+        const requiresReapproval = approvalSensitiveFields.some((field) => field in cleanedData);
+
+        await ctx.db.patch(propertyId, requiresReapproval
+            ? {
+                ...cleanedData,
+                isAvailable: false,
+                approvalStatus: "pending",
+                approvalRequestedAt: Date.now(),
+                adminNotes: undefined,
+            }
+            : cleanedData,
+        );
         return { success: true };
     },
 });

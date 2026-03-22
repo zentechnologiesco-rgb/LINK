@@ -1,55 +1,124 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { auth } from "./auth";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { TEMPLATES } from "./emailTemplates";
-import { validateFile, ALLOWED_IMAGE_TYPES, ALLOWED_DOCUMENT_TYPES } from "./files";
 
 const BASE_URL = process.env.SITE_URL || "http://localhost:3000";
 
-// Create a new lease
-export const create = mutation({
-    args: {
-        propertyId: v.id("properties"),
-        tenantId: v.id("users"),
-        startDate: v.string(),
-        endDate: v.string(),
-        monthlyRent: v.number(),
-        deposit: v.optional(v.number()),
-        leaseDocument: v.optional(v.any()),
-        terms: v.optional(v.any()),
+// ─── Mandatory clauses that cannot be removed (legally defensible) ───
+const MANDATORY_CLAUSES = [
+    {
+        id: "mandatory_rent",
+        title: "Rent Payment",
+        content: "The Tenant agrees to pay the monthly rent amount specified in this agreement on or before the due date of each month. Late payments will incur fees as specified in the rental rules of this agreement. Rent must be paid in Namibian Dollars (N$) via the agreed payment method.",
+        isMandatory: true,
     },
-    handler: async (ctx, args) => {
-        const userId = await auth.getUserId(ctx);
-        if (!userId) throw new Error("Not authenticated");
+    {
+        id: "mandatory_deposit",
+        title: "Security Deposit",
+        content: "The Tenant shall pay a security deposit as specified in this agreement. The deposit will be held by the Landlord for the duration of the lease and returned within 14 days of lease termination, subject to deductions for damages beyond normal wear and tear, outstanding rent, or other legitimate charges. An itemised list of deductions will be provided.",
+        isMandatory: true,
+    },
+    {
+        id: "mandatory_condition",
+        title: "Property Condition & Maintenance",
+        content: "The Tenant agrees to maintain the property in good, habitable condition and report any damages, defects, or maintenance issues promptly to the Landlord. The Tenant shall not make structural modifications without written consent. Normal wear and tear is the Landlord's responsibility.",
+        isMandatory: true,
+    },
+    {
+        id: "mandatory_occupancy",
+        title: "Occupancy & Use",
+        content: "The property shall be used solely as a residential dwelling. Only the Tenant and approved occupants listed in this agreement may reside in the property. The maximum number of occupants shall not exceed the amount specified in this agreement. Subletting is governed by the terms set out in the rental rules.",
+        isMandatory: true,
+    },
+    {
+        id: "mandatory_entry",
+        title: "Entry by Landlord",
+        content: "The Landlord or their authorised agent may enter the property with reasonable notice (minimum 24 hours) for inspections, repairs, showings, or emergency purposes. In the case of an emergency that threatens life or property, immediate entry is permitted without prior notice.",
+        isMandatory: true,
+    },
+    {
+        id: "mandatory_termination",
+        title: "Termination & Notice",
+        content: "Either party may terminate this lease by providing written notice as specified in the notice period outlined in the rental rules. Early termination by the Tenant may result in forfeiture of the security deposit unless otherwise agreed. Upon termination, the Tenant must vacate and return all keys within the agreed timeframe.",
+        isMandatory: true,
+    },
+    {
+        id: "mandatory_dispute",
+        title: "Dispute Resolution",
+        content: "Any disputes arising from this agreement shall first be resolved through negotiation between the parties. If negotiation fails, the parties agree to seek mediation through the Namibian Rental Tribunal or an agreed mediator before pursuing legal action. This agreement is governed by the laws of the Republic of Namibia.",
+        isMandatory: true,
+    },
+];
 
-        const property = await ctx.db.get(args.propertyId);
-        if (!property) throw new Error("Property not found");
+const BLOCKING_LEASE_STATUSES = new Set([
+    "draft",
+    "sent_to_tenant",
+    "tenant_signed",
+    "revision_requested",
+    "approved",
+]);
 
-        const user = await ctx.db.get(userId);
-        if (property.landlordId !== userId && user?.role !== "admin") {
-            throw new Error("Only the property owner can create leases");
+function formatDateOnly(date: Date) {
+    return date.toISOString().split("T")[0];
+}
+
+async function ensurePropertyHasNoBlockingLease(
+    ctx: MutationCtx,
+    propertyId: Id<"properties">,
+    currentLeaseId?: Id<"leases">,
+) {
+    const propertyLeases = await ctx.db
+        .query("leases")
+        .withIndex("by_propertyId", (q) => q.eq("propertyId", propertyId))
+        .collect();
+
+    const blockingLease = propertyLeases.find((lease) =>
+        lease._id !== currentLeaseId && BLOCKING_LEASE_STATUSES.has(lease.status),
+    );
+
+    if (blockingLease) {
+        throw new Error("This property already has a lease in progress or an active tenant.");
+    }
+}
+
+async function ensureTenantHasNoActiveLease(
+    ctx: MutationCtx,
+    tenantId: Id<"users">,
+    currentLeaseId?: Id<"leases">,
+) {
+    const tenantLeases = await ctx.db
+        .query("leases")
+        .withIndex("by_tenantId", (q) => q.eq("tenantId", tenantId))
+        .collect();
+
+    const activeLease = tenantLeases.find((lease) =>
+        lease._id !== currentLeaseId && lease.status === "approved",
+    );
+
+    if (activeLease) {
+        throw new Error("This tenant already has an active lease linked to another property.");
+    }
+}
+
+async function clearFuturePendingPayments(ctx: MutationCtx, leaseId: Id<"leases">, fromDate: string) {
+    const payments = await ctx.db
+        .query("payments")
+        .withIndex("by_leaseId", (q) => q.eq("leaseId", leaseId))
+        .collect();
+
+    for (const payment of payments) {
+        if (payment.status === "pending" && payment.dueDate >= fromDate) {
+            await ctx.db.delete(payment._id);
         }
+    }
+}
 
-        const leaseId = await ctx.db.insert("leases", {
-            propertyId: args.propertyId,
-            tenantId: args.tenantId,
-            landlordId: userId,
-            startDate: args.startDate,
-            endDate: args.endDate,
-            monthlyRent: args.monthlyRent,
-            deposit: args.deposit,
-            leaseDocument: args.leaseDocument,
-            terms: args.terms,
-            status: "draft",
-        });
-
-        return leaseId;
-    },
-});
-
-// Create a new lease with tenant email
-export const createByEmail = mutation({
+// ─── Create a new lease ───
+export const create = mutation({
     args: {
         propertyId: v.id("properties"),
         tenantEmail: v.string(),
@@ -57,21 +126,36 @@ export const createByEmail = mutation({
         endDate: v.string(),
         monthlyRent: v.number(),
         deposit: v.optional(v.number()),
-        leaseDocument: v.optional(v.any()),
-        terms: v.optional(v.any()),
+        // Rental Rules
+        templateId: v.optional(v.id("leaseTemplates")),
+        rentDueDay: v.optional(v.number()),
+        gracePeriodDays: v.optional(v.number()),
+        lateFeeType: v.optional(v.union(v.literal("percentage"), v.literal("fixed"))),
+        lateFeeAmount: v.optional(v.number()),
+        paymentFrequency: v.optional(v.union(v.literal("monthly"), v.literal("weekly"), v.literal("biweekly"))),
+        // Property Rules
+        petPolicy: v.optional(v.string()),
+        utilitiesIncluded: v.optional(v.array(v.string())),
+        parkingIncluded: v.optional(v.boolean()),
+        maintenanceResponsibility: v.optional(v.string()),
+        noticePeriodDays: v.optional(v.number()),
+        maxOccupants: v.optional(v.number()),
+        smokingAllowed: v.optional(v.boolean()),
+        sublettingAllowed: v.optional(v.boolean()),
+        // Custom clauses (on top of mandatory)
+        customClauses: v.optional(v.array(v.object({
+            id: v.string(),
+            title: v.string(),
+            content: v.string(),
+        }))),
+        // Whether to send immediately or save as draft
+        sendImmediately: v.optional(v.boolean()),
     },
     handler: async (ctx, args) => {
         const userId = await auth.getUserId(ctx);
         if (!userId) throw new Error("Not authenticated");
 
-        // Find tenant by email
-        const tenant = await ctx.db
-            .query("users")
-            .withIndex("by_email", (q) => q.eq("email", args.tenantEmail))
-            .first();
-
-        if (!tenant) throw new Error(`No user found with email ${args.tenantEmail}. Please ask them to sign up first.`);
-
+        // Validate property
         const property = await ctx.db.get(args.propertyId);
         if (!property) throw new Error("Property not found");
 
@@ -79,6 +163,93 @@ export const createByEmail = mutation({
         if (property.landlordId !== userId && user?.role !== "admin") {
             throw new Error("Only the property owner can create leases");
         }
+
+        if (property.approvalStatus !== "approved") {
+            throw new Error("The property must be approved before you can create a lease.");
+        }
+
+        await ensurePropertyHasNoBlockingLease(ctx, args.propertyId);
+
+        // Find tenant by email
+        const tenant = await ctx.db
+            .query("users")
+            .withIndex("by_email", (q) => q.eq("email", args.tenantEmail))
+            .first();
+
+        if (!tenant) {
+            throw new Error(`No user found with email ${args.tenantEmail}. Please ask them to sign up first.`);
+        }
+
+        if (tenant._id === property.landlordId) {
+            throw new Error("You cannot assign yourself as the tenant on your own property.");
+        }
+
+        // Build clauses: mandatory + auto-generated from rules + custom
+        const allClauses = [...MANDATORY_CLAUSES];
+
+        // Auto-generate clauses from rules
+        if (args.petPolicy && args.petPolicy !== "no_pets") {
+            allClauses.push({
+                id: "auto_pets",
+                title: "Pet Policy",
+                content: `Pets are permitted under the following policy: ${args.petPolicy.replace(/_/g, " ")}. The Tenant is responsible for any damage caused by pets and must ensure pets do not disturb other residents.`,
+                isMandatory: false,
+            });
+        } else if (args.petPolicy === "no_pets") {
+            allClauses.push({
+                id: "auto_pets",
+                title: "Pet Policy",
+                content: "No pets of any kind are permitted on the property without prior written consent from the Landlord.",
+                isMandatory: false,
+            });
+        }
+
+        if (args.utilitiesIncluded && args.utilitiesIncluded.length > 0) {
+            allClauses.push({
+                id: "auto_utilities",
+                title: "Utilities",
+                content: `The following utilities are included in the monthly rent: ${args.utilitiesIncluded.join(", ")}. All other utilities are the Tenant's responsibility and must be paid directly to the service provider.`,
+                isMandatory: false,
+            });
+        }
+
+        if (args.smokingAllowed === false) {
+            allClauses.push({
+                id: "auto_smoking",
+                title: "Smoking Policy",
+                content: "Smoking is strictly prohibited inside the property and in all enclosed common areas. Violation of this policy may result in lease termination.",
+                isMandatory: false,
+            });
+        }
+
+        // Add custom clauses. If an auto-generated clause was edited in the UI,
+        // replace the generated version instead of appending a duplicate id.
+        if (args.customClauses) {
+            for (const clause of args.customClauses) {
+                const existingClauseIndex = allClauses.findIndex((existingClause) => existingClause.id === clause.id);
+
+                if (existingClauseIndex >= 0) {
+                    allClauses[existingClauseIndex] = {
+                        ...allClauses[existingClauseIndex],
+                        ...clause,
+                        isMandatory: false,
+                    };
+                    continue;
+                }
+
+                allClauses.push({
+                    ...clause,
+                    isMandatory: false,
+                });
+            }
+        }
+
+        const leaseDocument = {
+            title: "Residential Lease Agreement",
+            clauses: allClauses,
+        };
+
+        const status = args.sendImmediately ? "sent_to_tenant" : "draft";
 
         const leaseId = await ctx.db.insert("leases", {
             propertyId: args.propertyId,
@@ -88,19 +259,43 @@ export const createByEmail = mutation({
             endDate: args.endDate,
             monthlyRent: args.monthlyRent,
             deposit: args.deposit,
-            leaseDocument: args.leaseDocument,
-            terms: args.terms,
-            status: "draft",
+            leaseDocument,
+            templateId: args.templateId,
+            rentDueDay: args.rentDueDay ?? 1,
+            gracePeriodDays: args.gracePeriodDays ?? 5,
+            lateFeeType: args.lateFeeType ?? "percentage",
+            lateFeeAmount: args.lateFeeAmount ?? 5,
+            paymentFrequency: args.paymentFrequency ?? "monthly",
+            petPolicy: args.petPolicy ?? "no_pets",
+            utilitiesIncluded: args.utilitiesIncluded ?? [],
+            parkingIncluded: args.parkingIncluded ?? false,
+            maintenanceResponsibility: args.maintenanceResponsibility ?? "shared",
+            noticePeriodDays: args.noticePeriodDays ?? 30,
+            maxOccupants: args.maxOccupants ?? 2,
+            smokingAllowed: args.smokingAllowed ?? false,
+            sublettingAllowed: args.sublettingAllowed ?? false,
+            status,
+            ...(args.sendImmediately ? { sentAt: Date.now() } : {}),
         });
 
-        // Also generate payments (optional, but legacy probably did it)
-        // We handle payment generation separately usually.
+        // If sending immediately, notify tenant
+        if (args.sendImmediately && tenant.email) {
+            const emailData = TEMPLATES.LEASE_CREATED(
+                `${BASE_URL}/tenant/leases/${leaseId}`,
+                property.address
+            );
+            await ctx.scheduler.runAfter(0, api.emails.send, {
+                to: tenant.email,
+                subject: emailData.subject,
+                html: emailData.html,
+            });
+        }
 
-        return { leaseId, tenantName: tenant.fullName };
+        return { leaseId, tenantName: tenant.fullName || "Tenant" };
     },
 });
 
-// Send lease to tenant
+// ─── Send lease to tenant (from draft) ───
 export const sendToTenant = mutation({
     args: { leaseId: v.id("leases") },
     handler: async (ctx, args) => {
@@ -117,7 +312,6 @@ export const sendToTenant = mutation({
             sentAt: Date.now(),
         });
 
-        // Notify Tenant
         const tenant = await ctx.db.get(lease.tenantId);
         const property = await ctx.db.get(lease.propertyId);
 
@@ -129,7 +323,7 @@ export const sendToTenant = mutation({
             await ctx.scheduler.runAfter(0, api.emails.send, {
                 to: tenant.email,
                 subject: emailData.subject,
-                html: emailData.html
+                html: emailData.html,
             });
         }
 
@@ -137,7 +331,7 @@ export const sendToTenant = mutation({
     },
 });
 
-// Tenant signs lease
+// ─── Tenant signs lease ───
 export const tenantSign = mutation({
     args: {
         leaseId: v.id("leases"),
@@ -155,14 +349,11 @@ export const tenantSign = mutation({
         const lease = await ctx.db.get(args.leaseId);
         if (!lease) throw new Error("Lease not found");
         if (lease.tenantId !== userId) throw new Error("Only the tenant can sign");
-        if (lease.status !== "sent_to_tenant" && lease.status !== "revision_requested") throw new Error("Lease not ready for signing");
-
-
-        // Validate documents
-        const ALLOWED_LEASE_DOCS = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_DOCUMENT_TYPES];
-        for (const doc of args.tenantDocuments) {
-            await validateFile(ctx, doc.storageId, ALLOWED_LEASE_DOCS);
+        if (lease.status !== "sent_to_tenant" && lease.status !== "revision_requested") {
+            throw new Error("Lease not ready for signing");
         }
+
+        // Documents are validated on upload in the frontend (DocumentUploader component)
 
         await ctx.db.patch(args.leaseId, {
             status: "tenant_signed",
@@ -185,7 +376,7 @@ export const tenantSign = mutation({
             await ctx.scheduler.runAfter(0, api.emails.send, {
                 to: landlord.email,
                 subject: emailData.subject,
-                html: emailData.html
+                html: emailData.html,
             });
         }
 
@@ -193,7 +384,7 @@ export const tenantSign = mutation({
     },
 });
 
-// Landlord approves or rejects signed lease
+// ─── Landlord approves or rejects (with full system activation on approval) ───
 export const landlordDecision = mutation({
     args: {
         leaseId: v.id("leases"),
@@ -211,15 +402,47 @@ export const landlordDecision = mutation({
         if (lease.status !== "tenant_signed") throw new Error("Lease not ready for approval");
 
         if (args.approved) {
+            const now = Date.now();
+
+            const property = await ctx.db.get(lease.propertyId);
+            if (!property) {
+                throw new Error("Property not found");
+            }
+            if (property.approvalStatus !== "approved") {
+                throw new Error("The property is no longer approved for leasing.");
+            }
+
+            await ensurePropertyHasNoBlockingLease(ctx, lease.propertyId, lease._id);
+            await ensureTenantHasNoActiveLease(ctx, lease.tenantId, lease._id);
+
+            // 1. Activate the lease
             await ctx.db.patch(args.leaseId, {
                 status: "approved",
                 landlordSignatureData: args.signatureData,
                 landlordNotes: args.notes,
-                approvedAt: Date.now(),
+                approvedAt: now,
+                activatedAt: now,
             });
 
-            // Mark property as unavailable
+            // 2. Mark property as unavailable
             await ctx.db.patch(lease.propertyId, { isAvailable: false });
+
+            // 3. Auto-generate payment schedule
+            await ctx.scheduler.runAfter(0, internal.payments.generateScheduleForLease, {
+                leaseId: args.leaseId,
+            });
+
+            // 4. Auto-create deposit record if deposit specified
+            if (lease.deposit && lease.deposit > 0) {
+                await ctx.db.insert("deposits", {
+                    leaseId: args.leaseId,
+                    tenantId: lease.tenantId,
+                    landlordId: lease.landlordId,
+                    amount: lease.deposit,
+                    status: "pending",
+                    deductionAmount: 0,
+                });
+            }
         } else {
             await ctx.db.patch(args.leaseId, {
                 status: "rejected",
@@ -248,7 +471,7 @@ export const landlordDecision = mutation({
             await ctx.scheduler.runAfter(0, api.emails.send, {
                 to: tenant.email,
                 subject: emailData.subject,
-                html: emailData.html
+                html: emailData.html,
             });
         }
 
@@ -256,7 +479,7 @@ export const landlordDecision = mutation({
     },
 });
 
-// Request revision from tenant
+// ─── Request revision from tenant ───
 export const requestRevision = mutation({
     args: {
         leaseId: v.id("leases"),
@@ -265,19 +488,21 @@ export const requestRevision = mutation({
     handler: async (ctx, args) => {
         const userId = await auth.getUserId(ctx);
         if (!userId) throw new Error("Not authenticated");
+        const trimmedNotes = args.notes.trim();
+        if (!trimmedNotes) throw new Error("Please provide revision notes");
 
         const lease = await ctx.db.get(args.leaseId);
         if (!lease) throw new Error("Lease not found");
         if (lease.landlordId !== userId) throw new Error("Only the landlord can request revisions");
-        // Status check: usually can request revision if tenant signed but something is wrong
         if (lease.status !== "tenant_signed") throw new Error("Lease not currently in review");
 
         await ctx.db.patch(args.leaseId, {
             status: "revision_requested",
-            landlordNotes: args.notes,
+            landlordNotes: trimmedNotes,
+            tenantSignatureData: undefined,
+            signedAt: undefined,
         });
 
-        // Notify Tenant
         const tenant = await ctx.db.get(lease.tenantId);
         const property = await ctx.db.get(lease.propertyId);
 
@@ -285,12 +510,12 @@ export const requestRevision = mutation({
             const emailData = TEMPLATES.REVISION_REQUESTED(
                 `${BASE_URL}/tenant/leases/${args.leaseId}`,
                 property.address,
-                args.notes
+                trimmedNotes
             );
             await ctx.scheduler.runAfter(0, api.emails.send, {
                 to: tenant.email,
                 subject: emailData.subject,
-                html: emailData.html
+                html: emailData.html,
             });
         }
 
@@ -298,7 +523,66 @@ export const requestRevision = mutation({
     },
 });
 
-// Get lease by ID
+// ─── Terminate lease ───
+export const terminate = mutation({
+    args: {
+        leaseId: v.id("leases"),
+        reason: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) throw new Error("Not authenticated");
+
+        const lease = await ctx.db.get(args.leaseId);
+        if (!lease) throw new Error("Lease not found");
+
+        const user = await ctx.db.get(userId);
+        if (lease.landlordId !== userId && user?.role !== "admin") {
+            throw new Error("Only the landlord can terminate leases");
+        }
+
+        await ctx.db.patch(args.leaseId, {
+            status: "terminated",
+            terminatedAt: Date.now(),
+            terminationReason: args.reason,
+            landlordNotes: args.reason,
+        });
+
+        await clearFuturePendingPayments(ctx, args.leaseId, formatDateOnly(new Date()));
+
+        // Mark property as available again
+        await ctx.db.patch(lease.propertyId, { isAvailable: true });
+
+        return { success: true };
+    },
+});
+
+// ─── Check for expired leases (cron job) ───
+export const checkExpired = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const today = new Date().toISOString().split("T")[0];
+
+        const approvedLeases = await ctx.db
+            .query("leases")
+            .withIndex("by_status", (q) => q.eq("status", "approved"))
+            .collect();
+
+        let count = 0;
+        for (const lease of approvedLeases) {
+            if (lease.endDate < today) {
+                await ctx.db.patch(lease._id, { status: "expired" });
+                await clearFuturePendingPayments(ctx, lease._id, today);
+                await ctx.db.patch(lease.propertyId, { isAvailable: true });
+                count++;
+            }
+        }
+
+        return { success: true, expiredCount: count };
+    },
+});
+
+// ─── Get lease by ID ───
 export const getById = query({
     args: { leaseId: v.id("leases") },
     handler: async (ctx, args) => {
@@ -308,7 +592,6 @@ export const getById = query({
         const lease = await ctx.db.get(args.leaseId);
         if (!lease) return null;
 
-        // Only landlord, tenant, or admin can view lease details
         const user = await ctx.db.get(userId);
         const isLandlord = lease.landlordId === userId;
         const isTenant = lease.tenantId === userId;
@@ -330,8 +613,8 @@ export const getById = query({
             }
             propertyWithImage = {
                 ...property,
-                imageUrl, // Add explicit imageUrl field
-                images: property.images, // Keep original IDs just in case
+                imageUrl,
+                images: property.images,
             };
         }
 
@@ -344,7 +627,7 @@ export const getById = query({
     },
 });
 
-// Get leases for landlord
+// ─── Get leases for landlord ───
 export const getForLandlord = query({
     args: { status: v.optional(v.string()) },
     handler: async (ctx, args) => {
@@ -382,7 +665,7 @@ export const getForLandlord = query({
     },
 });
 
-// Get leases for tenant
+// ─── Get leases for tenant ───
 export const getForTenant = query({
     args: { status: v.optional(v.string()) },
     handler: async (ctx, args) => {
@@ -420,65 +703,51 @@ export const getForTenant = query({
     },
 });
 
-// Terminate lease
-export const terminate = mutation({
-    args: {
-        leaseId: v.id("leases"),
-        reason: v.optional(v.string()),
-    },
-    handler: async (ctx, args) => {
-        const userId = await auth.getUserId(ctx);
-        if (!userId) throw new Error("Not authenticated");
-
-        const lease = await ctx.db.get(args.leaseId);
-        if (!lease) throw new Error("Lease not found");
-
-        const user = await ctx.db.get(userId);
-        if (lease.landlordId !== userId && user?.role !== "admin") {
-            throw new Error("Only the landlord can terminate leases");
-        }
-
-        await ctx.db.patch(args.leaseId, {
-            status: "terminated",
-            landlordNotes: args.reason,
-        });
-
-        // Mark property as available again
-        await ctx.db.patch(lease.propertyId, { isAvailable: true });
-
-        return { success: true };
-    },
-});
-
-// Check for expired leases (cron job)
-export const checkExpired = mutation({
+// ─── Get tenant's currently active lease ───
+export const getActiveLease = query({
     args: {},
     handler: async (ctx) => {
-        const today = new Date().toISOString().split("T")[0];
+        const userId = await auth.getUserId(ctx);
+        if (!userId) return null;
 
-        // Get all active leases
-        const approvedLeases = await ctx.db
+        const activeLeases = await ctx.db
             .query("leases")
-            .withIndex("by_status", (q) => q.eq("status", "approved"))
+            .withIndex("by_tenantId", (q) => q.eq("tenantId", userId))
             .collect();
 
-        let count = 0;
-        for (const lease of approvedLeases) {
-            if (lease.endDate < today) {
-                await ctx.db.patch(lease._id, { status: "expired" });
+        const activeLease = activeLeases.find((l) => l.status === "approved");
+        if (!activeLease) return null;
 
-                // Mark property available again
-                await ctx.db.patch(lease.propertyId, { isAvailable: true });
+        const property = await ctx.db.get(activeLease.propertyId);
+        const landlord = await ctx.db.get(activeLease.landlordId);
 
-                count++;
-            }
+        let imageUrl = null;
+        if (property?.images && property.images.length > 0) {
+            imageUrl = await ctx.storage.getUrl(property.images[0]);
         }
 
-        return { success: true, expiredCount: count };
+        // Get next payment due
+        const payments = await ctx.db
+            .query("payments")
+            .withIndex("by_leaseId", (q) => q.eq("leaseId", activeLease._id))
+            .collect();
+
+        const pendingPayments = payments
+            .filter((p) => p.status === "pending" || p.status === "overdue")
+            .sort((a, b) => (a.dueDate > b.dueDate ? 1 : -1));
+
+        const nextPayment = pendingPayments[0] || null;
+
+        return {
+            ...activeLease,
+            property: property ? { ...property, imageUrl } : null,
+            landlord: landlord ? { fullName: landlord.fullName, email: landlord.email } : null,
+            nextPayment,
+        };
     },
 });
 
-// Get count of leases requiring action for current user
+// ─── Count leases requiring action ───
 export const getActionRequiredCount = query({
     args: {},
     handler: async (ctx) => {
@@ -489,7 +758,6 @@ export const getActionRequiredCount = query({
         if (!user) return 0;
 
         if (user.role === "landlord") {
-            // For landlords: count leases waiting for their approval
             const pendingLeases = await ctx.db
                 .query("leases")
                 .withIndex("by_landlordId", (q) => q.eq("landlordId", userId))
@@ -497,7 +765,6 @@ export const getActionRequiredCount = query({
                 .collect();
             return pendingLeases.length;
         } else {
-            // For tenants: count leases waiting for their signature
             const pendingLeases = await ctx.db
                 .query("leases")
                 .withIndex("by_tenantId", (q) => q.eq("tenantId", userId))
@@ -512,5 +779,3 @@ export const getActionRequiredCount = query({
         }
     },
 });
-
-

@@ -9,6 +9,11 @@ export const toggle = mutation({
         const userId = await auth.getUserId(ctx);
         if (!userId) throw new Error("Authentication required");
 
+        const property = await ctx.db.get(args.propertyId);
+        if (property && property.landlordId === userId) {
+            throw new Error("OwnerCannotSave");
+        }
+
         const existing = await ctx.db
             .query("savedProperties")
             .withIndex("by_user_property", (q) =>
