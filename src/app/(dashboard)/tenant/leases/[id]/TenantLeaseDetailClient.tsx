@@ -10,6 +10,7 @@ import {
     CalendarRange,
     Cat,
     ChevronLeft,
+    ChevronRight,
     CircleParking,
     Cigarette,
     Clock3,
@@ -29,8 +30,7 @@ import {
 
 import { api } from '../../../../../../convex/_generated/api'
 import { Id } from '../../../../../../convex/_generated/dataModel'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { LeaseStatusBadge, LeaseStatusTimeline } from '@/components/leases/LeaseStatusTimeline'
 import { SignatureCanvas } from '@/components/leases/SignatureCanvas'
 import { DocumentUploader } from '@/components/leases/DocumentUploader'
@@ -46,7 +46,7 @@ import {
 
 const money = new Intl.NumberFormat('en-NA', { style: 'currency', currency: 'NAD', maximumFractionDigits: 0 })
 const dates = new Intl.DateTimeFormat('en-NA', { day: 'numeric', month: 'short', year: 'numeric' })
-const formatCurrency = (value: number) => money.format(value)
+const formatCurrency = (value: number) => money.format(value || 0)
 const formatDate = (value: string) => dates.format(new Date(value))
 
 interface TenantDocumentUpload {
@@ -91,21 +91,22 @@ export function TenantLeaseDetailClient({ leaseId }: { leaseId: string }) {
     }, [lease?.tenantDocuments])
 
     if (lease === undefined || payments === undefined) {
-        return (
-            <div className="min-h-[60vh] flex items-center justify-center">
-                <div className="flex flex-col items-center gap-3">
-                    <div className="h-8 w-8 rounded-full border-2 border-neutral-200 border-t-neutral-900 animate-spin" />
-                    <p className="text-sm font-medium text-neutral-400">Loading your lease...</p>
-                </div>
-            </div>
-        )
+        return <PageSkeleton />
     }
 
     if (!lease) {
         return (
-            <div className="py-20 text-center">
-                <h2 className="text-lg font-semibold text-neutral-900">Lease not found</h2>
-                <Link href="/tenant/leases" className="mt-2 inline-flex text-sm text-neutral-500 underline">
+            <div className="flex min-h-screen flex-col items-center justify-center bg-white px-6 text-center pb-24">
+                <div className="mb-6 flex h-[88px] w-[88px] items-center justify-center rounded-full bg-neutral-50 ring-1 ring-inset ring-neutral-200/60">
+                    <Building2 className="h-10 w-10 text-neutral-400" strokeWidth={1.8} />
+                </div>
+                <h3 className="text-[22px] font-bold tracking-[-0.03em] text-neutral-950">
+                    Lease not found
+                </h3>
+                <Link
+                    href="/tenant/leases"
+                    className="mt-8 flex h-12 items-center justify-center rounded-full bg-neutral-950 px-8 text-[15px] font-semibold text-white transition-all active:scale-95 hover:bg-neutral-800"
+                >
                     Back to my leases
                 </Link>
             </div>
@@ -172,437 +173,426 @@ export function TenantLeaseDetailClient({ leaseId }: { leaseId: string }) {
     }
 
     return (
-        <div className="mx-auto max-w-[820px] font-sans pb-28">
-            <section className="border-b border-neutral-100 pb-6">
-                <Link
-                    href="/tenant/leases"
-                    className="inline-flex items-center gap-1.5 text-sm text-neutral-500 transition-colors hover:text-neutral-900"
-                >
-                    <ChevronLeft className="h-4 w-4" strokeWidth={2.2} />
-                    My leases
-                </Link>
-
-                <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-start">
-                    <div className="h-28 w-full shrink-0 overflow-hidden rounded-[24px] bg-neutral-100 sm:h-28 sm:w-32">
-                        {lease.property?.imageUrl ? (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img
-                                src={lease.property.imageUrl}
-                                alt={lease.property?.title || 'Property'}
-                                className="h-full w-full object-cover"
-                            />
-                        ) : (
-                            <div className="flex h-full items-center justify-center text-neutral-400">
-                                <Building2 className="h-8 w-8" strokeWidth={1.8} />
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-3">
-                            <p className="text-sm font-medium text-neutral-500">Tenant lease</p>
-                            <LeaseStatusBadge status={lease.status} />
-                        </div>
-                        <h1 className="mt-2 text-[2rem] font-semibold tracking-[-0.04em] text-neutral-950">
-                            {lease.property?.title || 'Property'}
+        <div className="mx-auto min-h-screen max-w-[820px] bg-white pb-32 font-sans md:pb-36 xl:rounded-xl xl:border-x xl:border-neutral-100/60 xl:shadow-sm">
+            {/* ── Sticky Header ── */}
+            <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-2xl border-b border-neutral-100/60">
+                <div className="flex h-14 items-center gap-3 px-4 sm:px-6">
+                    <Link
+                        href="/tenant/leases"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-700 transition-colors active:scale-95 hover:bg-neutral-200/80"
+                        aria-label="Back to leases"
+                    >
+                        <ChevronLeft className="h-5 w-5" strokeWidth={2.2} />
+                    </Link>
+                    <div className="flex min-w-0 flex-1 flex-col">
+                        <h1 className="truncate text-[15px] font-semibold text-neutral-950">
+                            {lease.property?.title || 'Property Lease'}
                         </h1>
-                        <p className="mt-2 text-[15px] leading-7 text-neutral-600">
-                            {lease.property?.address}{lease.property?.city ? `, ${lease.property.city}` : ''}
-                        </p>
-                        <p className="mt-2 text-sm text-neutral-500">
-                            Landlord: {lease.landlord?.fullName || 'Property owner'}
+                        <p className="truncate text-[12px] font-medium text-neutral-500">
+                            {lease.property?.address || 'Address unavailable'}
                         </p>
                     </div>
                 </div>
+            </header>
 
+            {/* ── Immersive Hero Section ── */}
+            <section className="px-4 pt-6 sm:px-6">
+                <div className="relative aspect-[21/9] w-full overflow-hidden rounded-[24px] bg-neutral-100 sm:aspect-[21/7]">
+                    {lease.property?.imageUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                            src={lease.property.imageUrl}
+                            alt={lease.property?.title || 'Property'}
+                            className="absolute inset-0 h-full w-full object-cover"
+                        />
+                    ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-neutral-400">
+                            <Building2 className="h-8 w-8" strokeWidth={1.8} />
+                        </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <div className="absolute bottom-5 left-5 right-5">
+                        <LeaseStatusBadge status={lease.status} />
+                    </div>
+                </div>
+
+                <div className="mt-5 px-1">
+                    <h2 className="text-[2rem] font-bold tracking-[-0.04em] text-neutral-950 sm:text-[2.25rem] leading-tight">
+                        {lease.property?.title || 'Property Lease'}
+                    </h2>
+                    <p className="mt-1.5 text-[15px] leading-relaxed text-neutral-500">
+                        {lease.property?.address}{lease.property?.city ? `, ${lease.property.city}` : ''}
+                    </p>
+                    <div className="mt-4 flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 ring-1 ring-inset ring-neutral-200/60">
+                            <Users className="h-4 w-4 text-neutral-500" strokeWidth={2.2} />
+                        </div>
+                        <p className="text-[14px] font-medium text-neutral-700">
+                            Landlord: <span className="font-semibold text-neutral-950">{lease.landlord?.fullName || 'Property owner'}</span>
+                        </p>
+                    </div>
+                </div>
+                
                 {lease.status === 'revision_requested' && (
-                    <div className="mt-5 rounded-[24px] border border-amber-200 bg-amber-50/80 px-5 py-4">
-                        <p className="text-sm font-semibold text-amber-900">Revision requested</p>
-                        <p className="mt-1 text-sm leading-6 text-amber-800">
+                    <div className="mt-5 rounded-[20px] bg-amber-50 px-5 py-4 ring-1 ring-inset ring-amber-200/80">
+                        <p className="text-[13px] font-bold tracking-[0.04em] uppercase text-amber-900">Revision requested</p>
+                        <p className="mt-1 text-[14px] leading-relaxed text-amber-800">
                             {lease.landlordNotes || 'The landlord requested updates before approval.'}
                         </p>
                     </div>
                 )}
-
-                <div className="mt-5 flex flex-wrap gap-2">
-                    <HeaderPill icon={Wallet2} label="Rent" value={formatCurrency(lease.monthlyRent)} />
-                    <HeaderPill icon={Wallet2} label="Deposit" value={formatCurrency(lease.deposit ?? 0)} />
-                    <HeaderPill icon={CalendarRange} label="Move in" value={formatDate(lease.startDate)} />
-                    <HeaderPill
-                        icon={Clock3}
-                        label="Next due"
-                        value={nextPayment ? formatCurrency(nextPayment.amount) : 'Up to date'}
-                    />
-                </div>
             </section>
 
-            <div className="space-y-8 pt-6">
-                <DetailSection
-                    title="Progress"
-                    description="See where the lease sits today and what happens next."
-                >
-                    <LeaseStatusTimeline
-                        status={lease.status}
-                        createdAt={lease._creationTime}
-                        sentAt={lease.sentAt}
-                        signedAt={lease.signedAt}
-                        approvedAt={lease.approvedAt}
-                    />
-                </DetailSection>
+            {/* ── Main Details List ── */}
+            <div className="mt-8 flex flex-col gap-8">
 
-                <DetailSection
-                    title="Payment snapshot"
-                    description="Your lease totals, latest items, and next payment."
-                    action={(
-                        <Link href="/tenant/payments">
-                            <Button
-                                variant="outline"
-                                className="h-10 rounded-full border-neutral-200 bg-white px-4 text-sm font-medium text-neutral-700"
-                            >
-                                Open payments
-                            </Button>
+                <section>
+                    <SectionHeader title="Metrics" description="Key dates and financial amounts." />
+                    <div className="mt-2 grid grid-cols-2 gap-3 px-4 sm:grid-cols-4 sm:px-6">
+                        <MiniStat icon={Wallet2} label="Rent" value={formatCurrency(lease.monthlyRent ?? 0)} />
+                        <MiniStat icon={Wallet2} label="Deposit" value={formatCurrency(lease.deposit ?? 0)} />
+                        <MiniStat icon={CalendarRange} label="Move In" value={formatDate(lease.startDate)} />
+                        <MiniStat icon={Clock3} label="Next Due" value={nextPayment ? formatCurrency(nextPayment.amount) : 'Up to date'} />
+                    </div>
+                </section>
+
+                <section>
+                    <SectionHeader title="Progress" description="See where the lease sits today." />
+                    <GroupedSection>
+                        <div className="p-5">
+                            <LeaseStatusTimeline
+                                status={lease.status}
+                                createdAt={lease._creationTime}
+                                sentAt={lease.sentAt}
+                                signedAt={lease.signedAt}
+                                approvedAt={lease.approvedAt}
+                            />
+                        </div>
+                    </GroupedSection>
+                </section>
+
+                <section>
+                    <div className="flex items-end justify-between px-5 sm:px-6">
+                        <SectionHeader title="Payment Snapshot" description="Latest items and next payment." />
+                        <Link href="/tenant/payments" className="mb-3">
+                            <span className="text-[13px] font-semibold text-neutral-950 hover:underline">View all</span>
                         </Link>
-                    )}
-                >
-                    <div className="flex flex-wrap gap-2">
+                    </div>
+                    <div className="mt-1 overflow-x-auto px-4 pb-4 sm:px-6 hide-scrollbar flex gap-2">
                         <InlineMetric label="Paid" value={formatCurrency(totals.paid)} tone="success" />
                         <InlineMetric label="Pending" value={formatCurrency(totals.pending)} tone="default" />
                         <InlineMetric label="Overdue" value={formatCurrency(totals.overdue)} tone="danger" />
                     </div>
-
-                    <div className="mt-5 divide-y divide-neutral-100 border-y border-neutral-200 bg-white">
+                    <GroupedSection>
                         {payments.length > 0 ? (
                             payments.slice(0, 4).map((payment) => (
-                                <div key={payment._id} className="flex items-center justify-between gap-3 py-4">
-                                    <div>
-                                        <p className="text-sm font-semibold capitalize text-neutral-950">
-                                            {payment.type.replace('_', ' ')}
-                                        </p>
-                                        <p className="mt-1 text-sm text-neutral-500">
-                                            Due {formatDate(payment.dueDate)}
-                                        </p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-sm font-semibold text-neutral-950">
-                                            {formatCurrency(payment.amount)}
-                                        </p>
-                                        <p
-                                            className={cn(
-                                                'mt-1 text-xs font-medium capitalize',
-                                                payment.status === 'paid' && 'text-emerald-700',
-                                                payment.status === 'pending' && 'text-neutral-500',
-                                                payment.status === 'overdue' && 'text-red-600'
-                                            )}
-                                        >
-                                            {payment.status}
-                                        </p>
-                                    </div>
-                                </div>
+                                <ListRow 
+                                    key={payment._id}
+                                    label={payment.type.replace('_', ' ')}
+                                    subLabel={`Due ${formatDate(payment.dueDate)}`}
+                                    value={formatCurrency(payment.amount)}
+                                    valueDetail={payment.status}
+                                    statusTone={payment.status}
+                                />
                             ))
                         ) : (
-                            <div className="py-5 text-sm text-neutral-500">
+                            <div className="px-5 py-6 text-center text-[14px] text-neutral-500">
                                 Payment items appear once the lease is approved.
                             </div>
                         )}
-                    </div>
-                </DetailSection>
+                    </GroupedSection>
+                </section>
 
-                <DetailSection
-                    title="Rules and policies"
-                    description="The operational rules attached to this lease."
-                >
-                    <div className="flex flex-wrap gap-2">
+                <section>
+                    <SectionHeader title="Rules and Policies" description="Operational rules attached to this lease." />
+                    <div className="mt-2 flex flex-wrap gap-2 px-4 sm:px-6">
                         {policyItems.map((item) => (
-                            <PolicyPill key={item.label} icon={item.icon} label={item.label} />
+                            <MiniPill key={item.label} icon={item.icon} label={item.label} />
                         ))}
                     </div>
-                </DetailSection>
+                </section>
 
-                <DetailSection
-                    title="Agreement terms"
-                    description="The clauses and commitments included in the signed agreement."
-                >
-                    <div className="divide-y divide-neutral-100 border-y border-neutral-200 bg-white">
+                <section>
+                    <SectionHeader title="Agreement Terms" description="Clauses and commitments." />
+                    <GroupedSection>
                         {leaseClauses.map((clause, index: number) => (
-                            <div key={clause.id?.trim() || `clause_${index}`} className="py-5">
-                                <p className="text-sm font-semibold text-neutral-950">
-                                    {index + 1}. {clause.title}
-                                </p>
-                                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
-                                    {clause.content}
-                                </p>
-                            </div>
+                            <ListStackItem 
+                                key={clause.id?.trim() || `clause_${index}`}
+                                title={`${index + 1}. ${clause.title}`}
+                                content={clause.content}
+                            />
                         ))}
-                    </div>
-                </DetailSection>
+                    </GroupedSection>
+                </section>
 
-                <DetailSection
-                    title="Move-in total"
-                    description="Your first payment and lease term summary."
-                >
-                    <p className="text-[2rem] font-semibold tracking-[-0.04em] text-neutral-950">
-                        {formatCurrency(lease.monthlyRent + (lease.deposit ?? 0))}
-                    </p>
-                    <div className="mt-4 space-y-3">
-                        <ValueRow label="First rent" value={formatCurrency(lease.monthlyRent)} />
-                        <ValueRow label="Deposit" value={formatCurrency(lease.deposit ?? 0)} />
-                        <ValueRow
-                            label="Due day"
-                            value={`Every ${lease.rentDueDay || 1}${ordinal(lease.rentDueDay || 1)}`}
-                        />
-                        <ValueRow
-                            label="Lease term"
-                            value={`${formatDate(lease.startDate)} to ${formatDate(lease.endDate)}`}
-                        />
-                    </div>
-                </DetailSection>
+                <section>
+                    <SectionHeader title="Move-in Total" description="Initial payment summary." />
+                    <GroupedSection>
+                        <div className="px-5 py-5 border-b border-neutral-100/60 pb-5">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-neutral-500">Total Due Before Move-in</p>
+                            <p className="mt-1 text-[2.25rem] font-bold tracking-tight text-neutral-950 leading-none">
+                                {formatCurrency((lease.monthlyRent ?? 0) + (lease.deposit ?? 0))}
+                            </p>
+                        </div>
+                        <ListRow label="First rent" value={formatCurrency(lease.monthlyRent ?? 0)} />
+                        <ListRow label="Deposit" value={formatCurrency(lease.deposit ?? 0)} />
+                        <ListRow label="Due day" value={`Every ${lease.rentDueDay || 1}${ordinal(lease.rentDueDay || 1)}`} />
+                        <ListRow label="Lease term" value={`${formatDate(lease.startDate)} to ${formatDate(lease.endDate)}`} />
+                    </GroupedSection>
+                </section>
 
-                <DetailSection
-                    title="What happens next"
-                    description="The next step based on the current lease status."
-                >
-                    <div className="text-sm leading-7 text-neutral-600">
-                        {lease.status === 'sent_to_tenant' && (
-                            <p>Upload your documents and sign the lease. After that, the landlord reviews and activates it.</p>
-                        )}
-                        {lease.status === 'revision_requested' && (
-                            <p>Update the requested documents and sign again so the landlord can finish approval.</p>
-                        )}
-                        {lease.status === 'tenant_signed' && (
-                            <p>You are done for now. The landlord is reviewing your signed lease.</p>
-                        )}
-                        {lease.status === 'approved' && (
-                            <p>Your lease is active. Track rent, upcoming payments, and payment history from the payments page.</p>
-                        )}
-                        {['terminated', 'expired', 'rejected'].includes(lease.status) && (
-                            <p>This lease is no longer active, but you can still review the agreement and payment history here.</p>
-                        )}
+                <section>
+                    <SectionHeader title="What happens next" description="Next steps based on the current status." />
+                    <div className="px-4 sm:px-6">
+                        <div className="rounded-[20px] bg-neutral-50 p-5 ring-1 ring-inset ring-neutral-200/60">
+                            <p className="text-[14px] leading-relaxed text-neutral-600">
+                                {lease.status === 'sent_to_tenant' && 'Upload your documents and sign the lease. After that, the landlord reviews and activates it.'}
+                                {lease.status === 'revision_requested' && 'Update the requested documents and sign again so the landlord can finish approval.'}
+                                {lease.status === 'tenant_signed' && 'You are done for now. The landlord is reviewing your signed lease.'}
+                                {lease.status === 'approved' && 'Your lease is active. Track rent, upcoming payments, and payment history from the payments page.'}
+                                {['terminated', 'expired', 'rejected'].includes(lease.status) && 'This lease is no longer active, but you can still review the agreement and payment history here.'}
+                            </p>
+                        </div>
                     </div>
-                </DetailSection>
+                </section>
+
             </div>
 
+            {/* ── Frosted Floating Action Bar ── */}
             {pendingAction && (
-                <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 px-4">
-                    <div className="mx-auto max-w-[820px]">
-                        <Dialog open={showDialog} onOpenChange={setShowDialog}>
-                            <DialogTrigger asChild>
-                                <Button className="pointer-events-auto h-14 w-full rounded-[28px] border border-neutral-900 bg-neutral-950 text-base font-semibold text-white hover:bg-neutral-800">
-                                    {isRevisionFlow ? 'Review changes and resend lease' : 'Review and sign lease'}
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto rounded-[30px] sm:max-w-2xl">
-                                <DialogHeader>
-                                    <DialogTitle className="text-xl font-semibold tracking-[-0.03em]">
-                                        {isRevisionFlow ? 'Update and resend lease' : 'Review and sign lease'}
-                                    </DialogTitle>
-                                </DialogHeader>
-
-                                <div className="mt-4 space-y-6">
-                                    {isRevisionFlow && (
-                                        <div className="rounded-[24px] border border-amber-200 bg-amber-50/80 px-5 py-4">
-                                            <p className="text-sm font-semibold text-amber-900">Revision request from your landlord</p>
-                                            <p className="mt-2 text-sm leading-6 text-amber-800">
-                                                {lease.landlordNotes || 'Please update the requested documents and sign again.'}
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    <div className="rounded-[24px] border border-neutral-200 bg-neutral-50/70 px-5 py-4">
-                                        <p className="text-sm font-semibold text-neutral-950">Move-in payment summary</p>
-                                        <div className="mt-3 space-y-3">
-                                            <ValueRow label="First rent" value={formatCurrency(lease.monthlyRent)} />
-                                            <ValueRow label="Deposit" value={formatCurrency(lease.deposit ?? 0)} />
-                                            <ValueRow
-                                                label="Total due"
-                                                value={formatCurrency(lease.monthlyRent + (lease.deposit ?? 0))}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <div className="flex items-center justify-between gap-3">
-                                            <div>
-                                                <p className="text-sm font-semibold text-neutral-950">
-                                                    {isRevisionFlow ? 'Updated documents' : 'Required documents'}
-                                                </p>
-                                                <p className="mt-1 text-xs text-neutral-500">
-                                                    {isRevisionFlow
-                                                        ? 'Re-upload any photo or PDF that needs correction before you resend.'
-                                                        : 'Upload identity and proof documents before signing.'}
-                                                </p>
-                                            </div>
-                                            <span
-                                                className={cn(
-                                                    'rounded-full px-2.5 py-1 text-xs font-semibold',
-                                                    missingDocs.length === 0
-                                                        ? 'bg-emerald-100 text-emerald-700'
-                                                        : 'bg-amber-100 text-amber-700'
-                                                )}
-                                            >
-                                                {missingDocs.length === 0 ? 'Complete' : `${missingDocs.length} left`}
-                                            </span>
-                                        </div>
-
-                                        <div className="mt-4 divide-y divide-neutral-100 border-y border-neutral-200 bg-white">
-                                            {REQUIRED_TENANT_DOCUMENTS.map((type) => {
-                                                const existingDocument = tenantDocuments.find((document) => document.type === type)
-                                                return (
-                                                    <div key={type} className="flex items-center justify-between gap-3 py-4">
-                                                        <div>
-                                                            <p className="text-sm font-semibold text-neutral-950">
-                                                                {TENANT_DOCUMENT_LABELS[type]}
-                                                            </p>
-                                                            <p className="mt-1 text-xs text-neutral-500">
-                                                                JPG, PNG, WebP, or PDF up to 5 MB.
-                                                            </p>
-                                                        </div>
-                                                        <DocumentUploader
-                                                            type={type}
-                                                            currentStorageId={existingDocument?.storageId}
-                                                            onUploadComplete={(storageId) => {
-                                                                setTenantDocuments((currentDocuments) => {
-                                                                    const remainingDocuments = currentDocuments.filter((document) => document.type !== type)
-                                                                    return [...remainingDocuments, { type, storageId, uploadedAt: new Date().toISOString() }]
-                                                                })
-                                                            }}
-                                                        />
-                                                    </div>
-                                                )
-                                            })}
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <p className="text-sm font-semibold text-neutral-950">Signature</p>
-                                        <p className="mt-1 text-xs text-neutral-500">
-                                            {isRevisionFlow
-                                                ? 'Add a fresh signature to confirm the revised lease before it goes back to the landlord.'
-                                                : 'By signing, you agree to the rules, payment terms, and lease clauses above.'}
-                                        </p>
-                                        <div className="mt-3">
-                                            <SignatureCanvas
-                                                key={`${lease.status}-${lease.signedAt ?? 'unsigned'}`}
-                                                onSignatureChange={(data) => setSignatureData(data || '')}
-                                                disabled={isSigning}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <Button
-                                        onClick={handleSign}
-                                        disabled={isSigning || missingDocs.length > 0 || !signatureData}
-                                        className="h-12 w-full rounded-[22px] bg-neutral-950 text-white hover:bg-neutral-800"
-                                    >
-                                        {isSigning ? (
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        ) : missingDocs.length > 0 ? (
-                                            <Upload className="mr-2 h-4 w-4" />
-                                        ) : (
-                                            <Send className="mr-2 h-4 w-4" />
-                                        )}
-                                        {missingDocs.length > 0
-                                            ? `Upload ${missingDocs.length} remaining documents`
-                                            : isRevisionFlow
-                                                ? 'Resend revised lease to landlord'
-                                                : 'Sign and submit lease'}
-                                    </Button>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
+                <div className="fixed inset-x-0 bottom-0 z-50 px-4 pb-safe pt-4 sm:px-6">
+                    <div className="absolute inset-0 bg-white/70 backdrop-blur-xl border-t border-neutral-200/60 shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.05)]" />
+                    <div className="relative mx-auto flex max-w-[820px] items-center gap-3 pb-6 md:pb-8">
+                        <button
+                            onClick={() => setShowDialog(true)}
+                            className="flex h-14 w-full items-center justify-center rounded-full bg-neutral-950 px-8 text-[16px] font-semibold text-white shadow-xl shadow-neutral-950/20 transition-all active:scale-95 hover:bg-neutral-800"
+                        >
+                            {isRevisionFlow ? 'Review and Resend Lease' : 'Review and Sign Lease'}
+                        </button>
                     </div>
                 </div>
             )}
+
+            {/* ── iOS Signature Bottom Sheet ── */}
+            <IOSDialog
+                open={showDialog}
+                onOpenChange={setShowDialog}
+                title={isRevisionFlow ? 'Update and Resend' : 'Complete and Sign'}
+            >
+                <div className="space-y-8 pb-4 pt-4">
+                    {/* Move-in total receipt style */}
+                    <div>
+                        <h3 className="mb-4 text-[13px] font-bold uppercase tracking-[0.05em] text-neutral-400">Move-in Summary</h3>
+                        <div className="space-y-3 px-1 text-[15px]">
+                            <div className="flex justify-between items-center">
+                                <span className="font-medium text-neutral-600">First rent</span>
+                                <span className="font-semibold text-neutral-950">{formatCurrency(lease.monthlyRent ?? 0)}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="font-medium text-neutral-600">Deposit</span>
+                                <span className="font-semibold text-neutral-950">{formatCurrency(lease.deposit ?? 0)}</span>
+                            </div>
+                            <div className="mt-4 flex items-center justify-between border-t border-dashed border-neutral-200/80 pt-4">
+                                <span className="text-[16px] font-bold text-neutral-950">Total Due</span>
+                                <span className="text-[20px] font-bold tracking-tight text-neutral-950">
+                                    {formatCurrency((lease.monthlyRent ?? 0) + (lease.deposit ?? 0))}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Document Uploads - Clean Row Style */}
+                    <div>
+                        <div className="mb-4 flex items-center justify-between">
+                            <h3 className="text-[13px] font-bold uppercase tracking-[0.05em] text-neutral-400">Required Documents</h3>
+                            <span className={cn(
+                                'rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.04em]',
+                                missingDocs.length === 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                            )}>
+                                {missingDocs.length === 0 ? 'Complete' : `${missingDocs.length} left`}
+                            </span>
+                        </div>
+                        <div className="flex flex-col gap-4">
+                            {REQUIRED_TENANT_DOCUMENTS.map((type) => {
+                                const existingDocument = tenantDocuments.find((document) => document.type === type)
+                                return (
+                                    <div key={type} className="flex items-center justify-between gap-3 rounded-[16px] bg-neutral-50 px-4 py-3.5 transition-colors hover:bg-neutral-100/60">
+                                        <div className="min-w-0 flex-1 pr-2">
+                                            <p className="text-[14px] font-bold tracking-[-0.01em] text-neutral-950 truncate">
+                                                {TENANT_DOCUMENT_LABELS[type]}
+                                            </p>
+                                            <p className="mt-0.5 text-[12px] font-medium text-neutral-400 truncate">
+                                                JPG, PNG, PDF (Max 5MB)
+                                            </p>
+                                        </div>
+                                        <DocumentUploader
+                                            type={type}
+                                            currentStorageId={existingDocument?.storageId}
+                                            onUploadComplete={(storageId) => {
+                                                setTenantDocuments((currentDocuments) => {
+                                                    const remainingDocuments = currentDocuments.filter((document) => document.type !== type)
+                                                    return [...remainingDocuments, { type, storageId, uploadedAt: new Date().toISOString() }]
+                                                })
+                                            }}
+                                        />
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Signature Area */}
+                    <div>
+                        <h3 className="mb-4 text-[13px] font-bold uppercase tracking-[0.05em] text-neutral-400">Signature</h3>
+                        <div className="overflow-hidden rounded-[24px] bg-neutral-50 p-2 ring-1 ring-inset ring-neutral-200/60">
+                            <SignatureCanvas
+                                key={`${lease.status}-${lease.signedAt ?? 'unsigned'}`}
+                                onSignatureChange={(data) => setSignatureData(data || '')}
+                                disabled={isSigning}
+                            />
+                        </div>
+                        <p className="mt-3 text-center text-[12px] font-medium text-neutral-400">
+                            By signing, you agree to the rules and lease clauses.
+                        </p>
+                    </div>
+
+                    <button
+                        onClick={handleSign}
+                        disabled={isSigning || missingDocs.length > 0 || !signatureData}
+                        className="mt-6 flex h-14 w-full items-center justify-center rounded-full bg-neutral-950 px-8 text-[16px] font-semibold text-white shadow-xl shadow-neutral-950/20 transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none hover:bg-neutral-800"
+                    >
+                        {isSigning ? (
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        ) : missingDocs.length > 0 ? (
+                            <Upload className="mr-2 h-5 w-5" />
+                        ) : (
+                            <Send className="mr-2 h-5 w-5" />
+                        )}
+                        {missingDocs.length > 0 ? `Upload ${missingDocs.length} remaining` : isRevisionFlow ? 'Resend to Landlord' : 'Sign & Complete'}
+                    </button>
+                </div>
+            </IOSDialog>
+
         </div>
     )
 }
 
-function DetailSection({
-    title,
-    description,
-    action,
-    children,
-}: {
-    title: string
-    description: string
-    action?: ReactNode
-    children: ReactNode
-}) {
+/* ── UI Helpers ── */
+
+function SectionHeader({ title, description }: { title: string; description: string }) {
     return (
-        <section>
-            <div className="flex items-start justify-between gap-4">
-                <div>
-                    <h2 className="text-[18px] font-semibold tracking-[-0.03em] text-neutral-950">{title}</h2>
-                    <p className="mt-1 text-sm text-neutral-500">{description}</p>
+        <div className="mb-3 px-4 sm:px-6">
+            <h2 className="text-[18px] font-bold tracking-[-0.03em] text-neutral-950">{title}</h2>
+            {description && <p className="mt-0.5 text-[14px] text-neutral-500">{description}</p>}
+        </div>
+    )
+}
+
+function GroupedSection({ children }: { children: ReactNode }) {
+    return (
+        <div className="px-4 sm:px-6">
+            <div className="overflow-hidden rounded-[20px] border border-neutral-200/80 bg-white shadow-sm">
+                <div className="divide-y divide-neutral-100/60">
+                    {children}
                 </div>
-                {action}
             </div>
-            <div className="mt-5">{children}</div>
-        </section>
+        </div>
     )
 }
 
-function HeaderPill({
-    icon: Icon,
-    label,
-    value,
-}: {
-    icon: ElementType
-    label: string
-    value: string
-}) {
+function ListRow({ label, subLabel, value, valueDetail, statusTone }: { label: string; subLabel?: string; value: string; valueDetail?: string; statusTone?: string }) {
     return (
-        <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-sm text-neutral-700">
-            <Icon className="h-4 w-4 text-neutral-500" strokeWidth={2} />
-            <span className="font-medium text-neutral-500">{label}</span>
-            <span className="font-semibold text-neutral-950">{value}</span>
-        </span>
+        <div className="flex items-center justify-between px-5 py-4 transition-colors hover:bg-neutral-50">
+            <div>
+                <p className="text-[15px] font-semibold capitalize text-neutral-950 truncate max-w-[200px] sm:max-w-[400px]">{label}</p>
+                {subLabel && <p className="mt-0.5 text-[13px] text-neutral-500">{subLabel}</p>}
+            </div>
+            <div className="text-right">
+                <p className="text-[15px] font-semibold text-neutral-950">{value}</p>
+                {valueDetail && (
+                    <p className={cn(
+                        "mt-0.5 text-[12px] font-semibold capitalize",
+                        statusTone === 'paid' ? 'text-emerald-600' : statusTone === 'pending' ? 'text-neutral-500' : 'text-red-500'
+                    )}>
+                        {valueDetail}
+                    </p>
+                )}
+            </div>
+        </div>
     )
 }
 
-function InlineMetric({
-    label,
-    value,
-    tone,
-}: {
-    label: string
-    value: string
-    tone: 'default' | 'success' | 'danger'
-}) {
+function ListStackItem({ title, content }: { title: string; content: string }) {
     return (
-        <span
-            className={cn(
-                'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm',
-                tone === 'default' && 'border-neutral-200 bg-neutral-50 text-neutral-700',
-                tone === 'success' && 'border-emerald-200 bg-emerald-50 text-emerald-700',
-                tone === 'danger' && 'border-red-200 bg-red-50 text-red-700'
-            )}
-        >
+        <div className="px-5 py-5 transition-colors hover:bg-neutral-50">
+            <p className="text-[15px] font-semibold text-neutral-950">{title}</p>
+            <p className="mt-2 whitespace-pre-wrap text-[14px] leading-relaxed text-neutral-600">{content}</p>
+        </div>
+    )
+}
+
+function MiniStat({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
+    return (
+        <div className="flex flex-col rounded-[20px] bg-neutral-50 p-4 ring-1 ring-inset ring-neutral-200/60">
+            <Icon className="mb-3 h-5 w-5 text-neutral-500" strokeWidth={2.2} />
+            <p className="text-[12px] font-bold uppercase tracking-[0.04em] text-neutral-400">{label}</p>
+            <p className="mt-1 text-[15px] font-bold tracking-tight text-neutral-950 truncate block w-full" title={value}>{value}</p>
+        </div>
+    )
+}
+
+function InlineMetric({ label, value, tone }: { label: string; value: string; tone: 'default' | 'success' | 'danger' }) {
+    return (
+        <span className={cn(
+            'flex shrink-0 items-center justify-center gap-2 rounded-full border px-4 py-2 text-[14px]',
+            tone === 'default' && 'border-neutral-200/60 bg-neutral-50 text-neutral-700',
+            tone === 'success' && 'border-emerald-200/60 bg-emerald-50 text-emerald-800',
+            tone === 'danger' && 'border-red-200/60 bg-red-50 text-red-800'
+        )}>
             <span className="font-medium">{label}</span>
-            <span className="font-semibold">{value}</span>
+            <span className="font-bold">{value}</span>
         </span>
     )
 }
 
-function PolicyPill({
-    icon: Icon,
-    label,
-}: {
-    icon: ElementType
-    label: string
-}) {
+function MiniPill({ icon: Icon, label }: { icon: ElementType; label: string }) {
     return (
-        <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-sm text-neutral-700">
-            <Icon className="h-4 w-4 text-neutral-500" strokeWidth={2} />
+        <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200/60 bg-neutral-50 px-3.5 py-2 text-[13px] font-semibold text-neutral-700">
+            <Icon className="h-4 w-4 text-neutral-500" strokeWidth={2.2} />
             {label}
         </span>
     )
 }
 
-function ValueRow({ label, value }: { label: string; value: string }) {
+function IOSDialog({ open, onOpenChange, title, children }: { open: boolean; onOpenChange: (o: boolean) => void; title: string; children: ReactNode }) {
     return (
-        <div className="flex items-start justify-between gap-4">
-            <p className="text-sm text-neutral-500">{label}</p>
-            <p className="text-right text-sm font-semibold text-neutral-950">{value}</p>
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="fixed bottom-0 top-auto translate-y-0 rounded-t-[32px] sm:bottom-auto sm:top-[50%] sm:-translate-y-1/2 sm:rounded-[32px] max-h-[90vh] w-full max-w-md gap-0 border-0 p-6 shadow-[0_-10px_60px_-15px_rgba(0,0,0,0.1)] overflow-y-auto hide-scrollbar bg-white">
+                <div className="mx-auto mb-6 h-1.5 w-12 rounded-full bg-neutral-200 sm:hidden" />
+                <DialogTitle className="mb-2 text-[22px] font-bold tracking-[-0.04em] text-neutral-950">{title}</DialogTitle>
+                {children}
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+function PageSkeleton() {
+    return (
+        <div className="mx-auto min-h-screen max-w-[820px] bg-white pb-16 font-sans">
+            <div className="h-14 border-b border-neutral-100/60 bg-white" />
+            <div className="px-4 pt-6 sm:px-6">
+                <div className="aspect-[21/9] w-full rounded-[24px] bg-neutral-100 sm:aspect-[21/7]" />
+                <div className="mt-8 space-y-4">
+                    <div className="h-8 w-64 rounded-xl bg-neutral-100" />
+                    <div className="h-4 w-48 rounded-lg bg-neutral-100" />
+                </div>
+                <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div className="h-24 rounded-[20px] bg-neutral-100" />
+                    <div className="h-24 rounded-[20px] bg-neutral-100" />
+                    <div className="h-24 rounded-[20px] bg-neutral-100" />
+                    <div className="h-24 rounded-[20px] bg-neutral-100" />
+                </div>
+            </div>
         </div>
     )
 }

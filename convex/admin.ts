@@ -4,6 +4,19 @@ import { type MutationCtx, mutation, query } from "./_generated/server";
 import { auth } from "./auth";
 import { logAdminAction } from "./audit";
 import { resolveAvatarUrl } from "./lib/avatar";
+import {
+    getStoredUnitsForProperty,
+    resolveStorageUrls,
+    summarizeInventory,
+    syncPropertyInventory,
+} from "./lib/propertyInventory";
+
+const RESERVED_LEASE_STATUSES = new Set([
+    "draft",
+    "sent_to_tenant",
+    "tenant_signed",
+    "revision_requested",
+]);
 
 // Helper to check admin role
 async function requireAdmin(ctx: MutationCtx) {
@@ -75,9 +88,24 @@ export const getAllProperties = query({
 
         const enrichedProperties = await Promise.all(
             properties.map(async (property) => {
-                const landlord = await ctx.db.get(property.landlordId);
+                const [landlord, units, leases] = await Promise.all([
+                    ctx.db.get(property.landlordId),
+                    getStoredUnitsForProperty(ctx, property._id),
+                    ctx.db
+                        .query("leases")
+                        .withIndex("by_propertyId", (q) => q.eq("propertyId", property._id))
+                        .collect(),
+                ]);
+                const inventory = summarizeInventory(property, units);
                 return {
                     ...property,
+                    listingType: property.listingType ?? "single_home",
+                    unitCount: inventory.unitCount,
+                    availableUnitCount: inventory.availableUnitCount,
+                    minPriceNad: inventory.minPriceNad,
+                    maxPriceNad: inventory.maxPriceNad,
+                    activeLeaseCount: leases.filter((lease) => lease.status === "approved").length,
+                    reservedLeaseCount: leases.filter((lease) => RESERVED_LEASE_STATUSES.has(lease.status)).length,
                     landlord: landlord ? { fullName: landlord.fullName, email: landlord.email } : null,
                 };
             })
@@ -108,7 +136,16 @@ export const togglePropertyAvailability = mutation({
     },
     handler: async (ctx, args) => {
         await requireAdmin(ctx);
-        await ctx.db.patch(args.propertyId, { isAvailable: args.isAvailable });
+        const property = await ctx.db.get(args.propertyId);
+        if (!property) throw new Error("Property not found");
+        if (property.approvalStatus !== "approved") {
+            throw new Error("Only approved listings can be published or taken off market.");
+        }
+
+        await ctx.db.patch(args.propertyId, {
+            publicationStatus: args.isAvailable ? "published" : "unpublished",
+        });
+        await syncPropertyInventory(ctx, args.propertyId);
         return { success: true };
     },
 });
@@ -118,6 +155,10 @@ export const deleteProperty = mutation({
     args: { propertyId: v.id("properties") },
     handler: async (ctx, args) => {
         await requireAdmin(ctx);
+        const units = await getStoredUnitsForProperty(ctx, args.propertyId);
+        for (const unit of units) {
+            await ctx.db.delete(unit._id);
+        }
         await ctx.db.delete(args.propertyId);
         return { success: true };
     },
@@ -183,20 +224,17 @@ export const getPropertyRequests = query({
         const enrichedProperties = await Promise.all(
             properties.map(async (property) => {
                 const landlord = await ctx.db.get(property.landlordId);
-
-                const imageUrls: string[] = [];
-                if (property.images && property.images.length > 0) {
-                    // Just get the first one for list view
-                    try {
-                        const url = await ctx.storage.getUrl(property.images[0]);
-                        if (url) imageUrls.push(url);
-                    } catch {
-                        // Ignore invalid image IDs
-                    }
-                }
+                const units = await getStoredUnitsForProperty(ctx, property._id);
+                const inventory = summarizeInventory(property, units);
+                const imageUrls = await resolveStorageUrls(ctx, property.images?.slice(0, 1));
 
                 return {
                     ...property,
+                    listingType: property.listingType ?? "single_home",
+                    unitCount: inventory.unitCount,
+                    availableUnitCount: inventory.availableUnitCount,
+                    minPriceNad: inventory.minPriceNad,
+                    maxPriceNad: inventory.maxPriceNad,
                     images: imageUrls,
                     landlord: landlord ? { fullName: landlord.fullName, email: landlord.email } : null,
                 };
@@ -224,22 +262,19 @@ export const getPropertyRequestById = query({
 
         const landlord = await ctx.db.get(property.landlordId);
         const landlordAvatarUrl = await resolveAvatarUrl(ctx, landlord?.avatarUrl);
-
-        const imageUrls: string[] = [];
-        if (property.images) {
-            for (const imageId of property.images) {
-                try {
-                    const url = await ctx.storage.getUrl(imageId);
-                    if (url) imageUrls.push(url);
-                } catch {
-                    // Ignore
-                }
-            }
-        }
+        const units = await getStoredUnitsForProperty(ctx, property._id);
+        const inventory = summarizeInventory(property, units);
+        const imageUrls = await resolveStorageUrls(ctx, property.images);
 
         return {
             ...property,
+            listingType: property.listingType ?? "single_home",
+            unitCount: inventory.unitCount,
+            availableUnitCount: inventory.availableUnitCount,
+            minPriceNad: inventory.minPriceNad,
+            maxPriceNad: inventory.maxPriceNad,
             images: imageUrls,
+            units,
             landlord: landlord ? {
                 fullName: landlord.fullName,
                 email: landlord.email,
@@ -257,8 +292,11 @@ export const approveProperty = mutation({
         const userId = await requireAdmin(ctx);
         await ctx.db.patch(args.propertyId, {
             approvalStatus: "approved",
-            isAvailable: true
+            publicationStatus: "unpublished",
+            isAvailable: false,
+            adminNotes: undefined,
         });
+        await syncPropertyInventory(ctx, args.propertyId);
 
         // Log action
         await logAdminAction(ctx, userId, "approve_property", args.propertyId, "property");
@@ -277,9 +315,11 @@ export const rejectProperty = mutation({
         const userId = await requireAdmin(ctx);
         await ctx.db.patch(args.propertyId, {
             approvalStatus: "rejected",
+            publicationStatus: "unpublished",
             isAvailable: false,
             adminNotes: args.reason
         });
+        await syncPropertyInventory(ctx, args.propertyId);
 
         // Log action
         await logAdminAction(ctx, userId, "reject_property", args.propertyId, "property", { reason: args.reason });

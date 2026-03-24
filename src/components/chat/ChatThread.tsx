@@ -1,162 +1,304 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
+import {
+    type FormEvent,
+    type KeyboardEvent,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState,
+    useCallback,
+} from 'react'
+import { format, isSameDay, isToday, isYesterday } from 'date-fns'
+import { ArrowUp, Loader2 } from 'lucide-react'
+
 import { UserAvatar } from '@/components/ui/user-avatar'
-import { toast } from 'sonner'
-import { Loader2, Send } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
-import { useMutation } from "convex/react"
-import { api } from "../../../convex/_generated/api"
-import { Id } from "../../../convex/_generated/dataModel"
 import { cn } from '@/lib/utils'
 
-interface Message {
-    _id: Id<"messages">
+/* ───────────────────────── types ───────────────────────── */
+
+interface ChatIdentity {
+    fullName?: string | null
+    name?: string | null
+    email?: string | null
+    avatarUrl?: string | null
+}
+
+interface ChatMessage {
+    _id: string
     content: string
     _creationTime: number
-    senderId: Id<"users">
+    senderId: string
 }
 
 interface ChatThreadProps {
-    inquiryId: Id<"inquiries">
-    messages: Message[]
+    messages: ChatMessage[]
     currentUserId: string
-    currentUser?: {
-        _id?: string
-        fullName?: string
-        email?: string
-        avatarUrl?: string | null
-    } | null
-    otherParty?: {
-        fullName?: string
-        email?: string
-        avatarUrl?: string | null
-    } | null
+    onSendMessage: (content: string) => Promise<void>
+    isSending?: boolean
+    otherParty?: ChatIdentity | null
+    placeholder?: string
+    emptyTitle?: string
+    emptyDescription?: string
+    submitLabel?: string
 }
 
-export function ChatThread({ inquiryId, messages, currentUserId, currentUser, otherParty }: ChatThreadProps) {
-    const [isLoading, setIsLoading] = useState(false)
-    const [newMessage, setNewMessage] = useState('')
+/* ───────────────────── helpers ───────────────────── */
+
+function formatDayLabel(date: Date) {
+    if (isToday(date)) return 'Today'
+    if (isYesterday(date)) return 'Yesterday'
+    return format(date, 'EEEE, MMMM d')
+}
+
+function shouldShowDayMarker(messages: ChatMessage[], index: number) {
+    if (index === 0) return true
+    return !isSameDay(
+        new Date(messages[index - 1]._creationTime),
+        new Date(messages[index]._creationTime)
+    )
+}
+
+/* ───────────────── component ───────────────── */
+
+export function ChatThread({
+    messages,
+    currentUserId,
+    onSendMessage,
+    isSending = false,
+    otherParty,
+    placeholder = 'Message…',
+    emptyTitle = 'No messages yet',
+    emptyDescription = 'Send a message to start the conversation.',
+}: ChatThreadProps) {
+    const [draft, setDraft] = useState('')
+    const scrollAreaRef = useRef<HTMLDivElement>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
-    const sendMessage = useMutation(api.messages.send)
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
+    const prevMessageCountRef = useRef(messages.length)
 
-    // Scroll to bottom when new messages arrive
+    /* ── auto-resize textarea ── */
+    const resizeTextarea = useCallback(() => {
+        const el = textareaRef.current
+        if (!el) return
+        el.style.height = 'auto'
+        el.style.height = `${Math.min(el.scrollHeight, 120)}px`
+    }, [])
+
+    useLayoutEffect(() => {
+        resizeTextarea()
+    }, [draft, resizeTextarea])
+
+    /* ── scroll to bottom on new messages ── */
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, [messages])
+        const isNewMessage = messages.length > prevMessageCountRef.current
+        prevMessageCountRef.current = messages.length
 
-    async function handleSubmit(e: React.FormEvent) {
-        e.preventDefault()
-        if (!newMessage.trim()) return
+        messagesEndRef.current?.scrollIntoView({
+            behavior: isNewMessage ? 'smooth' : 'auto',
+            block: 'end',
+        })
+    }, [messages.length])
 
-        setIsLoading(true)
-        try {
-            await sendMessage({ inquiryId, content: newMessage })
-            setNewMessage('')
-        } catch (error) {
-            toast.error('Failed to send message')
-            console.error(error)
-        } finally {
-            setIsLoading(false)
+    /* ── send ── */
+    async function submitDraft() {
+        const content = draft.trim()
+        if (!content || isSending) return
+        setDraft('')
+        await onSendMessage(content)
+    }
+
+    function handleSubmit(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault()
+        void submitDraft()
+    }
+
+    function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault()
+            void submitDraft()
         }
     }
 
-    return (
-        <div className="flex flex-col h-full">
-            {/* Messages List */}
-            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
-                {messages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-center">
-                        <div className="h-12 w-12 bg-neutral-100 rounded-full flex items-center justify-center mb-3">
-                            <span className="text-xl">👋</span>
+    /* ── empty state ── */
+    if (messages.length === 0) {
+        return (
+            <div className="flex h-full flex-col">
+                <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+                    <UserAvatar className="h-16 w-16 ring-2 ring-neutral-100" user={otherParty} />
+                    <p className="mt-4 text-[17px] font-semibold tracking-[-0.2px] text-neutral-900">
+                        {emptyTitle}
+                    </p>
+                    <p className="mt-1 max-w-[280px] text-[14px] leading-[1.4] text-neutral-400">
+                        {emptyDescription}
+                    </p>
+                </div>
+
+                {/* input bar even on empty state */}
+                <div className="border-t border-neutral-100 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 sm:px-4">
+                    <form
+                        onSubmit={handleSubmit}
+                        className="mx-auto flex w-full max-w-3xl items-end gap-2"
+                    >
+                        <div className="flex min-h-[44px] flex-1 items-end rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2">
+                            <textarea
+                                ref={textareaRef}
+                                value={draft}
+                                onChange={(e) => setDraft(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                disabled={isSending}
+                                placeholder={placeholder}
+                                rows={1}
+                                className="max-h-[120px] w-full resize-none overflow-y-auto border-0 bg-transparent text-[15px] leading-[1.35] text-neutral-900 outline-none placeholder:text-neutral-400"
+                            />
                         </div>
-                        <p className="font-medium text-neutral-900 mb-1">Start the conversation</p>
-                        <p className="text-sm text-neutral-500">
-                            Send a message to {otherParty?.fullName || 'get started'}.
-                        </p>
-                    </div>
-                ) : (
-                    <div className="space-y-4 max-w-3xl mx-auto">
-                        {messages.map((message, index) => {
-                            const isCurrentUser = message.senderId === currentUserId
 
-                            // Check if previous message was from same sender
-                            const isSequence = index > 0 && messages[index - 1].senderId === message.senderId
+                        <button
+                            type="submit"
+                            disabled={!draft.trim() || isSending}
+                            className={cn(
+                                'flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-full transition-all duration-200',
+                                draft.trim()
+                                    ? 'bg-[#007AFF] text-white shadow-sm active:scale-90'
+                                    : 'bg-neutral-200 text-neutral-400'
+                            )}
+                            aria-label="Send message"
+                        >
+                            {isSending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
+                            )}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        )
+    }
 
-                            return (
+    /* ── messages ── */
+    return (
+        <div className="flex h-full flex-col">
+            <div ref={scrollAreaRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-5">
+                <div className="mx-auto flex w-full max-w-3xl flex-col gap-[3px]">
+                    {messages.map((message, index) => {
+                        const isCurrentUser = message.senderId === currentUserId
+                        const prevMessage = messages[index - 1]
+                        const nextMessage = messages[index + 1]
+
+                        const isSequenceStart = !prevMessage || prevMessage.senderId !== message.senderId
+                        const isSequenceEnd = !nextMessage || nextMessage.senderId !== message.senderId
+
+                        // Day marker check includes cross-day sequences
+                        const showDay = shouldShowDayMarker(messages, index)
+
+                        // Determine bubble radius (tail on last bubble of sequence)
+                        const getBubbleRadius = () => {
+                            if (isCurrentUser) {
+                                if (isSequenceStart && isSequenceEnd) return 'rounded-[20px] rounded-br-[6px]'
+                                if (isSequenceEnd) return 'rounded-[20px] rounded-br-[6px]'
+                                if (isSequenceStart) return 'rounded-[20px] rounded-tr-[14px]'
+                                return 'rounded-[20px] rounded-tr-[14px] rounded-br-[14px]'
+                            }
+                            if (isSequenceStart && isSequenceEnd) return 'rounded-[20px] rounded-bl-[6px]'
+                            if (isSequenceEnd) return 'rounded-[20px] rounded-bl-[6px]'
+                            if (isSequenceStart) return 'rounded-[20px] rounded-tl-[14px]'
+                            return 'rounded-[20px] rounded-tl-[14px] rounded-bl-[14px]'
+                        }
+
+                        return (
+                            <div key={message._id}>
+                                {showDay && (
+                                    <div className="flex justify-center py-3 first:pt-1">
+                                        <span className="rounded-full bg-neutral-100 px-3 py-1 text-[11px] font-medium text-neutral-500">
+                                            {formatDayLabel(new Date(message._creationTime))}
+                                        </span>
+                                    </div>
+                                )}
+
                                 <div
-                                    key={message._id}
                                     className={cn(
-                                        "flex gap-3",
-                                        isCurrentUser ? "flex-row-reverse" : ""
+                                        'flex animate-in fade-in duration-200',
+                                        isCurrentUser ? 'justify-end' : 'justify-start',
+                                        isSequenceStart && index > 0 && !showDay && 'mt-2'
                                     )}
                                 >
-                                    {!isCurrentUser && !isSequence ? (
-                                        <UserAvatar className="h-8 w-8 shrink-0 mt-1" user={otherParty} />
+                                    {/* Other party avatar — only on first message of sequence */}
+                                    {!isCurrentUser && isSequenceEnd ? (
+                                        <UserAvatar className="mr-1.5 h-6 w-6 shrink-0 self-end" user={otherParty} />
                                     ) : !isCurrentUser ? (
-                                        <div className="w-8 shrink-0" />
+                                        <div className="mr-1.5 w-6 shrink-0" />
                                     ) : null}
 
-                                    <div className={cn(
-                                        "flex flex-col max-w-[75%]",
-                                        isCurrentUser ? "items-end" : "items-start"
-                                    )}>
+                                    <div className={cn('max-w-[75%] lg:max-w-[65%]')}>
                                         <div
                                             className={cn(
-                                                "px-4 py-2.5 text-sm leading-relaxed",
+                                                'px-3.5 py-2 text-[15px] leading-[1.38] break-words',
+                                                getBubbleRadius(),
                                                 isCurrentUser
-                                                    ? "bg-neutral-900 text-white rounded-2xl rounded-br-md"
-                                                    : "bg-white text-neutral-900 rounded-2xl rounded-bl-md border border-neutral-200"
+                                                    ? 'bg-[#007AFF] text-white'
+                                                    : 'bg-[#E9E9EB] text-[#1C1C1E]'
                                             )}
                                         >
                                             {message.content}
                                         </div>
-                                        <span className="text-[11px] text-neutral-400 mt-1 px-1">
-                                            {formatDistanceToNow(new Date(message._creationTime), { addSuffix: true })}
-                                        </span>
+
+                                        {/* Timestamp — shown at end of each sequence */}
+                                        {isSequenceEnd && (
+                                            <p
+                                                className={cn(
+                                                    'mt-1 px-1 text-[11px] text-neutral-400',
+                                                    isCurrentUser ? 'text-right' : 'text-left'
+                                                )}
+                                            >
+                                                {format(new Date(message._creationTime), 'h:mm a')}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
-                            )
-                        })}
-                        <div ref={messagesEndRef} />
-                    </div>
-                )}
+                            </div>
+                        )
+                    })}
+                    <div ref={messagesEndRef} />
+                </div>
             </div>
 
-            {/* Message Input */}
-            <div className="p-4 sm:p-5 bg-white border-t border-neutral-200">
-                <form onSubmit={handleSubmit} className="flex gap-3 max-w-3xl mx-auto">
-                    <UserAvatar
-                        activity={isLoading ? 'saving' : newMessage.trim() ? 'typing' : 'idle'}
-                        className="mt-0.5 h-11 w-11 shrink-0"
-                        user={currentUser}
-                    />
-                    <input
-                        type="text"
-                        placeholder="Type a message..."
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        disabled={isLoading}
-                        className="flex-1 px-4 py-3 rounded-lg bg-neutral-50 border border-neutral-200 focus:bg-white focus:border-neutral-300 focus:outline-none transition-colors text-sm"
-                    />
-                    <Button
+            {/* ── floating input bar ── */}
+            <div className="border-t border-neutral-100 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 sm:px-4">
+                <form
+                    onSubmit={handleSubmit}
+                    className="mx-auto flex w-full max-w-3xl items-end gap-2"
+                >
+                    <div className="flex min-h-[44px] flex-1 items-end rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2">
+                        <textarea
+                            ref={textareaRef}
+                            value={draft}
+                            onChange={(e) => setDraft(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            disabled={isSending}
+                            placeholder={placeholder}
+                            rows={1}
+                            className="max-h-[120px] w-full resize-none overflow-y-auto border-0 bg-transparent text-[15px] leading-[1.35] text-neutral-900 outline-none placeholder:text-neutral-400"
+                        />
+                    </div>
+
+                    <button
                         type="submit"
-                        disabled={isLoading || !newMessage.trim()}
+                        disabled={!draft.trim() || isSending}
                         className={cn(
-                            "h-11 px-5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white",
-                            (!newMessage.trim() || isLoading) && "opacity-50 cursor-not-allowed"
+                            'flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-full transition-all duration-200',
+                            draft.trim()
+                                ? 'bg-[#007AFF] text-white shadow-sm active:scale-90'
+                                : 'bg-neutral-200 text-neutral-400'
                         )}
+                        aria-label="Send message"
                     >
-                        {isLoading ? (
+                        {isSending ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                            <>
-                                <Send className="h-4 w-4 mr-2" />
-                                Send
-                            </>
+                            <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
                         )}
-                    </Button>
+                    </button>
                 </form>
             </div>
         </div>

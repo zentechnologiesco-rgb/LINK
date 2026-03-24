@@ -1,26 +1,247 @@
 import { v } from "convex/values";
+
+import type { Doc, Id } from "./_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
 import { validateFile, ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES } from "./files";
+import {
+    getStoredUnitsForProperty,
+    resolveStorageUrls,
+    summarizeInventory,
+    syncPropertyInventory,
+    upsertPropertyUnits,
+    type PropertyUnitDraft,
+} from "./lib/propertyInventory";
+
+const propertyUnitInputValidator = v.object({
+    _id: v.optional(v.id("propertyUnits")),
+    title: v.string(),
+    description: v.optional(v.string()),
+    unitCode: v.optional(v.string()),
+    unitType: v.optional(v.string()),
+    occupancyMode: v.optional(v.string()),
+    roomType: v.optional(v.string()),
+    furnishingStatus: v.optional(v.string()),
+    genderPolicy: v.optional(v.string()),
+    availableFrom: v.optional(v.string()),
+    floorLabel: v.optional(v.string()),
+    blockLabel: v.optional(v.string()),
+    priceNad: v.number(),
+    bedrooms: v.optional(v.number()),
+    bathrooms: v.optional(v.number()),
+    sizeSqm: v.optional(v.number()),
+    maxOccupants: v.optional(v.number()),
+    amenityNames: v.optional(v.array(v.string())),
+    utilitiesIncluded: v.optional(v.array(v.string())),
+    petPolicy: v.optional(v.string()),
+    images: v.optional(v.array(v.id("_storage"))),
+    publicationStatus: v.optional(v.union(v.literal("unpublished"), v.literal("published"))),
+    occupancyStatus: v.optional(
+        v.union(
+            v.literal("vacant"),
+            v.literal("reserved"),
+            v.literal("occupied"),
+            v.literal("unavailable"),
+        ),
+    ),
+});
+
+async function resolveLandlordInfo(ctx: QueryCtx | MutationCtx, landlordId: Id<"users">) {
+    const landlord = await ctx.db.get(landlordId);
+    if (!landlord) return null;
+
+    let avatarUrl = null;
+    if (landlord.avatarUrl) {
+        if (landlord.avatarUrl.startsWith("http")) {
+            avatarUrl = landlord.avatarUrl;
+        } else {
+            try {
+                avatarUrl = await ctx.storage.getUrl(landlord.avatarUrl);
+            } catch {
+                avatarUrl = null;
+            }
+        }
+    }
+
+    return {
+        name: landlord.fullName || null,
+        fullName: landlord.fullName || null,
+        email: landlord.email,
+        phone: landlord.phone || null,
+        avatarUrl,
+    };
+}
+
+async function validateImages(ctx: MutationCtx, imageIds?: Id<"_storage">[]) {
+    if (!imageIds) return;
+    for (const imageId of imageIds) {
+        await validateFile(ctx, imageId, ALLOWED_IMAGE_TYPES);
+    }
+}
+
+async function validateVideos(ctx: MutationCtx, videoIds?: Id<"_storage">[]) {
+    if (!videoIds) return;
+    for (const videoId of videoIds) {
+        await validateFile(ctx, videoId, ALLOWED_VIDEO_TYPES);
+    }
+}
+
+async function validateUnitImages(
+    ctx: MutationCtx,
+    units?: PropertyUnitDraft[],
+) {
+    if (!units) return;
+    for (const unit of units) {
+        await validateImages(ctx, unit.images);
+    }
+}
+
+async function enrichProperty(
+    ctx: QueryCtx,
+    property: Doc<"properties">,
+    options?: { includeUnits?: boolean },
+) {
+    const [imageUrls, landlordInfo, storedUnits] = await Promise.all([
+        resolveStorageUrls(ctx, property.images),
+        resolveLandlordInfo(ctx, property.landlordId),
+        getStoredUnitsForProperty(ctx, property._id),
+    ]);
+
+    const inventory = summarizeInventory(property, storedUnits);
+
+    const units = options?.includeUnits
+        ? await Promise.all(
+            inventory.units.map(async (unit) => ({
+                ...unit,
+                imageUrls: unit._id
+                    ? await resolveStorageUrls(ctx, unit.images)
+                    : imageUrls,
+            })),
+        )
+        : undefined;
+
+    return {
+        ...property,
+        listingType: property.listingType ?? "single_home",
+        publicationStatus: property.publicationStatus ?? (property.isAvailable ? "published" : "unpublished"),
+        imageUrls,
+        landlordInfo,
+        amenityNames: property.amenityNames ?? [],
+        minPriceNad: inventory.minPriceNad,
+        maxPriceNad: inventory.maxPriceNad,
+        unitCount: inventory.unitCount,
+        availableUnitCount: inventory.availableUnitCount,
+        unitTypeLabels: inventory.unitTypeLabels,
+        isPublicReady: inventory.isPublicReady,
+        units,
+    };
+}
+
+async function getFilteredPublicProperties(
+    ctx: QueryCtx,
+    args: {
+        city?: string;
+        onlyAvailable?: boolean;
+        limit?: number;
+        query?: string;
+        minPrice?: number;
+        maxPrice?: number;
+        bedrooms?: number;
+        propertyType?: string;
+        listingType?: string;
+    },
+) {
+    const allProperties = await ctx.db.query("properties").collect();
+
+    let properties = allProperties.filter((property: Doc<"properties">) => {
+        const publicationStatus = property.publicationStatus ?? (property.isAvailable ? "published" : "unpublished");
+        return property.approvalStatus === "approved" && publicationStatus === "published";
+    });
+
+    const enriched = await Promise.all(properties.map((property: Doc<"properties">) => enrichProperty(ctx, property)));
+
+    let filtered = enriched.filter((property) => !args.onlyAvailable || property.isPublicReady);
+
+    if (args.city) {
+        const city = args.city.toLowerCase();
+        filtered = filtered.filter((property) => property.city.toLowerCase().includes(city));
+    }
+
+    if (args.query) {
+        const search = args.query.toLowerCase();
+        filtered = filtered.filter((property) =>
+            property.title.toLowerCase().includes(search) ||
+            property.description?.toLowerCase().includes(search) ||
+            property.address.toLowerCase().includes(search) ||
+            property.city.toLowerCase().includes(search),
+        );
+    }
+
+    if (args.listingType) {
+        filtered = filtered.filter((property) => property.listingType === args.listingType);
+    }
+
+    if (args.propertyType) {
+        filtered = filtered.filter((property) => property.propertyType === args.propertyType);
+    }
+
+    if (args.minPrice !== undefined) {
+        filtered = filtered.filter((property) => property.minPriceNad >= args.minPrice!);
+    }
+
+    if (args.maxPrice !== undefined) {
+        filtered = filtered.filter((property) => property.minPriceNad <= args.maxPrice!);
+    }
+
+    if (args.bedrooms !== undefined) {
+        filtered = filtered.filter((property) => (property.bedrooms ?? 0) >= args.bedrooms!);
+    }
+
+    filtered.sort((a, b) => {
+        if (b.featured !== a.featured) return Number(b.featured) - Number(a.featured);
+        if (b.availableUnitCount !== a.availableUnitCount) return b.availableUnitCount - a.availableUnitCount;
+        return b._creationTime - a._creationTime;
+    });
+
+    if (args.limit) {
+        filtered = filtered.slice(0, args.limit);
+    }
+
+    return filtered;
+}
 
 // Create a new property
 export const create = mutation({
     args: {
         title: v.string(),
         description: v.optional(v.string()),
+        listingType: v.optional(
+            v.union(
+                v.literal("single_home"),
+                v.literal("multi_unit_block"),
+                v.literal("student_accommodation"),
+            ),
+        ),
         propertyType: v.string(),
         address: v.string(),
         city: v.string(),
         coordinates: v.object({ lat: v.number(), lng: v.number() }),
+        occupancyMode: v.optional(v.string()),
+        furnishingStatus: v.optional(v.string()),
+        genderPolicy: v.optional(v.string()),
+        availableFrom: v.optional(v.string()),
         priceNad: v.number(),
         bedrooms: v.optional(v.number()),
         bathrooms: v.optional(v.number()),
         sizeSqm: v.optional(v.number()),
+        maxOccupants: v.optional(v.number()),
         amenityNames: v.optional(v.array(v.string())),
         petPolicy: v.optional(v.string()),
         utilitiesIncluded: v.optional(v.array(v.string())),
         images: v.optional(v.array(v.id("_storage"))),
         videos: v.optional(v.array(v.id("_storage"))),
+        units: v.optional(v.array(propertyUnitInputValidator)),
     },
     handler: async (ctx, args) => {
         const userId = await auth.getUserId(ctx);
@@ -31,131 +252,75 @@ export const create = mutation({
             throw new Error("Only landlords can create properties");
         }
 
-        // Validate images and videos
-        if (args.images) {
-            for (const imageId of args.images) {
-                await validateFile(ctx, imageId, ALLOWED_IMAGE_TYPES);
-            }
-        }
-        if (args.videos) {
-            for (const videoId of args.videos) {
-                await validateFile(ctx, videoId, ALLOWED_VIDEO_TYPES);
-            }
-        }
+        await validateImages(ctx, args.images);
+        await validateVideos(ctx, args.videos);
+        await validateUnitImages(ctx, args.units as PropertyUnitDraft[] | undefined);
 
         const propertyId = await ctx.db.insert("properties", {
-            ...args,
+            title: args.title,
+            description: args.description,
+            listingType: args.listingType ?? "single_home",
+            propertyType: args.propertyType,
+            address: args.address,
+            city: args.city,
+            coordinates: args.coordinates,
+            occupancyMode: args.occupancyMode,
+            furnishingStatus: args.furnishingStatus,
+            genderPolicy: args.genderPolicy,
+            availableFrom: args.availableFrom,
+            priceNad: args.priceNad,
+            bedrooms: args.bedrooms,
+            bathrooms: args.bathrooms,
+            sizeSqm: args.sizeSqm,
+            maxOccupants: args.maxOccupants,
+            amenityNames: args.amenityNames ?? [],
+            petPolicy: args.petPolicy,
+            utilitiesIncluded: args.utilitiesIncluded ?? [],
+            images: args.images ?? [],
+            videos: args.videos ?? [],
             landlordId: userId,
-            isAvailable: false, // Not available until approved
+            isAvailable: false,
             featured: false,
+            publicationStatus: "unpublished",
             approvalStatus: "pending",
             approvalRequestedAt: Date.now(),
         });
+
+        const property = await ctx.db.get(propertyId);
+        if (!property) throw new Error("Property could not be created");
+
+        await upsertPropertyUnits(ctx, property, (args.units as PropertyUnitDraft[] | undefined) ?? []);
 
         return propertyId;
     },
 });
 
-// Get all properties (with filters)
+// Get all public properties
 export const list = query({
     args: {
         city: v.optional(v.string()),
         onlyAvailable: v.optional(v.boolean()),
         limit: v.optional(v.number()),
+        query: v.optional(v.string()),
+        minPrice: v.optional(v.number()),
+        maxPrice: v.optional(v.number()),
+        bedrooms: v.optional(v.number()),
+        propertyType: v.optional(v.string()),
+        listingType: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
-        let properties;
-
-        if (args.city) {
-            properties = await ctx.db
-                .query("properties")
-                .withIndex("by_city", (q) => q.eq("city", args.city!))
-                .collect();
-        } else {
-            properties = await ctx.db.query("properties").collect();
-        }
-
-        let filtered = properties;
-        if (args.onlyAvailable) {
-            filtered = properties.filter((p) => p.isAvailable);
-        }
-
-        if (args.limit) {
-            filtered = filtered.slice(0, args.limit);
-        }
-
-        const propertiesWithImages = await Promise.all(
-            filtered.map(async (property) => {
-                const imageUrls: string[] = [];
-                if (property.images && property.images.length > 0) {
-                    for (const imageId of property.images) {
-                        try {
-                            const url = await ctx.storage.getUrl(imageId);
-                            if (url) imageUrls.push(url);
-                        } catch {
-                            // Ignore invalid image IDs
-                        }
-                    }
-                }
-
-                return {
-                    ...property,
-                    imageUrls,
-                };
-            })
-        );
-
-        return propertiesWithImages;
+        return await getFilteredPublicProperties(ctx, args);
     },
 });
 
-// Get property by ID with resolved images, landlord info, and amenities
+// Get property by ID with resolved media, landlord info, and units
 export const getById = query({
     args: { propertyId: v.id("properties") },
     handler: async (ctx, args) => {
         const property = await ctx.db.get(args.propertyId);
         if (!property) return null;
 
-        // Resolve image URLs
-        let imageUrls: string[] = [];
-        if (property.images && property.images.length > 0) {
-            const urls = await Promise.all(
-                property.images.map(async (storageId) => {
-                    const url = await ctx.storage.getUrl(storageId);
-                    return url;
-                })
-            );
-            imageUrls = urls.filter((url): url is string => url !== null);
-        }
-
-        // Fetch landlord info
-        const landlord = await ctx.db.get(property.landlordId);
-        let landlordAvatarUrl = null;
-        if (landlord && landlord.avatarUrl) {
-            if (landlord.avatarUrl.startsWith("http")) {
-                landlordAvatarUrl = landlord.avatarUrl;
-            } else {
-                try {
-                    landlordAvatarUrl = await ctx.storage.getUrl(landlord.avatarUrl);
-                } catch (e) {
-                    console.error("Failed to resolve landlord avatar:", e);
-                }
-            }
-        }
-
-        const landlordInfo = landlord ? {
-            name: landlord.fullName || null,
-            email: landlord.email,
-            phone: landlord.phone || null,
-            avatarUrl: landlordAvatarUrl,
-        } : null;
-
-        return {
-            ...property,
-            imageUrls,
-            landlordInfo,
-            amenityNames: property.amenityNames || [],
-        };
+        return await enrichProperty(ctx, property, { includeUnits: true });
     },
 });
 
@@ -171,28 +336,11 @@ export const getByLandlord = query({
             .withIndex("by_landlordId", (q) => q.eq("landlordId", userId))
             .collect();
 
-        // Resolve image URLs for each property
-        const propertiesWithImages = await Promise.all(
-            properties.map(async (property) => {
-                const imageUrls: string[] = [];
-                if (property.images && property.images.length > 0) {
-                    for (const imageId of property.images) {
-                        try {
-                            const url = await ctx.storage.getUrl(imageId);
-                            if (url) imageUrls.push(url);
-                        } catch {
-                            // Ignore invalid image IDs
-                        }
-                    }
-                }
-                return {
-                    ...property,
-                    imageUrls,
-                };
-            })
+        const enriched = await Promise.all(
+            properties.map((property: Doc<"properties">) => enrichProperty(ctx, property, { includeUnits: true })),
         );
 
-        return propertiesWithImages;
+        return enriched.sort((a, b) => b._creationTime - a._creationTime);
     },
 });
 
@@ -208,18 +356,15 @@ export const getByLandlordWithLeases = query({
             .withIndex("by_landlordId", (q) => q.eq("landlordId", userId))
             .collect();
 
-        // Only return approved properties
-        const approvedProperties = properties.filter(p => p.approvalStatus === "approved");
+        const approvedProperties = properties.filter((property) => property.approvalStatus === "approved");
 
-        const propertiesWithLeases = await Promise.all(
+        return await Promise.all(
             approvedProperties.map(async (property) => {
-                // Get all leases for this property
                 const leases = await ctx.db
                     .query("leases")
                     .withIndex("by_propertyId", (q) => q.eq("propertyId", property._id))
                     .collect();
 
-                // Format leases with tenant info
                 const formattedLeases = await Promise.all(
                     leases.map(async (lease) => {
                         const tenant = await ctx.db.get(lease.tenantId);
@@ -230,21 +375,20 @@ export const getByLandlordWithLeases = query({
                             monthly_rent: lease.monthlyRent,
                             deposit: lease.deposit || 0,
                             tenant: tenant ? { email: tenant.email } : undefined,
+                            unitId: lease.unitId,
                         };
-                    })
+                    }),
                 );
 
                 return {
                     id: property._id,
                     title: property.title,
                     city: property.city,
-                    price_nad: property.priceNad,
+                    price_nad: property.minPriceNad ?? property.priceNad,
                     leases: formattedLeases,
                 };
-            })
+            }),
         );
-
-        return propertiesWithLeases;
     },
 });
 
@@ -254,21 +398,35 @@ export const update = mutation({
         propertyId: v.id("properties"),
         title: v.optional(v.string()),
         description: v.optional(v.string()),
+        listingType: v.optional(
+            v.union(
+                v.literal("single_home"),
+                v.literal("multi_unit_block"),
+                v.literal("student_accommodation"),
+            ),
+        ),
         propertyType: v.optional(v.string()),
         address: v.optional(v.string()),
         city: v.optional(v.string()),
         coordinates: v.optional(v.object({ lat: v.number(), lng: v.number() })),
+        occupancyMode: v.optional(v.string()),
+        furnishingStatus: v.optional(v.string()),
+        genderPolicy: v.optional(v.string()),
+        availableFrom: v.optional(v.string()),
         priceNad: v.optional(v.number()),
         bedrooms: v.optional(v.number()),
         bathrooms: v.optional(v.number()),
         sizeSqm: v.optional(v.number()),
+        maxOccupants: v.optional(v.number()),
         amenityNames: v.optional(v.array(v.string())),
         petPolicy: v.optional(v.string()),
         utilitiesIncluded: v.optional(v.array(v.string())),
         images: v.optional(v.array(v.id("_storage"))),
         videos: v.optional(v.array(v.id("_storage"))),
+        units: v.optional(v.array(propertyUnitInputValidator)),
         isAvailable: v.optional(v.boolean()),
         featured: v.optional(v.boolean()),
+        publicationStatus: v.optional(v.union(v.literal("unpublished"), v.literal("published"))),
     },
     handler: async (ctx, args) => {
         const userId = await auth.getUserId(ctx);
@@ -282,35 +440,39 @@ export const update = mutation({
             throw new Error("You can only update your own properties");
         }
 
-        const { propertyId, ...updateData } = args;
+        await validateImages(ctx, args.images);
+        await validateVideos(ctx, args.videos);
+        await validateUnitImages(ctx, args.units as PropertyUnitDraft[] | undefined);
 
-        // Validate images and videos
-        if (updateData.images) {
-            for (const imageId of updateData.images) {
-                await validateFile(ctx, imageId, ALLOWED_IMAGE_TYPES);
-            }
-        }
-        if (updateData.videos) {
-            for (const videoId of updateData.videos) {
-                await validateFile(ctx, videoId, ALLOWED_VIDEO_TYPES);
-            }
-        }
+        const {
+            propertyId,
+            units,
+            isAvailable,
+            publicationStatus,
+            ...updateData
+        } = args;
 
         const cleanedData = Object.fromEntries(
-            Object.entries(updateData).filter(([, v]) => v !== undefined)
+            Object.entries(updateData).filter(([, value]) => value !== undefined),
         );
 
         const approvalSensitiveFields = [
             "title",
             "description",
+            "listingType",
             "propertyType",
             "address",
             "city",
             "coordinates",
+            "occupancyMode",
+            "furnishingStatus",
+            "genderPolicy",
+            "availableFrom",
             "priceNad",
             "bedrooms",
             "bathrooms",
             "sizeSqm",
+            "maxOccupants",
             "amenityNames",
             "petPolicy",
             "utilitiesIncluded",
@@ -318,18 +480,45 @@ export const update = mutation({
             "videos",
         ];
 
-        const requiresReapproval = approvalSensitiveFields.some((field) => field in cleanedData);
+        const requiresReapproval =
+            approvalSensitiveFields.some((field) => field in cleanedData) ||
+            units !== undefined;
 
-        await ctx.db.patch(propertyId, requiresReapproval
-            ? {
-                ...cleanedData,
-                isAvailable: false,
-                approvalStatus: "pending",
-                approvalRequestedAt: Date.now(),
-                adminNotes: undefined,
-            }
-            : cleanedData,
-        );
+        const nextPublicationStatus =
+            publicationStatus ??
+            (isAvailable === undefined ? undefined : isAvailable ? "published" : "unpublished");
+
+        if (nextPublicationStatus === "published" && property.approvalStatus !== "approved" && !requiresReapproval) {
+            throw new Error("The listing must be approved before it can go live.");
+        }
+
+        const patch: Partial<Doc<"properties">> & { approvalRequestedAt?: number } = {
+            ...(cleanedData as Partial<Doc<"properties">>),
+        };
+
+        if (typeof nextPublicationStatus !== "undefined") {
+            patch.publicationStatus = nextPublicationStatus;
+        }
+
+        if (requiresReapproval) {
+            patch.approvalStatus = "pending";
+            patch.approvalRequestedAt = Date.now();
+            patch.adminNotes = undefined;
+            patch.publicationStatus = "unpublished";
+            patch.isAvailable = false;
+        }
+
+        await ctx.db.patch(propertyId, patch);
+
+        const updatedProperty = await ctx.db.get(propertyId);
+        if (!updatedProperty) throw new Error("Property not found after update");
+
+        if (units !== undefined) {
+            await upsertPropertyUnits(ctx, updatedProperty, units as PropertyUnitDraft[]);
+        } else {
+            await syncPropertyInventory(ctx, propertyId);
+        }
+
         return { success: true };
     },
 });
@@ -349,6 +538,11 @@ export const remove = mutation({
             throw new Error("You can only delete your own properties");
         }
 
+        const units = await getStoredUnitsForProperty(ctx, args.propertyId);
+        for (const unit of units) {
+            await ctx.db.delete(unit._id);
+        }
+
         await ctx.db.delete(args.propertyId);
         return { success: true };
     },
@@ -364,16 +558,23 @@ export const requestApproval = mutation({
         const property = await ctx.db.get(args.propertyId);
         if (!property) throw new Error("Property not found");
         if (property.landlordId !== userId) throw new Error("Only the owner can request approval");
+        if (property.approvalStatus === "pending") {
+            throw new Error("This listing is already in review.");
+        }
+        if (property.approvalStatus === "approved") {
+            throw new Error("Approved listings do not need to be resubmitted.");
+        }
+        if (property.approvalStatus !== "rejected") {
+            throw new Error("Only rejected listings can be resubmitted from here.");
+        }
 
         await ctx.db.patch(args.propertyId, {
             approvalStatus: "pending",
             approvalRequestedAt: Date.now(),
+            publicationStatus: "unpublished",
+            isAvailable: false,
+            adminNotes: undefined,
         });
-
-        // Create a landlord request for admin to see (optional, if we track requests separately)
-        // But approvalStatus on property might be enough.
-        // Let's also create a verifiable request if that system is used.
-        // For now, updating the status on property is the primary mechanism.
 
         return { success: true };
     },
@@ -388,45 +589,12 @@ export const search = query({
         maxPrice: v.optional(v.number()),
         bedrooms: v.optional(v.number()),
         propertyType: v.optional(v.string()),
+        listingType: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
-        let properties = await ctx.db
-            .query("properties")
-            .withIndex("by_available", (q) => q.eq("isAvailable", true))
-            .collect();
-
-        if (args.city) {
-            properties = properties.filter((p) =>
-                p.city.toLowerCase().includes(args.city!.toLowerCase())
-            );
-        }
-
-        if (args.minPrice !== undefined) {
-            properties = properties.filter((p) => p.priceNad >= args.minPrice!);
-        }
-
-        if (args.maxPrice !== undefined) {
-            properties = properties.filter((p) => p.priceNad <= args.maxPrice!);
-        }
-
-        if (args.bedrooms !== undefined) {
-            properties = properties.filter((p) => p.bedrooms === args.bedrooms);
-        }
-
-        if (args.propertyType) {
-            properties = properties.filter((p) => p.propertyType === args.propertyType);
-        }
-
-        if (args.query) {
-            const q = args.query.toLowerCase();
-            properties = properties.filter(
-                (p) =>
-                    p.title.toLowerCase().includes(q) ||
-                    p.description?.toLowerCase().includes(q) ||
-                    p.address.toLowerCase().includes(q)
-            );
-        }
-
-        return properties;
+        return await getFilteredPublicProperties(ctx, {
+            onlyAvailable: true,
+            ...args,
+        });
     },
 });

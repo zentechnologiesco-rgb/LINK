@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { OptimizedImage } from '@/components/ui/optimized-image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -24,10 +23,27 @@ import { api } from "../../../../../convex/_generated/api"
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 
+type PropertyRequest = {
+    _id: string
+    _creationTime: number
+    title: string
+    propertyType: string
+    city: string
+    bedrooms?: number
+    bathrooms?: number
+    approvalStatus?: 'pending' | 'approved' | 'rejected'
+    approvalRequestedAt?: number
+    images?: string[]
+    landlord?: {
+        fullName?: string | null
+        email?: string | null
+    } | null
+}
+
 // Status badge variants
 const statusConfig = {
     pending: {
-        label: 'Pending',
+        label: 'In Review',
         color: 'bg-yellow-50 text-yellow-700 border-yellow-200',
         icon: Clock,
     },
@@ -37,7 +53,7 @@ const statusConfig = {
         icon: CheckCircle2,
     },
     rejected: {
-        label: 'Rejected',
+        label: 'Needs Changes',
         color: 'bg-red-50 text-red-700 border-red-200',
         icon: XCircle,
     },
@@ -49,7 +65,7 @@ function PropertyRequestsContent() {
     const searchQuery = searchParams.get('search') || ''
 
     const currentUser = useQuery(api.users.currentUser)
-    const properties = useQuery(api.admin.getPropertyRequests, { status: statusFilter })
+    const properties = useQuery(api.admin.getPropertyRequests, { status: statusFilter }) as PropertyRequest[] | undefined
     const stats = useQuery(api.admin.getPropertyStats)
 
     if (currentUser === undefined || properties === undefined || stats === undefined) {
@@ -80,7 +96,7 @@ function PropertyRequestsContent() {
     }
 
     // Filter by search query (client-side)
-    const filteredProperties = properties.filter((property: any) => {
+    const filteredProperties = properties.filter((property) => {
         if (!searchQuery) return true
         const searchLower = searchQuery.toLowerCase()
         return (
@@ -99,7 +115,7 @@ function PropertyRequestsContent() {
                     <Building2 className="h-6 w-6 text-purple-600" />
                     <h1 className="text-3xl font-bold tracking-tight">Property Requests</h1>
                 </div>
-                <p className="text-muted-foreground">Review and approve property listings from landlords.</p>
+                <p className="text-muted-foreground">Review landlord submissions, approve what can go live later, or send listings back with clear changes.</p>
             </div>
 
             {/* Stats Overview */}
@@ -118,9 +134,9 @@ function PropertyRequestsContent() {
                 <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                         <CardTitle>
-                            {!statusFilter ? 'All Properties' : (
-                                `${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)} Properties`
-                            )}
+                            {!statusFilter
+                                ? 'All Property Requests'
+                                : `${statusConfig[statusFilter]?.label || statusFilter} Requests`}
                         </CardTitle>
                         <Badge variant="secondary" className="text-sm font-normal">
                             {filteredProperties.length} {filteredProperties.length === 1 ? 'result' : 'results'}
@@ -136,9 +152,9 @@ function PropertyRequestsContent() {
                             <h3 className="text-lg font-medium mb-1">No properties found</h3>
                             <p className="text-muted-foreground">
                                 {searchQuery
-                                    ? `No results matching "${searchQuery}"`
-                                    : statusFilter
-                                        ? `No ${statusFilter} property requests at the moment.`
+                                        ? `No results matching "${searchQuery}"`
+                                        : statusFilter
+                                        ? `No ${statusConfig[statusFilter]?.label?.toLowerCase() || statusFilter} property requests at the moment.`
                                         : 'No property requests have been submitted yet.'}
                             </p>
                         </div>
@@ -157,8 +173,8 @@ function PropertyRequestsContent() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredProperties.map((property: any) => {
-                                        const status = property.approvalStatus as keyof typeof statusConfig
+                                    {filteredProperties.map((property) => {
+                                        const status = (property.approvalStatus ?? 'pending') as keyof typeof statusConfig
                                         const StatusIcon = statusConfig[status]?.icon || Clock
 
                                         return (

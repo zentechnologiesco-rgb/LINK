@@ -5,10 +5,10 @@ import { AuthedChatInterface } from './ChatInterface'
 
 function ChatLoading() {
     return (
-        <div className="flex h-full items-center justify-center bg-gray-50/50">
-            <div className="flex flex-col items-center gap-4">
-                <div className="h-10 w-10 rounded-full border-2 border-black/10 border-t-black animate-spin" />
-                <p className="text-sm font-medium text-black/60">Loading messages...</p>
+        <div className="flex h-[calc(100dvh-4rem)] items-center justify-center bg-white md:h-[calc(100dvh-5rem)]">
+            <div className="flex flex-col items-center gap-3">
+                <div className="h-5 w-5 rounded-full border-2 border-neutral-200 border-t-neutral-600 animate-spin" />
+                <p className="text-[13px] font-medium text-neutral-400">Loading messages…</p>
             </div>
         </div>
     )
@@ -16,7 +16,7 @@ function ChatLoading() {
 
 export default function ChatPage() {
     return (
-        <div className="h-[calc(100vh-120px)] flex flex-col -mx-4 sm:-mx-6 md:-mx-12 -mt-4 -mb-24">
+        <div className="-mx-4 -mt-4 sm:-mx-6 md:-mx-12">
             <Suspense fallback={<ChatLoading />}>
                 <AuthedChatInterface />
             </Suspense>

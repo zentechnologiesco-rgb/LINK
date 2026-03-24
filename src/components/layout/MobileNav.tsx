@@ -1,11 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Home, Heart, MessageSquare, User, Building2, LayoutDashboard, FileText, LucideIcon } from 'lucide-react'
 import { useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
+import { Suspense } from 'react'
 
 interface MobileNavProps {
     user?: any
@@ -41,8 +42,9 @@ const adminNavItems: NavItem[] = [
     { label: 'Profile', href: '/settings', icon: User },
 ]
 
-export function MobileNav({ user, userRole }: MobileNavProps) {
+function MobileNavInner({ user, userRole }: MobileNavProps) {
     const pathname = usePathname()
+    const searchParams = useSearchParams()
     const currentRole = userRole || user?.role
 
     // Only fetch counts if user is logged in
@@ -58,7 +60,12 @@ export function MobileNav({ user, userRole }: MobileNavProps) {
     )
     const leaseActionCount = typeof leaseActionCountQuery === 'number' ? leaseActionCountQuery : 0
 
-    if (!user) return null
+    // Hide mobile nav completely when inside a chat thread, creation wizards, or detail pages with action bars
+    const isChatThread = pathname === '/chat' && searchParams.get('id') !== null
+    const isWizard = pathname?.endsWith('/new') || pathname?.includes('/edit')
+    const isLeaseDetail = pathname?.includes('/leases/') && pathname.split('/').pop() !== 'leases'
+
+    if (!user || isChatThread || isWizard || isLeaseDetail) return null
 
     let items: NavItem[] = tenantNavItems
     if (currentRole === 'landlord') items = landlordNavItems
@@ -134,5 +141,13 @@ export function MobileNav({ user, userRole }: MobileNavProps) {
                 </div>
             </nav>
         </>
+    )
+}
+
+export function MobileNav(props: MobileNavProps) {
+    return (
+        <Suspense fallback={null}>
+            <MobileNavInner {...props} />
+        </Suspense>
     )
 }

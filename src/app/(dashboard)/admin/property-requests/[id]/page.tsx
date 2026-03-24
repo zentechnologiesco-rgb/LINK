@@ -23,7 +23,7 @@ interface Props {
 // Status configuration
 const statusConfig = {
     pending: {
-        label: 'Pending Review',
+        label: 'In Review',
         color: 'bg-yellow-50 text-yellow-700 border-yellow-200',
         icon: Clock,
     },
@@ -33,10 +33,16 @@ const statusConfig = {
         icon: CheckCircle2,
     },
     rejected: {
-        label: 'Rejected',
+        label: 'Needs Changes',
         color: 'bg-red-50 text-red-700 border-red-200',
         icon: XCircle,
     },
+}
+
+const statusHelperCopy = {
+    pending: 'Approve this if the listing can move forward. It will still stay off market until the landlord publishes it.',
+    approved: 'The review is complete. The landlord can now publish or keep the listing off market.',
+    rejected: 'The landlord must update the listing and resubmit it before it can be reviewed again.',
 }
 
 function PropertyReviewContent({ id }: { id: string }) {
@@ -100,6 +106,9 @@ function PropertyReviewContent({ id }: { id: string }) {
                             Submitted {property.approvalRequestedAt
                                 ? format(new Date(property.approvalRequestedAt), 'PPP p')
                                 : format(new Date(property._creationTime), 'PPP p')}
+                        </p>
+                        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                            {statusHelperCopy[status] || statusHelperCopy.pending}
                         </p>
                     </div>
                     {approvalStatus === 'pending' && (
@@ -194,7 +203,7 @@ function PropertyReviewContent({ id }: { id: string }) {
                         <Card className="border-red-200">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-red-600">
-                                    <XCircle className="h-5 w-5" /> Rejection Reason
+                                    <XCircle className="h-5 w-5" /> Admin Feedback
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
