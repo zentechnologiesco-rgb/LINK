@@ -1,11 +1,12 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { type MutationCtx, mutation, query } from "./_generated/server";
 
 import { auth } from "./auth";
 import { logAdminAction } from "./audit";
+import { resolveAvatarUrl } from "./lib/avatar";
 
 // Helper to check admin role
-async function requireAdmin(ctx: any) {
+async function requireAdmin(ctx: MutationCtx) {
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
 
@@ -49,7 +50,14 @@ export const getAllUsers = query({
         const user = await ctx.db.get(userId);
         if (user?.role !== "admin") return [];
 
-        return await ctx.db.query("users").collect();
+        const users = await ctx.db.query("users").collect();
+
+        return await Promise.all(
+            users.map(async (user) => ({
+                ...user,
+                avatarUrl: await resolveAvatarUrl(ctx, user.avatarUrl),
+            }))
+        );
     },
 });
 
@@ -176,13 +184,13 @@ export const getPropertyRequests = query({
             properties.map(async (property) => {
                 const landlord = await ctx.db.get(property.landlordId);
 
-                let imageUrls: string[] = [];
+                const imageUrls: string[] = [];
                 if (property.images && property.images.length > 0) {
                     // Just get the first one for list view
                     try {
                         const url = await ctx.storage.getUrl(property.images[0]);
                         if (url) imageUrls.push(url);
-                    } catch (e) {
+                    } catch {
                         // Ignore invalid image IDs
                     }
                 }
@@ -215,14 +223,15 @@ export const getPropertyRequestById = query({
         if (!property) return null;
 
         const landlord = await ctx.db.get(property.landlordId);
+        const landlordAvatarUrl = await resolveAvatarUrl(ctx, landlord?.avatarUrl);
 
-        let imageUrls: string[] = [];
+        const imageUrls: string[] = [];
         if (property.images) {
             for (const imageId of property.images) {
                 try {
                     const url = await ctx.storage.getUrl(imageId);
                     if (url) imageUrls.push(url);
-                } catch (e) {
+                } catch {
                     // Ignore
                 }
             }
@@ -235,7 +244,7 @@ export const getPropertyRequestById = query({
                 fullName: landlord.fullName,
                 email: landlord.email,
                 phone: landlord.phone,
-                avatarUrl: landlord.avatarUrl
+                avatarUrl: landlordAvatarUrl
             } : null,
         };
     },

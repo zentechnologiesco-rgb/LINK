@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
+import { resolveAvatarUrl } from "./lib/avatar";
 
 // Get inquiries for tenant
 export const getForTenant = query({
@@ -212,8 +213,10 @@ export const getUserInquiries = query({
                 ...inquiry,
                 property: property ? { title: property.title } : null,
                 otherParty: otherParty ? {
+                    _id: otherParty._id,
                     fullName: otherParty.fullName,
-                    avatarUrl: otherParty.avatarUrl,
+                    email: otherParty.email,
+                    avatarUrl: await resolveAvatarUrl(ctx, otherParty.avatarUrl),
                 } : null,
                 lastMessage: lastMessage ? {
                     content: lastMessage.content,

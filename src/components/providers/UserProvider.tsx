@@ -12,7 +12,7 @@ type User = {
     firstName?: string
     surname?: string
     phone?: string
-    avatarUrl?: string
+    avatarUrl?: string | null
     role: "tenant" | "landlord" | "admin"
     isVerified: boolean
 } | null | undefined

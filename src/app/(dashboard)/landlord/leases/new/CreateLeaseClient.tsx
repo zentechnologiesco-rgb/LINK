@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState, type ElementType, type ReactNode } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -10,35 +10,142 @@ import { RentalRulesConfigurator, type RentalRulesData } from '@/components/leas
 import { ClauseEditor, type LeaseClause } from '@/components/leases/ClauseEditor'
 import { toast } from 'sonner'
 import {
+    BadgeCheck,
     ChevronLeft,
     ChevronRight,
     Building2,
-    Check,
+    CalendarRange,
+    CircleAlert,
+    CircleParking,
+    Clock3,
+    Layers3,
     Loader2,
     Send,
     Save,
-    Info,
     User,
     FileText,
     Search,
     Bookmark,
     Sparkles,
+    MapPin,
+    PawPrint,
+    ShieldCheck,
+    Wallet2,
+    Wrench,
+    Users,
+    Cigarette,
+    Home,
+    Zap,
 } from 'lucide-react'
 import { useMutation, useQuery, useConvex } from "convex/react"
 import { api } from "../../../../../../convex/_generated/api"
 import { Id } from "../../../../../../convex/_generated/dataModel"
+import { MAINTENANCE_LABELS, PET_POLICY_LABELS } from '@/constants/lease'
 import { cn } from '@/lib/utils'
 
 type Step = 'property' | 'tenant' | 'rules' | 'clauses' | 'review' | 'send'
 
-const STEPS: { key: Step; label: string; icon: React.ElementType }[] = [
-    { key: 'property', label: 'Property', icon: Building2 },
-    { key: 'tenant', label: 'Tenant', icon: User },
-    { key: 'rules', label: 'Rules', icon: Sparkles },
-    { key: 'clauses', label: 'Clauses', icon: FileText },
-    { key: 'review', label: 'Review', icon: Check },
-    { key: 'send', label: 'Send', icon: Send },
+type StepDefinition = {
+    key: Step
+    label: string
+    title: string
+    description: string
+    icon: ElementType
+}
+
+type LandlordProperty = {
+    _id: Id<'properties'>
+    title: string
+    address: string
+    city: string
+    priceNad?: number | null
+    imageUrls?: string[] | null
+    propertyType?: string | null
+    bedrooms?: number | null
+    bathrooms?: number | null
+    approvalStatus?: string | null
+}
+
+type TenantLookupResult = {
+    fullName?: string | null
+    email: string
+}
+
+type LeaseTemplateRecord = {
+    _id: Id<'leaseTemplates'>
+    name: string
+    isDefault?: boolean | null
+    customClauses?: LeaseClause[]
+    rentDueDay?: number | null
+    gracePeriodDays?: number | null
+    lateFeeType?: RentalRulesData['lateFeeType']
+    lateFeeAmount?: number | null
+    petPolicy?: RentalRulesData['petPolicy']
+    utilitiesIncluded?: string[]
+    parkingIncluded?: boolean | null
+    maintenanceResponsibility?: RentalRulesData['maintenanceResponsibility']
+    noticePeriodDays?: number | null
+    maxOccupants?: number | null
+    smokingAllowed?: boolean | null
+    sublettingAllowed?: boolean | null
+}
+
+type LandlordLeaseSummary = {
+    propertyId: Id<'properties'>
+    status: string
+}
+
+const STEPS: StepDefinition[] = [
+    {
+        key: 'property',
+        label: 'Property',
+        title: 'Choose the property',
+        description: 'Pick the home for this lease and optionally apply a saved template before you continue.',
+        icon: Building2,
+    },
+    {
+        key: 'tenant',
+        label: 'Tenant',
+        title: 'Find the tenant',
+        description: 'Search by email so the lease is attached to a real tenant account before it gets sent.',
+        icon: User,
+    },
+    {
+        key: 'rules',
+        label: 'Terms',
+        title: 'Set the lease terms',
+        description: 'Define pricing, timing, utilities, and rules with a calmer structure that is easier to scan.',
+        icon: Sparkles,
+    },
+    {
+        key: 'clauses',
+        label: 'Clauses',
+        title: 'Refine the clauses',
+        description: 'Keep required language intact, then tailor the flexible clauses for this property and tenant.',
+        icon: FileText,
+    },
+    {
+        key: 'review',
+        label: 'Review',
+        title: 'Review the draft',
+        description: 'Check the summary, financials, and policy details before the tenant receives anything.',
+        icon: ShieldCheck,
+    },
+    {
+        key: 'send',
+        label: 'Send',
+        title: 'Send or save the draft',
+        description: 'Send the agreement right away or keep a polished draft ready for later.',
+        icon: Send,
+    },
 ]
+
+const currencyFormatter = new Intl.NumberFormat('en-US')
+const humanDateFormatter = new Intl.DateTimeFormat('en-ZA', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+})
 
 export function CreateLeaseClient() {
     const router = useRouter()
@@ -47,9 +154,9 @@ export function CreateLeaseClient() {
 
     // State
     const [currentStep, setCurrentStep] = useState<Step>('property')
-    const [selectedProperty, setSelectedProperty] = useState<any>(null)
+    const [selectedProperty, setSelectedProperty] = useState<LandlordProperty | null>(null)
     const [tenantEmail, setTenantEmail] = useState('')
-    const [tenantFound, setTenantFound] = useState<any>(null)
+    const [tenantFound, setTenantFound] = useState<TenantLookupResult | null>(null)
     const [tenantSearching, setTenantSearching] = useState(false)
     const [tenantError, setTenantError] = useState('')
     const [rules, setRules] = useState<RentalRulesData>({
@@ -77,19 +184,20 @@ export function CreateLeaseClient() {
 
     // Queries
     const currentUser = useQuery(api.users.currentUser)
-    const properties = useQuery(api.properties.getByLandlord, {})
-    const leases = useQuery(api.leases.getForLandlord, {})
-    const templates = useQuery(api.leaseTemplates.getForLandlord, {})
+    const properties = useQuery(api.properties.getByLandlord, {}) as LandlordProperty[] | undefined
+    const leases = useQuery(api.leases.getForLandlord, {}) as LandlordLeaseSummary[] | undefined
+    const templates = useQuery(api.leaseTemplates.getForLandlord, {}) as LeaseTemplateRecord[] | undefined
 
     // Mutations
     const createLease = useMutation(api.leases.create)
 
     const currentStepIndex = STEPS.findIndex((s) => s.key === currentStep)
+    const currentStepDefinition = STEPS[currentStepIndex]
 
     const preselectedPropertyId = searchParams.get('propertyId')
 
     // Property selection handler
-    const handlePropertySelect = (property: any) => {
+    const handlePropertySelect = (property: LandlordProperty) => {
         setSelectedProperty(property)
         setRules((prev) => ({
             ...prev,
@@ -103,34 +211,44 @@ export function CreateLeaseClient() {
             return
         }
 
-        const property = properties.find((candidate: any) => candidate._id === preselectedPropertyId)
+        const property = properties.find((candidate) => candidate._id === preselectedPropertyId)
         if (property) {
             handlePropertySelect(property)
         }
     }, [preselectedPropertyId, properties, selectedProperty])
 
     // Template selection
-    const applyTemplate = (template: any) => {
-        setSelectedTemplateId(template._id)
-        setRules((prev) => ({
-            ...prev,
-            rentDueDay: template.rentDueDay ?? prev.rentDueDay,
-            gracePeriodDays: template.gracePeriodDays ?? prev.gracePeriodDays,
-            lateFeeType: template.lateFeeType ?? prev.lateFeeType,
-            lateFeeAmount: template.lateFeeAmount ?? prev.lateFeeAmount,
-            petPolicy: template.petPolicy ?? prev.petPolicy,
-            utilitiesIncluded: template.utilitiesIncluded ?? prev.utilitiesIncluded,
-            parkingIncluded: template.parkingIncluded ?? prev.parkingIncluded,
-            maintenanceResponsibility: template.maintenanceResponsibility ?? prev.maintenanceResponsibility,
-            noticePeriodDays: template.noticePeriodDays ?? prev.noticePeriodDays,
-            maxOccupants: template.maxOccupants ?? prev.maxOccupants,
-            smokingAllowed: template.smokingAllowed ?? prev.smokingAllowed,
-            sublettingAllowed: template.sublettingAllowed ?? prev.sublettingAllowed,
-        }))
-        if (template.customClauses) {
-            setClauses(template.customClauses)
+    const applyTemplate = (template: LeaseTemplateRecord) => {
+        const nextRules: RentalRulesData = {
+            ...rules,
+            rentDueDay: template.rentDueDay ?? rules.rentDueDay,
+            gracePeriodDays: template.gracePeriodDays ?? rules.gracePeriodDays,
+            lateFeeType: template.lateFeeType ?? rules.lateFeeType,
+            lateFeeAmount: template.lateFeeAmount ?? rules.lateFeeAmount,
+            petPolicy: template.petPolicy ?? rules.petPolicy,
+            utilitiesIncluded: template.utilitiesIncluded ?? rules.utilitiesIncluded,
+            parkingIncluded: template.parkingIncluded ?? rules.parkingIncluded,
+            maintenanceResponsibility: template.maintenanceResponsibility ?? rules.maintenanceResponsibility,
+            noticePeriodDays: template.noticePeriodDays ?? rules.noticePeriodDays,
+            maxOccupants: template.maxOccupants ?? rules.maxOccupants,
+            smokingAllowed: template.smokingAllowed ?? rules.smokingAllowed,
+            sublettingAllowed: template.sublettingAllowed ?? rules.sublettingAllowed,
         }
-        toast.success(`Template "${template.name}" applied`)
+
+        setSelectedTemplateId(template._id)
+        setRules(nextRules)
+        setClauses(
+            template.customClauses
+                ? [
+                    ...getDefaultClauses(nextRules).filter((clause) => clause.isMandatory),
+                    ...template.customClauses.map((clause: LeaseClause) => ({
+                        ...clause,
+                        isMandatory: false,
+                    })),
+                ]
+                : getDefaultClauses(nextRules)
+        )
+        toast.success(`Applied ${template.name}`)
     }
 
     // Tenant email search (debounced)
@@ -188,6 +306,11 @@ export function CreateLeaseClient() {
 
     // Submit
     const handleSubmit = async (sendImmediately: boolean) => {
+        if (!selectedProperty) {
+            toast.error('Choose a property before saving or sending the lease.')
+            return
+        }
+
         if (sendImmediately) {
             setIsSending(true)
         } else {
@@ -197,7 +320,7 @@ export function CreateLeaseClient() {
         try {
             const customClauses = clauses.filter((c) => !c.isMandatory)
 
-            const result = await createLease({
+            await createLease({
                 propertyId: selectedProperty._id,
                 tenantEmail,
                 startDate: rules.startDate,
@@ -231,9 +354,9 @@ export function CreateLeaseClient() {
                 toast.success('Lease draft saved!')
             }
             router.push('/landlord/leases')
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error)
-            toast.error(error.message || 'Something went wrong.')
+            toast.error(error instanceof Error ? error.message : 'Something went wrong.')
         } finally {
             setIsSaving(false)
             setIsSending(false)
@@ -254,474 +377,632 @@ export function CreateLeaseClient() {
 
     const blockedPropertyIds = new Set(
         leases
-            .filter((lease: any) => ['draft', 'sent_to_tenant', 'tenant_signed', 'revision_requested', 'approved'].includes(lease.status))
-            .map((lease: any) => lease.propertyId)
+            .filter((lease) => ['draft', 'sent_to_tenant', 'tenant_signed', 'revision_requested', 'approved'].includes(lease.status))
+            .map((lease) => lease.propertyId)
     )
 
-    const availableProperties = properties.filter((property: any) =>
+    const availableProperties = properties.filter((property) =>
         property.approvalStatus === 'approved' && !blockedPropertyIds.has(property._id)
     )
 
+    const displayClauses = clauses.length > 0 ? clauses : getDefaultClauses(rules)
+    const firstPayment = rules.monthlyRent + rules.deposit
+    const selectedTemplate = templates?.find((template) => template._id === selectedTemplateId) ?? null
+    const stepActionHint =
+        currentStep === 'property'
+            ? 'Choose the home first, then the rest of the draft opens up naturally.'
+            : currentStep === 'tenant'
+                ? 'The tenant needs an account before the lease can be sent.'
+                : currentStep === 'rules'
+                    ? 'Rent, deposit, and dates need to be set before review.'
+                    : currentStep === 'clauses'
+                        ? 'Refine any optional language, then move into review.'
+                        : 'Everything is lined up for the final draft.'
+    const reviewRuleBadges = [
+        { icon: PawPrint, label: PET_POLICY_LABELS[rules.petPolicy] },
+        { icon: Wrench, label: `${MAINTENANCE_LABELS[rules.maintenanceResponsibility]} maintenance` },
+        { icon: Users, label: `Max ${rules.maxOccupants} occupants` },
+        { icon: CalendarRange, label: `Due on the ${rules.rentDueDay}${getOrdinal(rules.rentDueDay)}` },
+        { icon: Clock3, label: `${rules.noticePeriodDays} day notice` },
+        { icon: CircleParking, label: rules.parkingIncluded ? 'Parking included' : 'No parking' },
+        { icon: Cigarette, label: rules.smokingAllowed ? 'Smoking allowed' : 'No smoking' },
+        { icon: Home, label: rules.sublettingAllowed ? 'Subletting allowed' : 'No subletting' },
+        ...rules.utilitiesIncluded.map((utility) => ({ icon: Zap, label: utility })),
+    ]
+
     return (
-        <div className="font-sans pb-28">
-            {/* Header */}
-            <div className="mb-6">
-                <Link
-                    href="/landlord/leases"
-                    className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900 transition-colors mb-4"
-                >
-                    <ChevronLeft className="h-4 w-4" />
-                    Leases
-                </Link>
-                <h1 className="text-2xl font-semibold text-neutral-900">New Lease</h1>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="mb-8">
-                <div className="flex items-center justify-between mb-2">
-                    {STEPS.map((step, index) => {
-                        const isDone = index < currentStepIndex
-                        const isCurrent = currentStep === step.key
-                        const StepIcon = step.icon
-                        return (
-                            <button
-                                key={step.key}
-                                onClick={() => index <= currentStepIndex && setCurrentStep(step.key)}
-                                disabled={index > currentStepIndex}
-                                className="flex flex-col items-center gap-1 flex-1"
+        <div className="mx-auto max-w-[760px] font-sans pb-32">
+            <div>
+                <section className="min-w-0 bg-white">
+                    <div className="sticky top-0 z-30 border-b border-neutral-200/80 bg-white/90 backdrop-blur-xl">
+                        <div className="flex items-center gap-3 px-4 py-3 sm:px-6">
+                            <Link
+                                href="/landlord/leases"
+                                className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-neutral-950"
+                                aria-label="Back to leases"
                             >
-                                <div
-                                    className={cn(
-                                        'h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium transition-all',
-                                        isCurrent
-                                            ? 'bg-neutral-900 text-white scale-110'
-                                            : isDone
-                                                ? 'bg-emerald-500 text-white'
-                                                : 'bg-neutral-100 text-neutral-400'
-                                    )}
-                                >
-                                    {isDone ? <Check className="h-4 w-4" /> : <StepIcon className="h-4 w-4" />}
-                                </div>
-                                <span
-                                    className={cn(
-                                        'text-[10px] font-medium',
-                                        isCurrent ? 'text-neutral-900' : 'text-neutral-400'
-                                    )}
-                                >
-                                    {step.label}
-                                </span>
-                            </button>
-                        )
-                    })}
-                </div>
-                <div className="h-1 bg-neutral-100 rounded-full overflow-hidden">
-                    <div
-                        className="h-full bg-neutral-900 rounded-full transition-all duration-500"
-                        style={{ width: `${((currentStepIndex + 1) / STEPS.length) * 100}%` }}
-                    />
-                </div>
-            </div>
+                                <ChevronLeft className="h-5 w-5" strokeWidth={2.2} />
+                            </Link>
 
-            {/* Step Content */}
-            <div className="min-h-[400px]">
-                {/* ── Step 1: Property ── */}
-                {currentStep === 'property' && (
-                    <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                        {/* Template Picker */}
-                        {templates && templates.length > 0 && (
-                            <div className="mb-6">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <Bookmark className="h-4 w-4 text-neutral-500" />
-                                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
-                                        Use a Template
-                                    </span>
-                                </div>
-                                <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
-                                    {templates.map((template: any) => (
-                                        <button
-                                            key={template._id}
-                                            onClick={() => applyTemplate(template)}
-                                            className={cn(
-                                                'flex-shrink-0 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all whitespace-nowrap',
-                                                selectedTemplateId === template._id
-                                                    ? 'bg-neutral-900 text-white border-neutral-900'
-                                                    : 'bg-white border-neutral-200 text-neutral-700 hover:border-neutral-300'
-                                            )}
-                                        >
-                                            {template.isDefault && <span className="mr-1">⭐</span>}
-                                            {template.name}
-                                        </button>
-                                    ))}
-                                </div>
+                            <div className="min-w-0">
+                                <p className="text-[17px] font-semibold tracking-[-0.02em] text-neutral-950">
+                                    New lease
+                                </p>
+                                <p className="truncate text-[13px] text-neutral-500">
+                                    {currentStepDefinition.title}
+                                </p>
                             </div>
-                        )}
 
-                        {/* Property Selection */}
-                        {availableProperties.length === 0 ? (
-                            <div className="py-16 text-center">
-                                <div className="h-14 w-14 rounded-xl bg-neutral-100 flex items-center justify-center mx-auto mb-4">
-                                    <Building2 className="h-6 w-6 text-neutral-400" />
-                                </div>
-                                <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-                                    No available properties
-                                </h3>
-                                <p className="text-sm text-neutral-500 mb-6 max-w-xs mx-auto">
-                                    Add a property first to create a lease.
+                            <div className="ml-auto text-right">
+                                <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-neutral-400">
+                                    Step {currentStepIndex + 1}/{STEPS.length}
                                 </p>
-                                <Link href="/landlord/properties/new">
-                                    <Button className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl h-11 px-6">
-                                        Add Property
-                                    </Button>
-                                </Link>
+                                <p className="mt-1 text-[13px] font-medium text-neutral-500">
+                                    {currentStepDefinition.label}
+                                </p>
                             </div>
-                        ) : (
-                            <div className="space-y-3">
-                                <p className="text-sm text-neutral-500 mb-4">
-                                    Select the property for this lease
-                                </p>
-                                {availableProperties.map((property: any) => {
-                                    const isSelected = selectedProperty?._id === property._id
+                        </div>
+
+                        <div className="overflow-x-auto no-scrollbar">
+                            <div className="flex min-w-max px-2 sm:px-4">
+                                {STEPS.map((step, index) => {
+                                    const isDone = index < currentStepIndex
+                                    const isCurrent = currentStep === step.key
+
                                     return (
                                         <button
-                                            key={property._id}
-                                            onClick={() => handlePropertySelect(property)}
+                                            key={step.key}
+                                            type="button"
+                                            onClick={() => index <= currentStepIndex && setCurrentStep(step.key)}
+                                            disabled={index > currentStepIndex}
                                             className={cn(
-                                                'w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all border',
-                                                isSelected
-                                                    ? 'bg-neutral-900 text-white border-neutral-900 shadow-lg'
-                                                    : 'bg-white hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
+                                                'relative px-4 pb-4 pt-3 text-[15px] font-medium transition-colors',
+                                                isCurrent
+                                                    ? 'text-neutral-950'
+                                                    : isDone
+                                                        ? 'text-neutral-600 hover:text-neutral-950'
+                                                        : 'text-neutral-400'
                                             )}
                                         >
-                                            <div
+                                            {step.label}
+                                            <span
                                                 className={cn(
-                                                    'h-16 w-16 rounded-xl flex items-center justify-center shrink-0 overflow-hidden',
-                                                    isSelected ? 'bg-neutral-800' : 'bg-neutral-100'
+                                                    'absolute inset-x-4 bottom-0 h-[3px] rounded-full transition-colors',
+                                                    isCurrent ? 'bg-[#1d9bf0]' : 'bg-transparent'
                                                 )}
-                                            >
-                                                {property.imageUrls?.[0] ? (
-                                                    /* eslint-disable-next-line @next/next/no-img-element */
-                                                    <img
-                                                        src={property.imageUrls[0]}
-                                                        alt={property.title}
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                ) : (
-                                                    <Building2
-                                                        className={cn(
-                                                            'h-6 w-6',
-                                                            isSelected ? 'text-neutral-500' : 'text-neutral-400'
-                                                        )}
-                                                    />
-                                                )}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h3 className="font-semibold text-sm truncate">
-                                                    {property.title}
-                                                </h3>
-                                                <p
-                                                    className={cn(
-                                                        'text-xs truncate mt-0.5',
-                                                        isSelected ? 'text-neutral-400' : 'text-neutral-500'
-                                                    )}
-                                                >
-                                                    {property.address}, {property.city}
-                                                </p>
-                                            </div>
-                                            <div className="text-right shrink-0">
-                                                <p className="font-bold text-sm">
-                                                    N${property.priceNad?.toLocaleString()}
-                                                </p>
-                                                <p
-                                                    className={cn(
-                                                        'text-xs',
-                                                        isSelected ? 'text-neutral-400' : 'text-neutral-500'
-                                                    )}
-                                                >
-                                                    /mo
-                                                </p>
-                                            </div>
-                                            {isSelected && (
-                                                <div className="h-7 w-7 rounded-full bg-white flex items-center justify-center shrink-0">
-                                                    <Check className="h-4 w-4 text-neutral-900" />
-                                                </div>
-                                            )}
+                                            />
                                         </button>
                                     )
                                 })}
                             </div>
-                        )}
+                        </div>
                     </div>
-                )}
 
-                {/* ── Step 2: Tenant ── */}
-                {currentStep === 'tenant' && (
-                    <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-4">
-                        <p className="text-sm text-neutral-500 mb-2">
-                            Enter the tenant&apos;s email address. They need an account to receive the lease.
+                    <div className="border-b border-neutral-100 px-4 py-5 sm:px-6">
+                        <p className="max-w-2xl text-[15px] leading-7 text-neutral-600">
+                            {currentStepDefinition.description}
                         </p>
-                        <div className="bg-white rounded-xl border border-neutral-200 p-5">
-                            <div className="relative">
-                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-                                <Input
-                                    type="email"
-                                    placeholder="tenant@example.com"
-                                    value={tenantEmail}
-                                    onChange={(e) => setTenantEmail(e.target.value)}
-                                    className="h-12 pl-10 rounded-xl bg-neutral-50 border-neutral-200 text-neutral-900 font-medium"
+                    </div>
+
+                    <div className="min-h-[540px]">
+                        {currentStep === 'property' && (
+                            <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                                {templates && templates.length > 0 && (
+                                    <div className="border-b border-neutral-100 px-4 py-5 sm:px-6">
+                                        <div className="flex items-center gap-2 text-[13px] font-medium text-neutral-500">
+                                            <Bookmark className="h-4 w-4" strokeWidth={2} />
+                                            Saved templates
+                                        </div>
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            {templates.map((template) => (
+                                                <button
+                                                    key={template._id}
+                                                    type="button"
+                                                    onClick={() => applyTemplate(template)}
+                                                    className={cn(
+                                                        'rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
+                                                        selectedTemplateId === template._id
+                                                            ? 'border-[#1d9bf0]/30 bg-[#1d9bf0]/10 text-[#1d9bf0]'
+                                                            : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950'
+                                                    )}
+                                                >
+                                                    {template.name}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {availableProperties.length === 0 ? (
+                                    <div className="px-4 py-8 sm:px-6">
+                                        <div className="rounded-[24px] border border-dashed border-neutral-200 bg-neutral-50/80 px-6 py-12 text-center">
+                                            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500">
+                                                <Building2 className="h-6 w-6" strokeWidth={1.9} />
+                                            </div>
+                                            <h3 className="text-xl font-semibold tracking-[-0.03em] text-neutral-950">
+                                                No approved properties are ready
+                                            </h3>
+                                            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-neutral-600">
+                                                Add or approve a property first, then come back here to draft the lease.
+                                            </p>
+                                            <Link href="/landlord/properties/new" className="mt-6 inline-flex">
+                                                <Button className="h-11 rounded-full bg-neutral-950 px-5 text-sm font-medium text-white hover:bg-neutral-800">
+                                                    Add property
+                                                </Button>
+                                            </Link>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        {availableProperties.map((property, index) => {
+                                            const isSelected = selectedProperty?._id === property._id
+
+                                            return (
+                                                <div key={property._id}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handlePropertySelect(property)}
+                                                        className={cn(
+                                                            'group flex w-full items-start gap-4 px-4 py-4 text-left transition-colors hover:bg-neutral-50 sm:px-6',
+                                                            isSelected && 'bg-neutral-50'
+                                                        )}
+                                                    >
+                                                        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-[18px] bg-neutral-100">
+                                                            {property.imageUrls?.[0] ? (
+                                                                /* eslint-disable-next-line @next/next/no-img-element */
+                                                                <img
+                                                                    src={property.imageUrls[0]}
+                                                                    alt={property.title}
+                                                                    className="h-full w-full object-cover"
+                                                                />
+                                                            ) : (
+                                                                <div className="flex h-full items-center justify-center text-neutral-400">
+                                                                    <Building2 className="h-6 w-6" strokeWidth={1.8} />
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-start justify-between gap-4">
+                                                                <div className="min-w-0">
+                                                                    <h3 className="truncate text-[16px] font-semibold tracking-[-0.02em] text-neutral-950">
+                                                                        {property.title}
+                                                                    </h3>
+                                                                    <div className="mt-1 flex items-center gap-2 text-sm text-neutral-500">
+                                                                        <MapPin className="h-4 w-4 shrink-0" strokeWidth={2} />
+                                                                        <span className="truncate">
+                                                                            {property.address}, {property.city}
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="mt-2 text-sm text-neutral-500">
+                                                                        {[
+                                                                            property.propertyType,
+                                                                            property.bedrooms ? `${property.bedrooms} bed` : null,
+                                                                            property.bathrooms ? `${property.bathrooms} bath` : null,
+                                                                        ].filter(Boolean).join(' · ') || 'Residential property'}
+                                                                    </p>
+                                                                </div>
+
+                                                                <div className="flex items-start gap-3">
+                                                                    <div className="text-right">
+                                                                        <p className="text-sm font-semibold text-neutral-950">
+                                                                            {formatCurrency(property.priceNad || 0)}
+                                                                        </p>
+                                                                        <p className="text-xs text-neutral-500">per month</p>
+                                                                    </div>
+                                                                    <div
+                                                                        className={cn(
+                                                                            'mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors',
+                                                                            isSelected ? 'border-[#1d9bf0]' : 'border-neutral-300'
+                                                                        )}
+                                                                    >
+                                                                        <span
+                                                                            className={cn(
+                                                                                'h-2.5 w-2.5 rounded-full transition-colors',
+                                                                                isSelected ? 'bg-[#1d9bf0]' : 'bg-transparent'
+                                                                            )}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                    {index < availableProperties.length - 1 && (
+                                                        <div className="ml-[96px] border-t border-neutral-100" />
+                                                    )}
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {currentStep === 'tenant' && (
+                            <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                                <div className="border-b border-neutral-100 px-4 py-5 sm:px-6">
+                                    <Label className="text-[13px] font-medium text-neutral-500">
+                                        Tenant email
+                                    </Label>
+                                    <div className="relative mt-3">
+                                        <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" strokeWidth={2.1} />
+                                        <Input
+                                            type="email"
+                                            placeholder="tenant@example.com"
+                                            value={tenantEmail}
+                                            onChange={(e) => setTenantEmail(e.target.value)}
+                                            className="h-14 rounded-full border-neutral-200 bg-white pl-11 text-[15px] font-medium text-neutral-900 shadow-none focus-visible:border-[#1d9bf0] focus-visible:ring-4 focus-visible:ring-[#1d9bf0]/10"
+                                        />
+                                    </div>
+                                    <p className="mt-3 max-w-2xl text-sm leading-6 text-neutral-500">
+                                        We look up the tenant automatically once you pause typing. Only existing accounts can receive a lease.
+                                    </p>
+                                </div>
+
+                                <div className="px-4 sm:px-6">
+                                    {!tenantEmail && (
+                                        <StatusRow
+                                            icon={User}
+                                            title="Add the tenant email"
+                                            description="Use the account email the tenant signs in with so the draft connects to the right profile."
+                                            tone="default"
+                                        />
+                                    )}
+
+                                    {tenantSearching && (
+                                        <StatusRow
+                                            icon={Loader2}
+                                            title="Searching tenant records"
+                                            description="Checking for an existing account that matches this email."
+                                            tone="default"
+                                            spinning
+                                        />
+                                    )}
+
+                                    {tenantFound && (
+                                        <StatusRow
+                                            icon={BadgeCheck}
+                                            title={tenantFound.fullName || 'Tenant found'}
+                                            description={tenantFound.email}
+                                            tone="success"
+                                        />
+                                    )}
+
+                                    {tenantError && (
+                                        <StatusRow
+                                            icon={CircleAlert}
+                                            title="Tenant not found"
+                                            description={tenantError}
+                                            tone="danger"
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {currentStep === 'rules' && (
+                            <div className="animate-in fade-in slide-in-from-right-4 duration-300 px-4 py-5 sm:px-6">
+                                <p className="mb-6 max-w-2xl text-[15px] leading-7 text-neutral-500">
+                                    Set the rental terms, payment rules, and property policies in one clean pass.
+                                </p>
+                                <RentalRulesConfigurator
+                                    data={rules}
+                                    onChange={setRules}
                                 />
                             </div>
+                        )}
 
-                            {/* Search Result */}
-                            {tenantSearching && (
-                                <div className="flex items-center gap-2 mt-4 text-neutral-400">
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                    <span className="text-sm">Searching...</span>
-                                </div>
-                            )}
+                        {currentStep === 'clauses' && (
+                            <div className="animate-in fade-in slide-in-from-right-4 duration-300 px-4 py-5 sm:px-6">
+                                <p className="mb-6 max-w-2xl text-[15px] leading-7 text-neutral-500">
+                                    Mandatory clauses stay locked. Add or refine optional language where this lease needs extra detail.
+                                </p>
+                                <ClauseEditor
+                                    clauses={displayClauses}
+                                    onChange={setClauses}
+                                />
+                            </div>
+                        )}
 
-                            {tenantFound && (
-                                <div className="flex items-center gap-3 mt-4 p-3 rounded-xl bg-emerald-50 border border-emerald-100">
-                                    <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                                        <User className="h-4 w-4 text-emerald-600" />
+                        {currentStep === 'review' && (
+                            <div className="animate-in fade-in slide-in-from-right-4 duration-300 divide-y divide-neutral-100">
+                                <ReviewSection
+                                    title="Property"
+                                    icon={Building2}
+                                    editStep={() => setCurrentStep('property')}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-[18px] border border-neutral-200 bg-neutral-50">
+                                            {selectedProperty?.imageUrls?.[0] ? (
+                                                /* eslint-disable-next-line @next/next/no-img-element */
+                                                <img
+                                                    src={selectedProperty.imageUrls[0]}
+                                                    alt={selectedProperty.title}
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            ) : (
+                                                <Building2 className="h-5 w-5 text-neutral-400" strokeWidth={1.9} />
+                                            )}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-semibold text-neutral-950">
+                                                {selectedProperty?.title || 'No property selected'}
+                                            </p>
+                                            <p className="mt-1 text-sm text-neutral-500">
+                                                {selectedProperty
+                                                    ? `${selectedProperty.address}, ${selectedProperty.city}`
+                                                    : 'Choose a property to continue.'}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-emerald-900">
-                                            {tenantFound.fullName || 'User Found'}
-                                        </p>
-                                        <p className="text-xs text-emerald-600">{tenantFound.email}</p>
+                                </ReviewSection>
+
+                                <ReviewSection
+                                    title="Tenant"
+                                    icon={User}
+                                    editStep={() => setCurrentStep('tenant')}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex h-14 w-14 items-center justify-center rounded-[18px] border border-neutral-200 bg-neutral-50 text-neutral-500">
+                                            <User className="h-5 w-5" strokeWidth={2} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-semibold text-neutral-950">
+                                                {tenantFound?.fullName || 'Tenant'}
+                                            </p>
+                                            <p className="mt-1 text-sm text-neutral-500">
+                                                {tenantEmail || 'No tenant email added yet.'}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <Check className="h-5 w-5 text-emerald-500 ml-auto" />
-                                </div>
-                            )}
+                                </ReviewSection>
 
-                            {tenantError && (
-                                <div className="flex items-start gap-2 mt-4 p-3 rounded-xl bg-red-50 border border-red-100">
-                                    <Info className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
-                                    <p className="text-sm text-red-700">{tenantError}</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
+                                <ReviewSection
+                                    title="Financial summary"
+                                    icon={Wallet2}
+                                    editStep={() => setCurrentStep('rules')}
+                                >
+                                    <div className="space-y-3">
+                                        <ValueRow label="Monthly rent" value={formatCurrency(rules.monthlyRent)} />
+                                        <ValueRow label="Deposit" value={formatCurrency(rules.deposit)} />
+                                        <ValueRow label="First payment" value={formatCurrency(firstPayment)} />
+                                    </div>
+                                    <div className="mt-4 flex flex-wrap gap-2">
+                                        <RuleBadge icon={CalendarRange} label={`Due on the ${rules.rentDueDay}${getOrdinal(rules.rentDueDay)}`} />
+                                        <RuleBadge icon={Clock3} label={`${rules.gracePeriodDays} day grace`} />
+                                        <RuleBadge icon={Wallet2} label={`${rules.lateFeeAmount}${rules.lateFeeType === 'percentage' ? '%' : ' N$'} late fee`} />
+                                    </div>
+                                </ReviewSection>
 
-                {/* ── Step 3: Rules ── */}
-                {currentStep === 'rules' && (
-                    <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                        <p className="text-sm text-neutral-500 mb-4">
-                            Set the rental terms, payment rules, and property policies.
-                        </p>
-                        <RentalRulesConfigurator
-                            data={rules}
-                            onChange={setRules}
-                        />
-                    </div>
-                )}
+                                <ReviewSection
+                                    title="Policy summary"
+                                    icon={Sparkles}
+                                    editStep={() => setCurrentStep('rules')}
+                                >
+                                    <div className="flex flex-wrap gap-2">
+                                        {reviewRuleBadges.map((badge) => (
+                                            <RuleBadge key={badge.label} icon={badge.icon} label={badge.label} />
+                                        ))}
+                                    </div>
+                                </ReviewSection>
 
-                {/* ── Step 4: Clauses ── */}
-                {currentStep === 'clauses' && (
-                    <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                        <p className="text-sm text-neutral-500 mb-4">
-                            Review the lease clauses. Mandatory clauses are locked. You can add custom clauses.
-                        </p>
-                        <ClauseEditor
-                            clauses={clauses.length > 0 ? clauses : getDefaultClauses(rules)}
-                            onChange={setClauses}
-                        />
-                    </div>
-                )}
-
-                {/* ── Step 5: Review ── */}
-                {currentStep === 'review' && (
-                    <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-4">
-                        <p className="text-sm text-neutral-500 mb-2">
-                            Review everything before sending.
-                        </p>
-
-                        {/* Property */}
-                        <ReviewCard
-                            title="Property"
-                            editStep={() => setCurrentStep('property')}
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="h-12 w-12 rounded-xl bg-neutral-100 overflow-hidden flex items-center justify-center">
-                                    {selectedProperty?.imageUrls?.[0] ? (
-                                        /* eslint-disable-next-line @next/next/no-img-element */
-                                        <img
-                                            src={selectedProperty.imageUrls[0]}
-                                            alt=""
-                                            className="w-full h-full object-cover"
+                                <ReviewSection
+                                    title="Lease period"
+                                    icon={CalendarRange}
+                                    editStep={() => setCurrentStep('rules')}
+                                >
+                                    <ValueRow
+                                        label="Start"
+                                        value={humanDateFormatter.format(new Date(rules.startDate))}
+                                    />
+                                    <div className="mt-3">
+                                        <ValueRow
+                                            label="End"
+                                            value={humanDateFormatter.format(new Date(rules.endDate))}
                                         />
-                                    ) : (
-                                        <Building2 className="h-5 w-5 text-neutral-400" />
-                                    )}
-                                </div>
-                                <div>
-                                    <p className="text-sm font-semibold text-neutral-900">{selectedProperty?.title}</p>
-                                    <p className="text-xs text-neutral-500">
-                                        {selectedProperty?.address}, {selectedProperty?.city}
+                                    </div>
+                                    <p className="mt-4 text-sm leading-6 text-neutral-500">
+                                        Notice period is {rules.noticePeriodDays} days and the draft currently includes {displayClauses.length} clauses.
                                     </p>
-                                </div>
-                            </div>
-                        </ReviewCard>
+                                </ReviewSection>
 
-                        {/* Tenant */}
-                        <ReviewCard
-                            title="Tenant"
-                            editStep={() => setCurrentStep('tenant')}
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-full bg-neutral-100 flex items-center justify-center">
-                                    <User className="h-4 w-4 text-neutral-400" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-semibold text-neutral-900">
-                                        {tenantFound?.fullName || 'Tenant'}
-                                    </p>
-                                    <p className="text-xs text-neutral-500">{tenantEmail}</p>
-                                </div>
-                            </div>
-                        </ReviewCard>
-
-                        {/* Financial Summary */}
-                        <ReviewCard
-                            title="Financial Summary"
-                            editStep={() => setCurrentStep('rules')}
-                        >
-                            <div className="grid grid-cols-3 gap-3">
-                                <div className="text-center p-3 bg-neutral-50 rounded-lg">
-                                    <p className="text-xs text-neutral-500 mb-0.5">Monthly Rent</p>
-                                    <p className="text-lg font-bold text-neutral-900">
-                                        N${rules.monthlyRent.toLocaleString()}
-                                    </p>
-                                </div>
-                                <div className="text-center p-3 bg-neutral-50 rounded-lg">
-                                    <p className="text-xs text-neutral-500 mb-0.5">Deposit</p>
-                                    <p className="text-lg font-bold text-neutral-900">
-                                        N${rules.deposit.toLocaleString()}
-                                    </p>
-                                </div>
-                                <div className="text-center p-3 bg-neutral-50 rounded-lg">
-                                    <p className="text-xs text-neutral-500 mb-0.5">First Payment</p>
-                                    <p className="text-lg font-bold text-neutral-900">
-                                        N${(rules.monthlyRent + rules.deposit).toLocaleString()}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="mt-3 flex flex-wrap gap-1.5">
-                                <RuleBadge label={`Due: ${rules.rentDueDay}${getOrdinal(rules.rentDueDay)}`} />
-                                <RuleBadge label={`${rules.gracePeriodDays} day grace`} />
-                                <RuleBadge label={`${rules.lateFeeAmount}${rules.lateFeeType === 'percentage' ? '%' : ' N$'} late fee`} />
-                                <RuleBadge label={`${rules.noticePeriodDays} day notice`} />
-                            </div>
-                        </ReviewCard>
-
-                        {/* Rules */}
-                        <ReviewCard
-                            title="Property Rules"
-                            editStep={() => setCurrentStep('rules')}
-                        >
-                            <div className="flex flex-wrap gap-1.5">
-                                <RuleBadge label={`🐾 ${rules.petPolicy.replace(/_/g, ' ')}`} />
-                                <RuleBadge label={`🔧 ${rules.maintenanceResponsibility} maintenance`} />
-                                <RuleBadge label={`👥 Max ${rules.maxOccupants}`} />
-                                {rules.parkingIncluded && <RuleBadge label="🅿️ Parking" />}
-                                {rules.smokingAllowed && <RuleBadge label="🚬 Smoking OK" />}
-                                {!rules.smokingAllowed && <RuleBadge label="🚭 No Smoking" />}
-                                {rules.sublettingAllowed && <RuleBadge label="🏠 Subletting OK" />}
-                                {rules.utilitiesIncluded.map((u) => (
-                                    <RuleBadge key={u} label={`⚡ ${u}`} />
-                                ))}
-                            </div>
-                        </ReviewCard>
-
-                        {/* Lease Period */}
-                        <ReviewCard
-                            title="Lease Period"
-                            editStep={() => setCurrentStep('rules')}
-                        >
-                            <p className="text-sm text-neutral-900 font-medium">
-                                {new Date(rules.startDate).toLocaleDateString('en-ZA', { month: 'long', day: 'numeric', year: 'numeric' })}
-                                {' — '}
-                                {new Date(rules.endDate).toLocaleDateString('en-ZA', { month: 'long', day: 'numeric', year: 'numeric' })}
-                            </p>
-                        </ReviewCard>
-                    </div>
-                )}
-
-                {/* ── Step 6: Send ── */}
-                {currentStep === 'send' && (
-                    <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                        <div className="text-center py-8">
-                            <div className="h-16 w-16 rounded-2xl bg-neutral-900 flex items-center justify-center mx-auto mb-5">
-                                <Send className="h-7 w-7 text-white" />
-                            </div>
-                            <h2 className="text-xl font-semibold text-neutral-900 mb-2">
-                                Ready to send?
-                            </h2>
-                            <p className="text-sm text-neutral-500 max-w-sm mx-auto mb-8">
-                                {tenantFound?.fullName || 'The tenant'} will receive a notification to review and sign the lease.
-                            </p>
-
-                            <div className="space-y-3 max-w-sm mx-auto">
-                                <Button
-                                    onClick={() => handleSubmit(true)}
-                                    disabled={isSending}
-                                    className="w-full bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl h-12 font-semibold text-sm"
+                                <ReviewSection
+                                    title="Clause set"
+                                    icon={Layers3}
+                                    editStep={() => setCurrentStep('clauses')}
                                 >
-                                    {isSending ? (
-                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                    ) : (
-                                        <Send className="h-4 w-4 mr-2" />
-                                    )}
-                                    Send to Tenant
-                                </Button>
-
-                                <Button
-                                    variant="outline"
-                                    onClick={() => handleSubmit(false)}
-                                    disabled={isSaving}
-                                    className="w-full rounded-xl h-11 border-neutral-200 text-neutral-700"
-                                >
-                                    {isSaving ? (
-                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                    ) : (
-                                        <Save className="h-4 w-4 mr-2" />
-                                    )}
-                                    Save as Draft
-                                </Button>
+                                    <div className="flex flex-wrap gap-2">
+                                        <InlineStat label="Required" value={displayClauses.filter((clause) => clause.isMandatory).length} />
+                                        <InlineStat label="Flexible" value={displayClauses.filter((clause) => !clause.isMandatory).length} />
+                                        <InlineStat label="Total" value={displayClauses.length} />
+                                    </div>
+                                    <div className="mt-4 space-y-3">
+                                        {displayClauses.slice(0, 3).map((clause) => (
+                                            <div
+                                                key={clause.id}
+                                                className="rounded-[18px] border border-neutral-200 bg-neutral-50/70 px-4 py-3"
+                                            >
+                                                <p className="text-sm font-semibold text-neutral-950">{clause.title}</p>
+                                                <p className="mt-1 line-clamp-2 text-sm leading-6 text-neutral-500">
+                                                    {clause.content}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </ReviewSection>
                             </div>
-                        </div>
+                        )}
+
+                        {currentStep === 'send' && (
+                            <div className="animate-in fade-in slide-in-from-right-4 duration-300 px-4 py-8 sm:px-6 sm:py-10">
+                                <div className="mx-auto max-w-xl text-center">
+                                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50 text-neutral-900">
+                                        <Send className="h-6 w-6" strokeWidth={2} />
+                                    </div>
+                                    <h2 className="mt-5 text-[1.8rem] font-semibold tracking-[-0.05em] text-neutral-950">
+                                        Ready to send the lease
+                                    </h2>
+                                    <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-neutral-600 sm:text-[15px]">
+                                        {tenantFound?.fullName || 'The tenant'} will receive the agreement at {tenantEmail}. They can review the details, sign digitally, and send it back for approval.
+                                    </p>
+
+                                    <div className="mt-8 rounded-[24px] border border-neutral-200 bg-neutral-50/70 p-5 text-left">
+                                        <div className="space-y-3">
+                                            <ValueRow label="Property" value={selectedProperty?.title || 'Not selected'} />
+                                            <ValueRow label="First payment" value={formatCurrency(firstPayment)} />
+                                            <ValueRow label="Lease end" value={humanDateFormatter.format(new Date(rules.endDate))} />
+                                            {selectedTemplate && (
+                                                <ValueRow label="Template" value={selectedTemplate.name} />
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                                        <Button
+                                            onClick={() => handleSubmit(true)}
+                                            disabled={isSending}
+                                            className="h-12 flex-1 rounded-full bg-neutral-950 text-sm font-medium text-white hover:bg-neutral-800"
+                                        >
+                                            {isSending ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Send className="h-4 w-4" strokeWidth={2.1} />
+                                            )}
+                                            Send to tenant
+                                        </Button>
+
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => handleSubmit(false)}
+                                            disabled={isSaving}
+                                            className="h-12 flex-1 rounded-full border-neutral-200 bg-white text-sm font-medium text-neutral-700 shadow-none hover:bg-neutral-50"
+                                        >
+                                            {isSaving ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Save className="h-4 w-4" strokeWidth={2.1} />
+                                            )}
+                                            Save draft
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
-                )}
+                </section>
+
+                <aside className="hidden">
+                    <div className="sticky top-6 space-y-4 pt-6">
+                        <RailPanel title="Draft summary">
+                            <div className="space-y-3 px-4 py-4">
+                                <ValueRow label="Property" value={selectedProperty?.title || 'Not selected'} />
+                                <ValueRow label="Tenant" value={tenantEmail || 'Not added'} />
+                                <ValueRow label="Rent" value={formatCurrency(rules.monthlyRent)} />
+                                <ValueRow label="First payment" value={formatCurrency(firstPayment)} />
+                                <ValueRow
+                                    label="Lease period"
+                                    value={`${humanDateFormatter.format(new Date(rules.startDate))} - ${humanDateFormatter.format(new Date(rules.endDate))}`}
+                                />
+                                {selectedTemplate && (
+                                    <ValueRow label="Template" value={selectedTemplate.name} />
+                                )}
+                            </div>
+                        </RailPanel>
+
+                        <RailPanel title="Progress">
+                            <div>
+                                {STEPS.map((step, index) => {
+                                    const StepIcon = step.icon
+                                    const isDone = index < currentStepIndex
+                                    const isCurrent = index === currentStepIndex
+
+                                    return (
+                                        <div
+                                            key={step.key}
+                                            className={cn(
+                                                'flex items-center justify-between gap-3 px-4 py-3',
+                                                index < STEPS.length - 1 && 'border-b border-neutral-100'
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div
+                                                    className={cn(
+                                                        'flex h-9 w-9 items-center justify-center rounded-full border',
+                                                        isCurrent
+                                                            ? 'border-[#1d9bf0]/30 bg-[#1d9bf0]/10 text-[#1d9bf0]'
+                                                            : isDone
+                                                                ? 'border-neutral-200 bg-neutral-100 text-neutral-900'
+                                                                : 'border-neutral-200 bg-white text-neutral-400'
+                                                    )}
+                                                >
+                                                    <StepIcon className="h-4 w-4" strokeWidth={2} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-semibold text-neutral-950">
+                                                        {step.label}
+                                                    </p>
+                                                    <p className="text-xs text-neutral-500">
+                                                        {step.title}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <span
+                                                className={cn(
+                                                    'text-xs font-medium',
+                                                    isCurrent
+                                                        ? 'text-[#1d9bf0]'
+                                                        : isDone
+                                                            ? 'text-neutral-600'
+                                                            : 'text-neutral-400'
+                                                )}
+                                            >
+                                                {isCurrent ? 'Now' : isDone ? 'Done' : 'Next'}
+                                            </span>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </RailPanel>
+                    </div>
+                </aside>
             </div>
 
-            {/* ── Sticky Bottom Nav ── */}
             {currentStep !== 'send' && (
-                <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-neutral-100 p-4 z-50">
-                    <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
-                        <Button
-                            variant="ghost"
-                            onClick={() => setCurrentStep(STEPS[currentStepIndex - 1]?.key)}
-                            disabled={currentStepIndex === 0}
-                            className="rounded-xl h-11 text-neutral-500"
-                        >
-                            <ChevronLeft className="h-4 w-4 mr-1" />
-                            Back
-                        </Button>
-                        <Button
-                            onClick={() => {
-                                // Initialize clauses when entering clauses step
-                                if (STEPS[currentStepIndex + 1]?.key === 'clauses' && clauses.length === 0) {
-                                    setClauses(getDefaultClauses(rules))
-                                }
-                                setCurrentStep(STEPS[currentStepIndex + 1]?.key)
-                            }}
-                            disabled={!canProceed()}
-                            className="bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl h-11 px-6 disabled:opacity-40"
-                        >
-                            {currentStepIndex === STEPS.length - 2 ? 'Confirm' : 'Next'}
-                            <ChevronRight className="h-4 w-4 ml-1" />
-                        </Button>
+                <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 px-4">
+                    <div className="mx-auto flex max-w-[760px] justify-center">
+                        <div className="pointer-events-auto flex w-full items-center justify-between gap-3 rounded-[28px] border border-neutral-200 bg-white/92 px-4 py-3 backdrop-blur-xl sm:px-5">
+                            <div className="hidden sm:block">
+                                <p className="text-sm font-semibold text-neutral-950">
+                                    Step {currentStepIndex + 1} of {STEPS.length}
+                                </p>
+                                <p className="mt-1 text-sm text-neutral-500">{stepActionHint}</p>
+                            </div>
+
+                            <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end">
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => setCurrentStep(STEPS[currentStepIndex - 1]?.key)}
+                                    disabled={currentStepIndex === 0}
+                                    className="h-11 rounded-full bg-neutral-100 px-5 text-sm font-medium text-neutral-700 shadow-none hover:bg-neutral-200"
+                                >
+                                    <ChevronLeft className="h-4 w-4" strokeWidth={2.2} />
+                                    Back
+                                </Button>
+                                <Button
+                                    onClick={() => {
+                                        if (STEPS[currentStepIndex + 1]?.key === 'clauses' && clauses.length === 0) {
+                                            setClauses(getDefaultClauses(rules))
+                                        }
+                                        setCurrentStep(STEPS[currentStepIndex + 1]?.key)
+                                    }}
+                                    disabled={!canProceed()}
+                                    className="h-11 rounded-full bg-neutral-950 px-5 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-40"
+                                >
+                                    {currentStepIndex === STEPS.length - 2 ? 'Confirm draft' : 'Continue'}
+                                    <ChevronRight className="h-4 w-4" strokeWidth={2.2} />
+                                </Button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
@@ -731,39 +1012,128 @@ export function CreateLeaseClient() {
 
 // ── Helper Components ──
 
-function ReviewCard({
+function StatusRow({
+    icon: Icon,
     title,
+    description,
+    tone,
+    spinning = false,
+}: {
+    icon: ElementType
+    title: string
+    description: string
+    tone: 'default' | 'success' | 'danger'
+    spinning?: boolean
+}) {
+    return (
+        <div className="flex items-start gap-4 py-5">
+            <div
+                className={cn(
+                    'mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border',
+                    tone === 'success'
+                        ? 'border-[#1d9bf0]/20 bg-[#1d9bf0]/10 text-[#1d9bf0]'
+                        : tone === 'danger'
+                            ? 'border-red-200 bg-red-50 text-red-600'
+                            : 'border-neutral-200 bg-neutral-50 text-neutral-600'
+                )}
+            >
+                <Icon className={cn('h-4 w-4', spinning && 'animate-spin')} strokeWidth={2.1} />
+            </div>
+            <div>
+                <p className="text-sm font-semibold text-neutral-950">{title}</p>
+                <p className="mt-1 text-sm leading-6 text-neutral-600">{description}</p>
+            </div>
+        </div>
+    )
+}
+
+function ReviewSection({
+    title,
+    icon: Icon,
     editStep,
     children,
 }: {
     title: string
+    icon: ElementType
     editStep: () => void
-    children: React.ReactNode
+    children: ReactNode
 }) {
     return (
-        <div className="bg-white rounded-xl border border-neutral-200 p-4">
-            <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
-                    {title}
-                </h3>
+        <section className="px-4 py-5 sm:px-6">
+            <div className="mb-5 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50 text-neutral-700">
+                        <Icon className="h-4 w-4" strokeWidth={2} />
+                    </div>
+                    <h3 className="text-sm font-semibold text-neutral-950">
+                        {title}
+                    </h3>
+                </div>
                 <button
+                    type="button"
                     onClick={editStep}
-                    className="text-xs font-medium text-neutral-500 hover:text-neutral-900 underline underline-offset-2"
+                    className="rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
                 >
                     Edit
                 </button>
             </div>
             {children}
+        </section>
+    )
+}
+
+function RailPanel({
+    title,
+    children,
+}: {
+    title: string
+    children: ReactNode
+}) {
+    return (
+        <section className="overflow-hidden rounded-[24px] border border-neutral-200 bg-white">
+            <div className="border-b border-neutral-100 px-4 py-3">
+                <h3 className="text-[15px] font-semibold text-neutral-950">{title}</h3>
+            </div>
+            {children}
+        </section>
+    )
+}
+
+function ValueRow({
+    label,
+    value,
+}: {
+    label: string
+    value: string
+}) {
+    return (
+        <div className="flex items-start justify-between gap-4">
+            <p className="text-sm text-neutral-500">{label}</p>
+            <p className="text-right text-sm font-semibold text-neutral-950">{value}</p>
         </div>
     )
 }
 
-function RuleBadge({ label }: { label: string }) {
+function InlineStat({ label, value }: { label: string; value: number }) {
     return (
-        <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-neutral-100 text-xs font-medium text-neutral-700 capitalize">
+        <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-sm text-neutral-700">
+            <span className="font-semibold text-neutral-950">{value}</span>
+            <span>{label}</span>
+        </div>
+    )
+}
+
+function RuleBadge({ icon: Icon, label }: { icon: ElementType; label: string }) {
+    return (
+        <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-sm font-medium text-neutral-700">
+            <Icon className="h-4 w-4 text-neutral-500" strokeWidth={2} />
             {label}
         </span>
     )
+}
+
+function formatCurrency(amount: number) {
+    return `N$${currencyFormatter.format(amount || 0)}`
 }
 
 function getOrdinal(n: number) {

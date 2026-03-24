@@ -4,12 +4,12 @@ import { useState, useEffect, useRef, use, useCallback, TouchEvent } from "react
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { OptimizedImage } from "@/components/ui/optimized-image"
+import { UserAvatar } from "@/components/ui/user-avatar"
 import {
     MapPin,
     BedDouble,
     Bath,
     Maximize,
-    User,
     Shield,
     X,
     Grid3X3,
@@ -18,7 +18,6 @@ import {
     ArrowLeft,
     Star,
     Box,
-    Heart,
     Phone,
     Edit,
     Share
@@ -132,6 +131,14 @@ function PropertyDetailContent({ id }: { id: string }) {
         landlord: convexProperty.landlordInfo || null,
     }
 
+    const landlordIdentity = property.landlord
+        ? {
+            name: property.landlord.name,
+            email: property.landlord.email,
+            avatarUrl: property.landlord.avatarUrl,
+        }
+        : null
+
     const isOwner = isAuthenticated && user?._id === property.landlordId
 
     if (showAllPhotos) {
@@ -210,17 +217,9 @@ function PropertyDetailContent({ id }: { id: string }) {
 
                         {/* Host info */}
                         <div className="flex items-center gap-4 py-5 border-y border-neutral-100">
-                            <div className="w-12 h-12 rounded-full bg-neutral-100 overflow-hidden relative shrink-0 border border-neutral-200">
-                                {property.landlord?.avatarUrl ? (
-                                    <OptimizedImage src={property.landlord.avatarUrl} alt="Landlord" fill className="object-cover" />
-                                ) : (
-                                    <div className="bg-neutral-100 w-full h-full flex items-center justify-center">
-                                        <User className="w-6 h-6 text-neutral-400" />
-                                    </div>
-                                )}
-                            </div>
+                            <UserAvatar className="w-12 h-12 shrink-0 border border-neutral-200" user={landlordIdentity} />
                             <div>
-                                <div className="text-[16px] font-[900] text-neutral-900">Hosted by {property.landlord?.name || 'Property Owner'}</div>
+                                <div className="text-[16px] font-[900] text-neutral-900">Hosted by {property.landlord?.name || property.landlord?.email || 'Property Owner'}</div>
                                 <div className="text-[14px] font-semibold text-neutral-500">Joined in 2024</div>
                             </div>
                         </div>
@@ -283,7 +282,7 @@ function PropertyDetailContent({ id }: { id: string }) {
                         {/* LOCATION */}
                         {property.coordinates && (
                             <div className="py-6">
-                                <h2 className="text-[22px] font-[900] tracking-[-0.03em] text-neutral-900 mb-4">Where you'll be</h2>
+                                <h2 className="text-[22px] font-[900] tracking-[-0.03em] text-neutral-900 mb-4">Where you&apos;ll be</h2>
                                 <div className="mb-4">
                                     <span className="text-[16px] font-semibold text-neutral-700">{property.address}, {property.city}</span>
                                 </div>
@@ -296,18 +295,10 @@ function PropertyDetailContent({ id }: { id: string }) {
                         {/* Host Contact info mobile */}
                         <div className="py-6 mt-4">
                             <div className="flex items-center gap-4 bg-neutral-50 rounded-[20px] px-5 py-5 border border-neutral-100">
-                                <div className="w-14 h-14 rounded-full bg-neutral-200 overflow-hidden relative shrink-0 border border-neutral-200">
-                                    {property.landlord?.avatarUrl ? (
-                                        <OptimizedImage src={property.landlord.avatarUrl} alt="Landlord" fill className="object-cover" />
-                                    ) : (
-                                        <div className="flex items-center justify-center h-full w-full text-neutral-400">
-                                            <User className="w-7 h-7" />
-                                        </div>
-                                    )}
-                                </div>
+                                <UserAvatar className="w-14 h-14 shrink-0 border border-neutral-200" user={landlordIdentity} />
                                 <div className="flex-1 min-w-0">
                                     <p className="font-[900] text-[16px] text-neutral-900 truncate">
-                                        {property.landlord?.name || 'Property Owner'}
+                                        {property.landlord?.name || property.landlord?.email || 'Property Owner'}
                                     </p>
                                     <div className="flex items-center gap-1.5 text-[13px] font-bold text-neutral-500 mt-0.5">
                                         <Shield className="w-3.5 h-3.5 text-[#10B981]" />
@@ -421,16 +412,14 @@ function PropertyDetailContent({ id }: { id: string }) {
                         <div className="flex-1 w-[60%]">
                             <div className="flex items-center justify-between pb-8 border-b border-neutral-200">
                                 <div>
-                                    <h2 className="text-[26px] font-[900] tracking-[-0.03em] text-neutral-900">Entire {property.type.toLowerCase()} hosted by {property.landlord?.name || 'Owner'}</h2>
+                                    <h2 className="text-[26px] font-[900] tracking-[-0.03em] text-neutral-900">Entire {property.type.toLowerCase()} hosted by {property.landlord?.name || property.landlord?.email || 'Owner'}</h2>
                                     <div className="flex gap-1.5 mt-1 text-[16px] text-neutral-600 font-medium">
                                         <span>{property.size} sqm</span> ·
                                         <span>{property.bedrooms} beds</span> ·
                                         <span>{property.bathrooms} baths</span>
                                     </div>
                                 </div>
-                                <div className="w-[60px] h-[60px] rounded-full overflow-hidden relative shrink-0 border border-neutral-200">
-                                    {property.landlord?.avatarUrl ? <OptimizedImage src={property.landlord.avatarUrl} alt="L" fill className="object-cover" /> : <div className="w-full h-full bg-neutral-100 flex items-center justify-center"><User className="w-7 h-7 text-neutral-400" /></div>}
-                                </div>
+                                <UserAvatar className="w-[60px] h-[60px] shrink-0 border border-neutral-200" user={landlordIdentity} />
                             </div>
 
                             <div className="py-8 border-b border-neutral-200 space-y-6">
@@ -438,14 +427,14 @@ function PropertyDetailContent({ id }: { id: string }) {
                                     <Home className="w-8 h-8 text-neutral-900 shrink-0" strokeWidth={1.5} />
                                     <div>
                                         <h3 className="text-[17px] font-[900] text-neutral-900 leading-tight">Entire home</h3>
-                                        <p className="text-[15px] font-medium text-neutral-500 mt-1">You'll have the space to yourself.</p>
+                                        <p className="text-[15px] font-medium text-neutral-500 mt-1">You&apos;ll have the space to yourself.</p>
                                     </div>
                                  </div>
                                  <div className="flex items-start gap-5">
                                     <CheckCircle2 className="w-8 h-8 text-neutral-900 shrink-0" strokeWidth={1.5} />
                                     <div>
                                         <h3 className="text-[17px] font-[900] text-neutral-900 leading-tight">Enhanced Clean</h3>
-                                        <p className="text-[15px] font-medium text-neutral-500 mt-1">This host committed to LINK's 5-step enhanced cleaning process.</p>
+                                        <p className="text-[15px] font-medium text-neutral-500 mt-1">This host committed to LINK&apos;s 5-step enhanced cleaning process.</p>
                                     </div>
                                  </div>
                                  <div className="flex items-start gap-5">
@@ -514,7 +503,7 @@ function PropertyDetailContent({ id }: { id: string }) {
 
                                 {!isOwner && (
                                     <div className="flex justify-center pt-6">
-                                        <span className="text-[14px] font-medium text-neutral-500 text-center">You won't be charged yet</span>
+                                        <span className="text-[14px] font-medium text-neutral-500 text-center">You won&apos;t be charged yet</span>
                                     </div>
                                 )}
                             </div>
@@ -524,7 +513,7 @@ function PropertyDetailContent({ id }: { id: string }) {
                     {/* Map Desktop */}
                     {property.coordinates && (
                         <div className="pt-10 border-t border-neutral-200 mt-10">
-                             <h2 className="text-[26px] font-[900] tracking-[-0.03em] mb-4">Where you'll be</h2>
+                             <h2 className="text-[26px] font-[900] tracking-[-0.03em] mb-4">Where you&apos;ll be</h2>
                              <p className="text-[16px] font-medium text-neutral-700 mb-6">{property.address}, {property.city}</p>
                              <div className="h-[480px] w-full rounded-[24px] overflow-hidden bg-neutral-100 border border-neutral-200 relative mb-4">
                                  <PropertyDetailMap coordinates={property.coordinates} address={property.address} />

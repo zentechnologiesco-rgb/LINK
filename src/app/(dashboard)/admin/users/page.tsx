@@ -4,8 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useQuery } from "convex/react"
 import { api } from "../../../../../convex/_generated/api"
 
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
 import {
     Table,
     TableBody,
@@ -15,7 +13,8 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { UserAvatar } from "@/components/ui/user-avatar"
+import { getDisplayName } from "@/lib/user-name"
 
 function UsersContent() {
     const currentUser = useQuery(api.users.currentUser)
@@ -66,17 +65,14 @@ function UsersContent() {
                             {users.map((user) => (
                                 <TableRow key={user._id}>
                                     <TableCell className="flex items-center gap-3">
-                                        <Avatar className="h-8 w-8">
-                                            <AvatarImage src={user.avatarUrl} />
-                                            <AvatarFallback>{user.fullName ? user.fullName[0] : '?'}</AvatarFallback>
-                                        </Avatar>
-                                        <div className="font-medium">{user.fullName || 'No Name'}</div>
+                                        <UserAvatar className="h-8 w-8" user={user} />
+                                        <div className="font-medium">{getDisplayName(user, 'No Name')}</div>
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
                                             {user.role}
                                         </Badge>
-                                        {(user as any).isVerified && (
+                                        {user.isVerified && (
                                             <Badge variant="outline" className="ml-2 bg-green-50 text-green-700 border-green-200">Verified</Badge>
                                         )}
                                     </TableCell>

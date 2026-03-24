@@ -24,7 +24,6 @@ import {
 
 import { cn } from "@/lib/utils"
 import { TrustCard } from "@/components/properties/TrustCard"
-import { RecentlyViewedSection } from "@/components/properties/RecentlyViewedSection"
 import { HomePageSkeleton } from "@/components/ui/skeleton"
 import { VirtualizedGrid } from "@/components/ui/virtualized-grid"
 import { useUser } from "@/components/providers/UserProvider"
@@ -161,7 +160,7 @@ export default function HomePage() {
 
                         {/* Premium Search & Filter Bar */}
                         <div className="flex justify-center mb-10 w-full relative z-10 px-0 sm:px-4">
-                            <div className="w-full max-w-[800px] flex items-center bg-white border border-neutral-200/80 rounded-full h-[68px] sm:h-20 pl-4 sm:pl-8 pr-1.5 sm:pr-2.5 transition-all duration-300 mx-auto hover:border-black/5">
+                            <div className="w-full max-w-[800px] flex items-center bg-neutral-100 border border-neutral-200/80 rounded-full h-[68px] sm:h-20 pl-4 sm:pl-8 pr-1.5 sm:pr-2.5 transition-all duration-300 mx-auto hover:border-black/5">
 
                                 {/* Search Section */}
                                 <div className="flex-1 flex items-center h-full">
@@ -214,10 +213,10 @@ export default function HomePage() {
                                     <Sheet>
                                         <SheetTrigger asChild>
                                             <button className={cn(
-                                                "w-12 h-12 sm:w-[52px] sm:h-[52px] shrink-0 rounded-full flex items-center justify-center transition-all relative border border-transparent group outline-none",
+                                                "w-12 h-12 sm:w-[52px] sm:h-[52px] shrink-0 rounded-full flex items-center justify-center transition-all relative border-0 group outline-none",
                                                 activeFilterCount > 0
                                                     ? "bg-black text-white hover:bg-neutral-800"
-                                                    : "bg-white text-black hover:bg-neutral-50 border-neutral-200 hover:border-black/30"
+                                                    : "bg-neutral-100 text-black hover:bg-neutral-200"
                                             )}>
                                                 <SlidersHorizontal className="w-[18px] h-[18px] group-hover:scale-110 transition-transform" strokeWidth={2.5} />
                                                 {activeFilterCount > 0 && (
@@ -289,9 +288,6 @@ export default function HomePage() {
                                 </div>
                             </div>
                         </div>
-
-                        {/* Recently Viewed */}
-                        <RecentlyViewedSection />
 
                         {/* Content Area — Grid/Map */}
                         <div className="min-h-[500px]">

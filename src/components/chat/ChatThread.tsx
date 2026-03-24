@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { toast } from 'sonner'
 import { Loader2, Send } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
@@ -22,13 +22,20 @@ interface ChatThreadProps {
     inquiryId: Id<"inquiries">
     messages: Message[]
     currentUserId: string
+    currentUser?: {
+        _id?: string
+        fullName?: string
+        email?: string
+        avatarUrl?: string | null
+    } | null
     otherParty?: {
         fullName?: string
-        avatarUrl?: string
+        email?: string
+        avatarUrl?: string | null
     } | null
 }
 
-export function ChatThread({ inquiryId, messages, currentUserId, otherParty }: ChatThreadProps) {
+export function ChatThread({ inquiryId, messages, currentUserId, currentUser, otherParty }: ChatThreadProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [newMessage, setNewMessage] = useState('')
     const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -73,8 +80,6 @@ export function ChatThread({ inquiryId, messages, currentUserId, otherParty }: C
                     <div className="space-y-4 max-w-3xl mx-auto">
                         {messages.map((message, index) => {
                             const isCurrentUser = message.senderId === currentUserId
-                            const senderName = isCurrentUser ? 'You' : otherParty?.fullName || 'User'
-                            const senderAvatar = isCurrentUser ? undefined : otherParty?.avatarUrl
 
                             // Check if previous message was from same sender
                             const isSequence = index > 0 && messages[index - 1].senderId === message.senderId
@@ -88,12 +93,7 @@ export function ChatThread({ inquiryId, messages, currentUserId, otherParty }: C
                                     )}
                                 >
                                     {!isCurrentUser && !isSequence ? (
-                                        <Avatar className="h-8 w-8 shrink-0 mt-1">
-                                            <AvatarImage src={senderAvatar} />
-                                            <AvatarFallback className="bg-neutral-200 text-neutral-600 text-xs font-medium">
-                                                {senderName.charAt(0)}
-                                            </AvatarFallback>
-                                        </Avatar>
+                                        <UserAvatar className="h-8 w-8 shrink-0 mt-1" user={otherParty} />
                                     ) : !isCurrentUser ? (
                                         <div className="w-8 shrink-0" />
                                     ) : null}
@@ -127,6 +127,11 @@ export function ChatThread({ inquiryId, messages, currentUserId, otherParty }: C
             {/* Message Input */}
             <div className="p-4 sm:p-5 bg-white border-t border-neutral-200">
                 <form onSubmit={handleSubmit} className="flex gap-3 max-w-3xl mx-auto">
+                    <UserAvatar
+                        activity={isLoading ? 'saving' : newMessage.trim() ? 'typing' : 'idle'}
+                        className="mt-0.5 h-11 w-11 shrink-0"
+                        user={currentUser}
+                    />
                     <input
                         type="text"
                         placeholder="Type a message..."

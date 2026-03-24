@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { PullToRefresh } from '@/components/ui/pull-to-refresh'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { cn } from '@/lib/utils'
 import { formatDistanceToNow } from 'date-fns'
 import { Search, MessageSquare, ArrowLeft } from 'lucide-react'
@@ -17,51 +17,50 @@ import { Id } from "../../../../convex/_generated/dataModel"
 export function AuthedChatInterface() {
     const searchParams = useSearchParams()
     const router = useRouter()
-    const activeId = searchParams.get('id')
+    const activeId = searchParams.get('id') as Id<"inquiries"> | null
 
-    const [selectedInquiryId, setSelectedInquiryId] = useState<string | null>(activeId)
+    const [fallbackSelectedInquiryId, setFallbackSelectedInquiryId] = useState<Id<"inquiries"> | null>(activeId)
     const [searchQuery, setSearchQuery] = useState('')
     const [showMobileChat, setShowMobileChat] = useState(false)
-    const [isRefreshing, setIsRefreshing] = useState(false)
 
     const currentUser = useQuery(api.users.currentUser)
     const inquiries = useQuery(api.inquiries.getUserInquiries)
+    const inquiryList = inquiries ?? []
+    const baseSelectedInquiryId = activeId ?? fallbackSelectedInquiryId
+    const selectedInquiryId = inquiries === undefined
+        ? null
+        : inquiryList.some((inquiry) => inquiry._id === baseSelectedInquiryId)
+            ? baseSelectedInquiryId
+            : null
     const messages = useQuery(
         api.messages.getByInquiry,
-        selectedInquiryId ? { inquiryId: selectedInquiryId as Id<"inquiries"> } : "skip"
+        selectedInquiryId ? { inquiryId: selectedInquiryId } : "skip"
     )
 
     // Filter inquiries
-    const filteredInquiries = (inquiries || []).filter((inquiry: any) =>
+    const filteredInquiries = inquiryList.filter((inquiry) =>
         inquiry.property?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         getDisplayName(inquiry.otherParty).toLowerCase().includes(searchQuery.toLowerCase())
     )
 
-    const selectedInquiry = (inquiries || []).find((i: any) => i._id === selectedInquiryId)
+    const selectedInquiry = inquiryList.find((inquiry) => inquiry._id === selectedInquiryId)
+    const isMobileChatOpen = showMobileChat || Boolean(activeId)
 
-    useEffect(() => {
-        if (activeId) {
-            setSelectedInquiryId(activeId)
-            setShowMobileChat(true)
-        }
-    }, [activeId])
-
-    const handleSelectInquiry = (id: string) => {
-        setSelectedInquiryId(id)
+    const handleSelectInquiry = (id: Id<"inquiries">) => {
+        setFallbackSelectedInquiryId(id)
         setShowMobileChat(true)
         router.push(`/chat?id=${id}`, { scroll: false })
     }
 
     const handleBackToList = () => {
+        setFallbackSelectedInquiryId(null)
         setShowMobileChat(false)
         router.push('/chat', { scroll: false })
     }
 
     const handleRefresh = async () => {
-        setIsRefreshing(true)
         router.refresh()
         await new Promise(resolve => setTimeout(resolve, 500))
-        setIsRefreshing(false)
     }
 
     // Loading state
@@ -81,7 +80,7 @@ export function AuthedChatInterface() {
             {/* Sidebar - Conversation List */}
             <div className={cn(
                 "w-full md:w-[340px] lg:w-[380px] border-r border-neutral-200 flex flex-col bg-white",
-                showMobileChat && "hidden md:flex"
+                isMobileChatOpen && "hidden md:flex"
             )}>
                 {/* Header */}
                 <div className="p-5 border-b border-neutral-200">
@@ -113,7 +112,7 @@ export function AuthedChatInterface() {
                         </div>
                     ) : (
                         <div className="py-2">
-                            {filteredInquiries.map((inquiry: any) => (
+                            {filteredInquiries.map((inquiry) => (
                                 <button
                                     key={inquiry._id}
                                     onClick={() => handleSelectInquiry(inquiry._id)}
@@ -124,12 +123,7 @@ export function AuthedChatInterface() {
                                             : "hover:bg-neutral-50"
                                     )}
                                 >
-                                    <Avatar className="h-12 w-12 shrink-0">
-                                        <AvatarImage src={inquiry.otherParty?.avatarUrl} className="object-cover" />
-                                        <AvatarFallback className="bg-neutral-200 text-neutral-600 font-medium">
-                                            {getDisplayName(inquiry.otherParty).charAt(0)}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    <UserAvatar className="h-12 w-12 shrink-0" user={inquiry.otherParty} />
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between gap-2 mb-0.5">
                                             <span className="font-medium text-neutral-900 truncate">
@@ -156,7 +150,7 @@ export function AuthedChatInterface() {
             {/* Chat Thread Area */}
             <div className={cn(
                 "flex-1 flex flex-col bg-white overflow-hidden",
-                !showMobileChat && "hidden md:flex"
+                !isMobileChatOpen && "hidden md:flex"
             )}>
                 {selectedInquiry ? (
                     <>
@@ -169,12 +163,7 @@ export function AuthedChatInterface() {
                                 <ArrowLeft className="h-5 w-5 text-neutral-600" />
                             </button>
 
-                            <Avatar className="h-10 w-10">
-                                <AvatarImage src={selectedInquiry.otherParty?.avatarUrl} className="object-cover" />
-                                <AvatarFallback className="bg-neutral-200 text-neutral-600 font-medium">
-                                    {getDisplayName(selectedInquiry.otherParty).charAt(0)}
-                                </AvatarFallback>
-                            </Avatar>
+                            <UserAvatar className="h-10 w-10" user={selectedInquiry.otherParty} />
                             <div className="min-w-0 flex-1">
                                 <h2 className="font-medium text-neutral-900 truncate">
                                     {getDisplayName(selectedInquiry.otherParty)}
@@ -191,6 +180,7 @@ export function AuthedChatInterface() {
                                 inquiryId={selectedInquiry._id}
                                 messages={messages || []}
                                 currentUserId={currentUser?._id || ''}
+                                currentUser={currentUser}
                                 otherParty={selectedInquiry.otherParty}
                             />
                         </div>

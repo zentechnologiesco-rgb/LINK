@@ -6,9 +6,9 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Button } from '@/components/ui/button'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { PropertyApprovalActions } from './PropertyApprovalActions'
-import { ArrowLeft, User, Building2, MapPin, Bed, Bath, Square, Clock, CheckCircle2, XCircle, Calendar } from 'lucide-react'
+import { ArrowLeft, User, Building2, MapPin, Bed, Bath, Square, Clock, CheckCircle2, XCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import { useQuery } from "convex/react"
 import { api } from "../../../../../../convex/_generated/api"
@@ -179,15 +179,9 @@ function PropertyReviewContent({ id }: { id: string }) {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex items-center gap-4">
-                                <div className="h-12 w-12 rounded-full bg-gray-100 relative overflow-hidden shrink-0 flex items-center justify-center">
-                                    {property.landlord?.avatarUrl ? (
-                                        <Image src={property.landlord.avatarUrl} alt="Profile" fill className="object-cover" />
-                                    ) : (
-                                        <User className="h-6 w-6 text-gray-400" />
-                                    )}
-                                </div>
+                                <UserAvatar className="h-12 w-12 shrink-0" user={property.landlord} />
                                 <div className="min-w-0">
-                                    <p className="font-semibold truncate">{property.landlord?.fullName || 'No Name'}</p>
+                                    <p className="font-semibold truncate">{property.landlord?.fullName || property.landlord?.email || 'No Name'}</p>
                                     <p className="text-sm text-muted-foreground truncate">{property.landlord?.email}</p>
                                     <p className="text-sm text-muted-foreground">{property.landlord?.phone || 'No phone'}</p>
                                 </div>

@@ -1,11 +1,9 @@
 'use client'
+import { Lock, Plus, Trash2 } from 'lucide-react'
 
-import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Plus, Trash2, Lock, GripVertical } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 export interface LeaseClause {
     id: string
@@ -20,87 +18,84 @@ interface ClauseEditorProps {
     disabled?: boolean
 }
 
+const titleInputClassName =
+    'h-12 rounded-[16px] border-neutral-200 bg-neutral-50 px-4 text-sm font-semibold text-neutral-900 shadow-none focus-visible:border-[#1d9bf0] focus-visible:ring-4 focus-visible:ring-[#1d9bf0]/10'
+
+const contentInputClassName =
+    'min-h-[120px] resize-none rounded-[20px] border-neutral-200 bg-neutral-50 px-4 py-3 text-sm leading-6 text-neutral-700 shadow-none focus-visible:border-[#1d9bf0] focus-visible:ring-4 focus-visible:ring-[#1d9bf0]/10'
+
 export function ClauseEditor({ clauses, onChange, disabled }: ClauseEditorProps) {
-    const mandatoryClauses = clauses.filter((c) => c.isMandatory)
-    const editableClauses = clauses.filter((c) => !c.isMandatory)
+    const mandatoryClauses = clauses.filter((clause) => clause.isMandatory)
+    const editableClauses = clauses.filter((clause) => !clause.isMandatory)
 
     const addClause = () => {
-        const newClause: LeaseClause = {
-            id: `custom_${Date.now()}`,
-            title: '',
-            content: '',
-            isMandatory: false,
-        }
-        onChange([...clauses, newClause])
+        onChange([
+            ...clauses,
+            {
+                id: `custom_${Date.now()}`,
+                title: '',
+                content: '',
+                isMandatory: false,
+            },
+        ])
     }
 
     const updateClause = (id: string, updates: Partial<LeaseClause>) => {
-        onChange(
-            clauses.map((c) => (c.id === id ? { ...c, ...updates } : c))
-        )
+        onChange(clauses.map((clause) => (clause.id === id ? { ...clause, ...updates } : clause)))
     }
 
     const removeClause = (id: string) => {
-        const clause = clauses.find((c) => c.id === id)
-        if (clause?.isMandatory) return
-        onChange(clauses.filter((c) => c.id !== id))
+        if (clauses.find((clause) => clause.id === id)?.isMandatory) {
+            return
+        }
+
+        onChange(clauses.filter((clause) => clause.id !== id))
     }
 
     return (
-        <div className="space-y-6">
-            {/* Mandatory Clauses */}
+        <div className="space-y-10">
             {mandatoryClauses.length > 0 && (
-                <div>
-                    <div className="flex items-center gap-2 mb-3">
-                        <Lock className="h-3.5 w-3.5 text-neutral-400" />
-                        <span className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
-                            Mandatory Clauses (Legally Required)
-                        </span>
-                    </div>
-                    <div className="space-y-2">
+                <section>
+                    <SectionHeader
+                        title="Required clauses"
+                        description="These stay locked so every lease keeps the essential legal and operational language."
+                    />
+
+                    <div className="mt-4 divide-y divide-neutral-100 border-y border-neutral-200 bg-white">
                         {mandatoryClauses.map((clause, index) => (
-                            <div
-                                key={clause.id}
-                                className="relative border border-neutral-100 rounded-xl p-4 bg-neutral-50/50"
-                            >
-                                <div className="flex items-start gap-3">
-                                    <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-neutral-900 text-white text-xs font-bold shrink-0 mt-0.5">
-                                        {index + 1}
+                            <div key={clause.id} className="flex items-start gap-4 px-4 py-4 sm:px-5">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50 text-sm font-semibold text-neutral-900">
+                                    {index + 1}
+                                </div>
+                                <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-sm font-semibold text-neutral-950">{clause.title}</p>
+                                        <Lock className="h-3.5 w-3.5 text-neutral-400" strokeWidth={2} />
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <h4 className="font-semibold text-sm text-neutral-900">
-                                                {clause.title}
-                                            </h4>
-                                            <Lock className="h-3 w-3 text-neutral-300" />
-                                        </div>
-                                        <p className="text-xs text-neutral-600 leading-relaxed">
-                                            {clause.content}
-                                        </p>
-                                    </div>
+                                    <p className="mt-2 text-sm leading-6 text-neutral-600">{clause.content}</p>
                                 </div>
                             </div>
                         ))}
                     </div>
-                </div>
+                </section>
             )}
 
-            {/* Editable Clauses */}
-            <div>
-                <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
-                        {editableClauses.length > 0 ? 'Additional Clauses' : 'Custom Clauses'}
-                    </span>
+            <section>
+                <div className="flex items-center justify-between gap-4">
+                    <SectionHeader
+                        title={editableClauses.length > 0 ? 'Additional clauses' : 'Custom clauses'}
+                        description="Add the terms that make this lease specific to the property or tenant."
+                    />
+
                     <Button
                         type="button"
                         variant="outline"
-                        size="sm"
                         onClick={addClause}
                         disabled={disabled}
-                        className="h-8 bg-white border-neutral-200 hover:bg-neutral-50 text-neutral-700 font-medium rounded-lg text-xs"
+                        className="h-10 rounded-full border-neutral-200 bg-neutral-50 px-4 text-sm font-medium text-neutral-700 shadow-none hover:bg-neutral-100"
                     >
-                        <Plus className="h-3.5 w-3.5 mr-1" />
-                        Add Clause
+                        <Plus className="h-4 w-4" strokeWidth={2.1} />
+                        Add clause
                     </Button>
                 </div>
 
@@ -109,64 +104,76 @@ export function ClauseEditor({ clauses, onChange, disabled }: ClauseEditorProps)
                         type="button"
                         onClick={addClause}
                         disabled={disabled}
-                        className="w-full border-2 border-dashed border-neutral-200 rounded-xl p-6 text-center hover:border-neutral-300 hover:bg-neutral-50 transition-colors group"
+                        className="mt-4 w-full border-y border-dashed border-neutral-200 bg-neutral-50/50 px-6 py-12 text-center transition-colors hover:bg-neutral-50"
                     >
-                        <Plus className="h-5 w-5 text-neutral-300 mx-auto mb-2 group-hover:text-neutral-500 transition-colors" />
-                        <p className="text-sm font-medium text-neutral-400 group-hover:text-neutral-600 transition-colors">
-                            Add a custom clause
-                        </p>
-                        <p className="text-xs text-neutral-300 mt-0.5">
-                            e.g., quiet hours, guest policies, garden maintenance
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500">
+                            <Plus className="h-5 w-5" strokeWidth={2.1} />
+                        </div>
+                        <p className="mt-4 text-sm font-semibold text-neutral-900">Add a custom clause</p>
+                        <p className="mt-1 text-sm leading-6 text-neutral-500">
+                            Examples: guest limits, quiet hours, garden maintenance, or move-out cleaning.
                         </p>
                     </button>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="mt-4 divide-y divide-neutral-100 border-y border-neutral-200 bg-white">
                         {editableClauses.map((clause, index) => (
                             <div
                                 key={clause.id}
-                                className="relative border border-neutral-200 rounded-xl p-4 bg-white hover:border-neutral-300 transition-colors group"
+                                className="px-0 py-5"
                             >
-                                <div className="flex items-start gap-3">
-                                    <div className="flex items-center justify-center h-7 w-7 rounded-lg bg-neutral-200 text-neutral-600 text-xs font-bold shrink-0 mt-0.5">
+                                <div className="flex items-start gap-4">
+                                    <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50 text-sm font-semibold text-neutral-900">
                                         {mandatoryClauses.length + index + 1}
                                     </div>
-                                    <div className="flex-1 space-y-2">
+
+                                    <div className="flex-1 space-y-3">
                                         <Input
                                             value={clause.title}
-                                            onChange={(e) =>
-                                                updateClause(clause.id, { title: e.target.value })
-                                            }
+                                            onChange={(event) => updateClause(clause.id, { title: event.target.value })}
                                             disabled={disabled}
-                                            placeholder="Clause title..."
-                                            className="font-semibold border-0 px-0 h-auto text-sm focus-visible:ring-0 bg-transparent text-neutral-900 placeholder:text-neutral-300"
+                                            placeholder="Clause title"
+                                            className={titleInputClassName}
                                         />
                                         <Textarea
                                             value={clause.content}
-                                            onChange={(e) =>
-                                                updateClause(clause.id, { content: e.target.value })
-                                            }
+                                            onChange={(event) => updateClause(clause.id, { content: event.target.value })}
                                             disabled={disabled}
-                                            placeholder="Clause content..."
-                                            rows={3}
-                                            className="resize-none border-neutral-200 focus-visible:ring-neutral-900 bg-neutral-50 rounded-lg text-xs text-neutral-600 leading-relaxed"
+                                            placeholder="Write the full clause here."
+                                            rows={4}
+                                            className={contentInputClassName}
                                         />
                                     </div>
+
                                     <Button
                                         type="button"
                                         variant="ghost"
-                                        size="sm"
                                         onClick={() => removeClause(clause.id)}
                                         disabled={disabled}
-                                        className="text-neutral-300 hover:text-red-600 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 p-0"
+                                        className="h-10 w-10 rounded-full text-neutral-400 shadow-none hover:bg-neutral-50 hover:text-neutral-900"
                                     >
-                                        <Trash2 className="h-3.5 w-3.5" />
+                                        <Trash2 className="h-4 w-4" strokeWidth={2.1} />
                                     </Button>
                                 </div>
                             </div>
                         ))}
                     </div>
                 )}
-            </div>
+            </section>
+        </div>
+    )
+}
+
+function SectionHeader({
+    title,
+    description,
+}: {
+    title: string
+    description: string
+}) {
+    return (
+        <div>
+            <h3 className="text-[18px] font-semibold tracking-[-0.03em] text-neutral-950">{title}</h3>
+            <p className="mt-1 text-sm leading-6 text-neutral-500">{description}</p>
         </div>
     )
 }
