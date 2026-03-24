@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { Download, Share2, Smartphone } from 'lucide-react'
+import { Download, Share2, Smartphone, PlusSquare } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -11,6 +11,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { cn } from '@/lib/utils'
 
 const PROMPT_STORAGE_KEY = 'link:pwa-install-prompt:v1'
 const DISMISS_FOR_MS = 1000 * 60 * 60 * 24 * 7
@@ -214,77 +215,78 @@ export function PwaInstallPrompt() {
     <Dialog open={isOpen} onOpenChange={(nextOpen) => !nextOpen && dismissPrompt()}>
       <DialogContent
         showCloseButton={false}
-        className="top-1/2 left-1/2 right-auto bottom-auto -translate-x-1/2 -translate-y-1/2 w-[calc(100%-24px)] max-w-[360px] gap-0 overflow-hidden rounded-[24px] border border-neutral-200/80 bg-white p-0 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]"
+        className="top-auto bottom-8 left-1/2 right-auto -translate-x-1/2 translate-y-0 w-[calc(100%-32px)] max-w-[380px] gap-0 overflow-hidden rounded-[32px] border border-neutral-200/60 bg-white/95 backdrop-blur-2xl p-0 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.2)]"
       >
-        {/* Compact content */}
-        <div className="px-5 pt-5 pb-4">
-          {/* Top row: icon + text */}
-          <div className="flex items-start gap-3.5 mb-5">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-neutral-900">
-              <Smartphone className="h-5 w-5 text-[#C4F135]" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <DialogTitle className="text-[17px] font-[900] leading-tight tracking-[-0.01em] text-neutral-900">
-                Get the LINK app
-              </DialogTitle>
-              <DialogDescription className="text-[13px] font-semibold leading-snug text-neutral-400 mt-1">
-                Faster browsing, one tap from home screen.
-              </DialogDescription>
-            </div>
+        <div className="p-7">
+          {/* Centered Brand Copy */}
+          <div className="flex flex-col items-center text-center mb-6">
+            <DialogTitle className="text-[22px] font-bold tracking-tight text-neutral-900 leading-tight">
+              Install the App
+            </DialogTitle>
+            <DialogDescription className="text-[15px] font-medium text-neutral-500 mt-1.5 leading-snug px-2">
+              Get the full native experience on your home screen for faster browsing.
+            </DialogDescription>
           </div>
 
-          {/* Manual install tips — only shown when needed */}
+          {/* Manual install tips — only shown when needed formatted beautifully */}
           {showManualTips && (
-            <div className="rounded-2xl bg-neutral-50 border border-neutral-100 p-4 mb-4 text-left animate-in fade-in zoom-in-95 duration-200">
+            <div className="rounded-[20px] bg-neutral-100/80 border border-neutral-200/50 p-4 mb-6 text-left animate-in fade-in zoom-in-95 duration-200">
               {isIOS ? (
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-200">
-                    <Share2 className="h-3.5 w-3.5 text-neutral-600" />
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white shadow-sm border border-neutral-200/50">
+                      <Share2 className="h-4 w-4 text-blue-500" />
+                    </div>
+                    <p className="text-[14px] leading-tight text-neutral-600 font-medium tracking-tight">
+                      First, tap the <span className="font-bold text-neutral-900">Share</span> icon at the bottom of Safari.
+                    </p>
                   </div>
-                  <p className="text-[13px] leading-relaxed text-neutral-500 font-medium">
-                    Tap <span className="font-bold text-neutral-900">Share</span> then{' '}
-                    <span className="font-bold text-neutral-900">Add to Home Screen</span>.
-                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white shadow-sm border border-neutral-200/50">
+                      <PlusSquare className="h-4 w-4 text-neutral-700" />
+                    </div>
+                    <p className="text-[14px] leading-tight text-neutral-600 font-medium tracking-tight">
+                      Then, scroll down and tap <span className="font-bold text-neutral-900">Add to Home Screen</span>.
+                    </p>
+                  </div>
                 </div>
               ) : (
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-200">
-                    <Smartphone className="h-3.5 w-3.5 text-neutral-600" />
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-sm border border-neutral-200/50">
+                    <Smartphone className="h-4 w-4 text-neutral-700" />
                   </div>
-                  <p className="text-[13px] leading-relaxed text-neutral-500 font-medium">
-                    Open browser menu → <span className="font-bold text-neutral-900">Install app</span> or{' '}
-                    <span className="font-bold text-neutral-900">Add to Home Screen</span>.
+                  <p className="text-[14px] leading-relaxed text-neutral-600 font-medium tracking-tight">
+                    Open your browser menu and tap <span className="font-bold text-neutral-900">Install app</span> or <span className="font-bold text-neutral-900">Add to Home Screen</span>.
                   </p>
                 </div>
               )}
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex items-center gap-2.5">
+          {/* Thick Apple Actions Stack */}
+          <div className="flex flex-col gap-3">
+            {!showManualTips ? (
+              <button
+                className="w-full h-[52px] rounded-[16px] bg-black text-[17px] font-bold tracking-tight text-white hover:bg-neutral-800 active:scale-[0.98] transition-all flex items-center justify-center outline-none select-none shadow-sm"
+                disabled={isInstalling}
+                onClick={handleInstallClick}
+              >
+                {isInstalling ? 'Installing...' : 'Get App'}
+              </button>
+            ) : (
+              <button
+                className="w-full h-[52px] rounded-[16px] bg-black text-[17px] font-bold tracking-tight text-white hover:bg-neutral-800 active:scale-[0.98] transition-all flex items-center justify-center outline-none select-none shadow-sm"
+                onClick={() => dismissPrompt()}
+              >
+                Got it
+              </button>
+            )}
             <button
-              className="h-12 flex-1 rounded-full text-[14px] font-bold text-neutral-400 hover:text-neutral-900 hover:bg-neutral-50 transition-all active:scale-[0.97]"
+              className="w-full h-[52px] rounded-[16px] bg-neutral-100 text-[17px] font-bold tracking-tight text-neutral-900 hover:bg-neutral-200 active:scale-[0.98] transition-all flex items-center justify-center outline-none select-none"
               onClick={() => dismissPrompt()}
             >
               Not now
             </button>
-            {!showManualTips ? (
-              <Button
-                className="h-12 flex-[2] rounded-full bg-neutral-900 text-[14px] font-[800] tracking-tight text-white hover:bg-neutral-800 active:scale-[0.97] transition-all"
-                disabled={isInstalling}
-                onClick={handleInstallClick}
-              >
-                <Download className="mr-1.5 h-4 w-4" />
-                {isInstalling ? 'Installing...' : 'Install'}
-              </Button>
-            ) : (
-              <Button
-                className="h-12 flex-[2] rounded-full bg-neutral-900 text-[14px] font-[800] tracking-tight text-white hover:bg-neutral-800 active:scale-[0.97] transition-all"
-                onClick={() => dismissPrompt()}
-              >
-                Got it
-              </Button>
-            )}
           </div>
         </div>
       </DialogContent>

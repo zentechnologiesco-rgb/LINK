@@ -26,15 +26,18 @@ import { MoreHorizontal, Eye, Edit, Trash2, ToggleLeft, ToggleRight, Loader2, Se
 import { useMutation } from "convex/react"
 import { api } from "../../../../../convex/_generated/api"
 import { Id } from "../../../../../convex/_generated/dataModel"
+import { getPropertyWorkflow } from '@/lib/property-workflow'
 
 interface PropertyActionsProps {
-    propertyId: string
+    propertyId: Id<"properties">
     propertyTitle: string
     propertyPrice: number
-    isAvailable: boolean
     approvalStatus: 'pending' | 'approved' | 'rejected'
+    publicationStatus: 'published' | 'unpublished'
     adminNotes: string | null
+    availableUnitCount: number
     hasActiveLease?: boolean
+    hasReservedLease?: boolean
     activeLeaseId?: string
 }
 
@@ -42,10 +45,12 @@ export function PropertyActions({
     propertyId,
     propertyTitle,
     propertyPrice,
-    isAvailable,
     approvalStatus,
+    publicationStatus,
     adminNotes,
+    availableUnitCount,
     hasActiveLease = false,
+    hasReservedLease = false,
     activeLeaseId
 }: PropertyActionsProps) {
     const [isDeleting, setIsDeleting] = useState(false)
@@ -56,19 +61,51 @@ export function PropertyActions({
     const [assignTenantDialogOpen, setAssignTenantDialogOpen] = useState(false)
     const router = useRouter()
 
-    const canToggleAvailability = approvalStatus === 'approved' && !hasActiveLease
-    const canAssignTenant = approvalStatus === 'approved' && !hasActiveLease
+    const workflow = getPropertyWorkflow({
+        approvalStatus,
+        publicationStatus,
+        availableUnitCount,
+        activeLeaseCount: hasActiveLease ? 1 : 0,
+        reservedLeaseCount: hasReservedLease ? 1 : 0,
+    })
+    const canToggleVisibility = workflow.canPublish || workflow.canUnpublish
+    const canAssignTenant = workflow.canAssignTenant
+    const isListed = workflow.isListed
 
     const updateProperty = useMutation(api.properties.update)
     const deleteProperty = useMutation(api.properties.remove)
     const requestApproval = useMutation(api.properties.requestApproval)
 
-    const handleToggleAvailability = async () => {
-        if (!canToggleAvailability) {
-            if (hasActiveLease) {
-                toast.error('Cannot relist property while there is an active lease')
+    const visibilityLabel = isListed ? 'Take Listing Off Market' : 'Publish Listing'
+    const visibilityBlockedLabel = (() => {
+        switch (workflow.key) {
+            case 'in_review':
+                return 'Waiting for Review'
+            case 'changes_requested':
+                return 'Fix and Resubmit First'
+            case 'reserved':
+                return 'Lease Flow in Progress'
+            case 'leased':
+                return 'Active Lease Locked'
+            case 'no_vacancies':
+                return 'No Vacancies to Publish'
+            default:
+                return 'Cannot Change Visibility'
+        }
+    })()
+
+    const handleToggleVisibility = async () => {
+        if (!canToggleVisibility) {
+            if (workflow.key === 'leased') {
+                toast.error('This listing is locked while an active lease is in place')
+            } else if (workflow.key === 'reserved') {
+                toast.error('This listing is locked while a lease is already in progress')
+            } else if (workflow.key === 'no_vacancies') {
+                toast.error('Add at least one vacant public unit before publishing this listing')
+            } else if (workflow.key === 'changes_requested') {
+                toast.error('Fix the admin feedback and resubmit the listing first')
             } else {
-                toast.error('Property must be approved before it can be listed')
+                toast.error('The listing must be approved before it can go live')
             }
             return
         }
@@ -76,26 +113,29 @@ export function PropertyActions({
         setIsToggling(true)
         try {
             await updateProperty({
-                propertyId: propertyId as Id<"properties">,
-                isAvailable: !isAvailable
+                propertyId,
+                publicationStatus: isListed ? 'unpublished' : 'published',
             })
-            toast.success(isAvailable ? 'Property unlisted' : 'Property listed')
-            // router.refresh() // Convex updates automatically
+            toast.success(isListed ? 'Listing taken off market' : 'Listing is now live')
         } catch (error) {
-            toast.error('Failed to update property status')
+            toast.error(error instanceof Error ? error.message : 'Failed to update property status')
         } finally {
             setIsToggling(false)
         }
     }
 
     const handleRequestApproval = async () => {
+        if (approvalStatus !== 'rejected') {
+            toast.error('Only rejected listings can be resubmitted from here')
+            return
+        }
+
         setIsRequestingApproval(true)
         try {
-            await requestApproval({ propertyId: propertyId as Id<"properties"> })
-            toast.success('Approval request submitted successfully')
-            // router.refresh()
+            await requestApproval({ propertyId })
+            toast.success('Listing resubmitted for review')
         } catch (error) {
-            toast.error('Failed to request approval')
+            toast.error(error instanceof Error ? error.message : 'Failed to request approval')
         } finally {
             setIsRequestingApproval(false)
         }
@@ -104,11 +144,11 @@ export function PropertyActions({
     const handleDelete = async () => {
         setIsDeleting(true)
         try {
-            await deleteProperty({ propertyId: propertyId as Id<"properties"> })
+            await deleteProperty({ propertyId })
             toast.success('Property deleted successfully')
             setDeleteDialogOpen(false)
-            router.refresh() // Might need to redirect if verifying list
-        } catch (error) {
+            router.refresh()
+        } catch {
             toast.error('Failed to delete property')
             setIsDeleting(false)
         }
@@ -189,26 +229,24 @@ export function PropertyActions({
                             ) : (
                                 <Send className="mr-2 h-4 w-4 text-black/60" strokeWidth={1.5} />
                             )}
-                            Request Re-approval
+                            Resubmit for Review
                         </DropdownMenuItem>
                     )}
 
-                    {/* Toggle Availability - only for approved properties */}
+                    {/* Toggle Visibility */}
                     <DropdownMenuItem
-                        onClick={handleToggleAvailability}
-                        disabled={isToggling || !canToggleAvailability}
-                        className={`rounded-lg focus:bg-black/5 cursor-pointer py-2 font-medium ${!canToggleAvailability ? 'opacity-50' : ''}`}
+                        onClick={handleToggleVisibility}
+                        disabled={isToggling || !canToggleVisibility}
+                        className={`rounded-lg focus:bg-black/5 cursor-pointer py-2 font-medium ${!canToggleVisibility ? 'opacity-50' : ''}`}
                     >
                         {isToggling ? (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin text-black/60" strokeWidth={1.5} />
-                        ) : isAvailable ? (
+                        ) : isListed ? (
                             <ToggleLeft className="mr-2 h-4 w-4 text-black/60" strokeWidth={1.5} />
                         ) : (
                             <ToggleRight className="mr-2 h-4 w-4 text-black/60" strokeWidth={1.5} />
                         )}
-                        {isAvailable ? 'Unlist Property' : 'List Property'}
-                        {!canToggleAvailability && approvalStatus === 'pending' && ' (Pending)'}
-                        {!canToggleAvailability && approvalStatus === 'rejected' && ' (Rejected)'}
+                        {canToggleVisibility ? visibilityLabel : visibilityBlockedLabel}
                     </DropdownMenuItem>
 
                     <DropdownMenuSeparator className="bg-black/5" />
@@ -237,7 +275,7 @@ export function PropertyActions({
                     <DialogHeader>
                         <DialogTitle className="font-[family-name:var(--font-anton)] uppercase tracking-wide text-xl">Property Rejected</DialogTitle>
                         <DialogDescription>
-                            Your property was not approved. Please review the reason below and make necessary changes before resubmitting.
+                            Your property was not approved. Review the feedback, update the listing if needed, and then resubmit it for review.
                         </DialogDescription>
                     </DialogHeader>
                     <Alert variant="destructive" className="rounded-xl shadow-none">
@@ -264,7 +302,7 @@ export function PropertyActions({
                             className="bg-black hover:bg-black/90 text-white rounded-full font-bold uppercase tracking-wider text-xs shadow-none"
                         >
                             {isRequestingApproval && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Request Re-approval
+                            Resubmit for Review
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { useQuery } from 'convex/react'
 import { differenceInDays, format } from 'date-fns'
@@ -16,6 +17,7 @@ import {
 
 import { api } from '../../../../../convex/_generated/api'
 import { LEASE_STATUS_LABELS, type LeaseStatus } from '@/constants/lease'
+import { PullToRefresh } from '@/components/ui/pull-to-refresh'
 import { cn } from '@/lib/utils'
 
 type TenantLease = {
@@ -39,16 +41,18 @@ const currency = new Intl.NumberFormat('en-NA', {
 
 export default function TenantLeasesPage() {
     const leases = useQuery(api.leases.getForTenant, {}) as TenantLease[] | undefined
+    const [isRefreshing, setIsRefreshing] = useState(false)
+
+    // Handle pull to refresh
+    const handleRefresh = async () => {
+        setIsRefreshing(true)
+        // Simulate a small delay for UX, Convex handles live updates automatically
+        await new Promise(resolve => setTimeout(resolve, 800))
+        setIsRefreshing(false)
+    }
 
     if (leases === undefined) {
-        return (
-            <div className="min-h-[60vh] flex items-center justify-center">
-                <div className="flex flex-col items-center gap-3">
-                    <div className="h-8 w-8 rounded-full border-2 border-neutral-200 border-t-neutral-900 animate-spin" />
-                    <p className="text-sm font-medium text-neutral-400">Loading leases...</p>
-                </div>
-            </div>
-        )
+        return <PageSkeleton />
     }
 
     const activeLease = leases.find((lease) => lease.status === 'approved') ?? null
@@ -57,179 +61,203 @@ export default function TenantLeasesPage() {
     const history = leases.filter((lease) => ['expired', 'terminated', 'rejected'].includes(lease.status))
 
     const summaryItems = [
-        {
-            label: 'Active',
-            value: activeLease ? '1' : '0',
-            icon: CheckCircle2,
-        },
-        {
-            label: 'Needs you',
-            value: actionRequired.length.toString(),
-            icon: AlertCircle,
-        },
-        {
-            label: 'Waiting',
-            value: pendingLandlord.length.toString(),
-            icon: Clock3,
-        },
-        {
-            label: 'History',
-            value: history.length.toString(),
-            icon: FileText,
-        },
+        { label: 'Active', value: activeLease ? '1' : '0', icon: CheckCircle2, active: !!activeLease },
+        { label: 'Needs you', value: actionRequired.length.toString(), icon: AlertCircle, active: actionRequired.length > 0 },
+        { label: 'Waiting', value: pendingLandlord.length.toString(), icon: Clock3, active: pendingLandlord.length > 0 },
+        { label: 'History', value: history.length.toString(), icon: FileText, active: false },
     ]
 
     return (
-        <div className="mx-auto max-w-[760px] font-sans pb-10">
-            <section className="border-b border-neutral-100 pb-6">
-                <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-                    <div className="max-w-2xl">
-                        <p className="text-sm font-medium text-neutral-500">Tenant leases</p>
-                        <h1 className="mt-2 text-[2rem] font-semibold tracking-[-0.04em] text-neutral-950 sm:text-[2.5rem]">
-                            My leases
-                        </h1>
-                        <p className="mt-3 text-[15px] leading-7 text-neutral-600">
-                            Track your current agreement, anything waiting on your signature, and past leases in one clean timeline.
+        <PullToRefresh onRefresh={handleRefresh} className="min-h-screen bg-white">
+            <div className="mx-auto max-w-[820px] pb-32 font-sans">
+                {/* ── Sticky Header ── */}
+                <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-2xl border-b border-neutral-100/60">
+                    <div className="flex h-14 items-center justify-between px-4 sm:px-6">
+                        <p className="text-[15px] font-semibold tracking-[-0.02em] text-neutral-950">
+                            Tenant Leases
                         </p>
+                        <Link
+                            href="/tenant/payments"
+                            className="flex h-[36px] items-center justify-center gap-1.5 rounded-full bg-neutral-100 px-3.5 text-[13px] font-semibold text-neutral-700 transition-colors active:scale-95 hover:bg-neutral-200/80"
+                            aria-label="View payments"
+                        >
+                            <Wallet2 className="h-4 w-4" strokeWidth={2.2} />
+                            <span className="hidden sm:inline">Payments</span>
+                        </Link>
                     </div>
+                </header>
 
-                    <Link
-                        href="/tenant/payments"
-                        className="inline-flex h-11 items-center gap-2 rounded-full border border-neutral-200 bg-white px-5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
-                    >
-                        <Wallet2 className="h-4 w-4" strokeWidth={2} />
-                        Payments
-                    </Link>
+                {/* ── Hero Title ── */}
+                <div className="px-4 pt-6 sm:px-6">
+                    <h1 className="text-[2.25rem] font-bold tracking-[-0.04em] text-neutral-950 sm:text-[2.75rem]">
+                        My Leases
+                    </h1>
                 </div>
 
                 {leases.length > 0 && (
-                    <div className="mt-5 flex flex-wrap gap-2">
-                        {summaryItems.map((item) => {
-                            const Icon = item.icon
-                            return (
-                                <span
-                                    key={item.label}
-                                    className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-sm text-neutral-700"
-                                >
-                                    <Icon className="h-4 w-4 text-neutral-500" strokeWidth={2} />
-                                    <span className="font-semibold text-neutral-950">{item.value}</span>
-                                    <span>{item.label}</span>
-                                </span>
-                            )
-                        })}
+                    <div className="mt-4 overflow-x-auto px-4 pb-2 sm:px-6 hide-scrollbar">
+                        <div className="flex w-max shrink-0 items-center justify-start gap-2">
+                            {summaryItems.map((item) => {
+                                const Icon = item.icon
+                                return (
+                                    <span
+                                        key={item.label}
+                                        className={cn(
+                                            "inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-colors",
+                                            item.active 
+                                                ? "border-neutral-200/80 bg-neutral-950 text-white" 
+                                                : "border-neutral-200/60 bg-neutral-50 text-neutral-700"
+                                        )}
+                                    >
+                                        <Icon className={cn("h-4 w-4", item.active ? "text-neutral-300" : "text-neutral-500")} strokeWidth={2.2} />
+                                        <span className={item.active ? "text-white" : "text-neutral-950"}>{item.value}</span>
+                                        <span>{item.label}</span>
+                                    </span>
+                                )
+                            })}
+                        </div>
                     </div>
                 )}
-            </section>
 
-            {leases.length === 0 ? (
-                <div className="py-20 text-center">
-                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50 text-neutral-500">
-                        <FileText className="h-6 w-6" strokeWidth={2} />
+                {/* ── Main Content Grid ── */}
+                {leases.length === 0 ? (
+                    /* ── Empty State ── */
+                    <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
+                        <div className="mb-6 flex h-[88px] w-[88px] items-center justify-center rounded-full bg-neutral-50 ring-1 ring-inset ring-neutral-200/60">
+                            <FileText className="h-10 w-10 text-neutral-400" strokeWidth={1.8} />
+                        </div>
+                        <h3 className="text-[22px] font-bold tracking-[-0.03em] text-neutral-950">
+                            No leases yet
+                        </h3>
+                        <p className="mt-2.5 max-w-[320px] text-[15px] leading-relaxed text-neutral-500">
+                            When a landlord sends you a lease agreement, it will appear here for review and signature.
+                        </p>
+                        <Link
+                            href="/"
+                            className="mt-8 flex h-12 items-center justify-center rounded-full bg-neutral-950 px-8 text-[15px] font-semibold text-white transition-all active:scale-95 hover:bg-neutral-800"
+                        >
+                            Browse Properties
+                        </Link>
                     </div>
-                    <h2 className="mt-5 text-xl font-semibold tracking-[-0.03em] text-neutral-950">
-                        No leases yet
-                    </h2>
-                    <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-neutral-500">
-                        When a landlord sends you a lease agreement, it will appear here for review and signature.
-                    </p>
-                    <Link
-                        href="/"
-                        className="mt-6 inline-flex h-11 items-center rounded-full bg-neutral-950 px-5 text-sm font-medium text-white transition-colors hover:bg-neutral-800"
-                    >
-                        Browse properties
-                    </Link>
-                </div>
-            ) : (
-                <div className="space-y-8 pt-6">
-                    {activeLease && (
-                        <section className="space-y-3">
-                            <SectionHeader
-                                title="Current lease"
-                                description="Your active agreement and next timeline milestone."
-                            />
-                            <Link href={`/tenant/leases/${activeLease._id}`} className="block">
-                                <article className="rounded-[28px] border border-neutral-200 bg-neutral-50/80 p-5 transition-colors hover:bg-neutral-50 sm:p-6">
-                                    <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-                                        <div className="h-24 w-full overflow-hidden rounded-[22px] bg-neutral-100 sm:h-24 sm:w-28">
-                                            {activeLease.property?.imageUrl ? (
-                                                /* eslint-disable-next-line @next/next/no-img-element */
-                                                <img
-                                                    src={activeLease.property.imageUrl}
-                                                    alt={activeLease.property.title || 'Property'}
-                                                    className="h-full w-full object-cover"
-                                                />
-                                            ) : (
-                                                <div className="flex h-full items-center justify-center text-neutral-400">
-                                                    <Building2 className="h-7 w-7" strokeWidth={1.8} />
+                ) : (
+                    <div className="mt-6 flex flex-col gap-8">
+                        
+                        {/* ── Active Lease Hero Card ── */}
+                        {activeLease && (
+                            <section>
+                                <SectionHeader title="Current Lease" description="Your active agreement and next milestone." />
+                                <div className="px-4 sm:px-6">
+                                    <Link href={`/tenant/leases/${activeLease._id}`} className="group block focus:outline-none">
+                                        <article className="overflow-hidden rounded-[24px] border border-neutral-200/80 bg-neutral-50/50 transition-colors hover:bg-neutral-50 shadow-sm">
+                                            {/* Property Hero Image */}
+                                            <div className="relative aspect-[21/9] w-full shrink-0 bg-neutral-100 sm:aspect-[21/7]">
+                                                {activeLease.property?.imageUrl ? (
+                                                    /* eslint-disable-next-line @next/next/no-img-element */
+                                                    <img
+                                                        src={activeLease.property.imageUrl}
+                                                        alt={activeLease.property.title || 'Property'}
+                                                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                    />
+                                                ) : (
+                                                    <div className="absolute inset-0 flex items-center justify-center text-neutral-400">
+                                                        <Building2 className="h-8 w-8" strokeWidth={1.8} />
+                                                    </div>
+                                                )}
+                                                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" />
+                                                <div className="absolute left-4 top-4">
+                                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-500/90 px-3 py-1.5 text-[12px] font-bold text-white shadow-sm backdrop-blur-md">
+                                                        <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.5} />
+                                                        Active
+                                                    </span>
                                                 </div>
-                                            )}
-                                        </div>
-
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                                                    <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} />
-                                                    Active
-                                                </span>
-                                                <span className="text-xs font-medium uppercase tracking-[0.14em] text-neutral-400">
-                                                    Lease overview
-                                                </span>
                                             </div>
-                                            <h2 className="mt-3 truncate text-[1.35rem] font-semibold tracking-[-0.04em] text-neutral-950">
-                                                {activeLease.property?.title || 'Property'}
-                                            </h2>
-                                            <p className="mt-1 truncate text-sm text-neutral-500">
-                                                {activeLease.property?.address || 'Address not available'}
-                                            </p>
 
-                                            <div className="mt-4 flex flex-wrap gap-2">
-                                                <InlineMeta
-                                                    icon={Wallet2}
-                                                    label={formatCurrency(activeLease.monthlyRent ?? 0)}
-                                                />
-                                                <InlineMeta
-                                                    icon={CalendarRange}
-                                                    label={`Ends ${format(new Date(activeLease.endDate), 'MMM d, yyyy')}`}
-                                                />
-                                                <InlineMeta
-                                                    icon={Clock3}
-                                                    label={`${Math.max(differenceInDays(new Date(activeLease.endDate), new Date()), 0)} days left`}
-                                                />
+                                            {/* Card Details */}
+                                            <div className="p-5">
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div className="min-w-0 flex-1">
+                                                        <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500">
+                                                            Lease overview
+                                                        </span>
+                                                        <h2 className="mt-1 truncate text-[22px] font-bold tracking-[-0.03em] text-neutral-950 sm:text-[24px]">
+                                                            {activeLease.property?.title || 'Property'}
+                                                        </h2>
+                                                        <p className="mt-0.5 truncate text-[14px] text-neutral-500">
+                                                            {activeLease.property?.address || 'Address not available'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-neutral-950 shadow-sm ring-1 ring-inset ring-neutral-200/60 transition-transform group-hover:bg-neutral-50 group-active:scale-95">
+                                                        <ChevronRight className="h-5 w-5" strokeWidth={2} />
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                                                    <MiniStat icon={Wallet2} label="Rent" value={`${formatCurrency(activeLease.monthlyRent ?? 0)}/mo`} />
+                                                    <MiniStat icon={CalendarRange} label="End Date" value={format(new Date(activeLease.endDate), 'MMM d, yyyy')} />
+                                                    <MiniStat icon={Clock3} label="Remaining" value={`${Math.max(differenceInDays(new Date(activeLease.endDate), new Date()), 0)} days left`} />
+                                                </div>
                                             </div>
-                                        </div>
+                                        </article>
+                                    </Link>
+                                </div>
+                            </section>
+                        )}
 
-                                        <ChevronRight className="hidden h-5 w-5 shrink-0 text-neutral-300 sm:block" strokeWidth={2} />
-                                    </div>
-                                </article>
-                            </Link>
-                        </section>
-                    )}
+                        {/* ── Needs Action ── */}
+                        <LeaseSection
+                            title="Needs your action"
+                            description="Agreements waiting on your review, documents, or signature."
+                            emptyLabel="Nothing is waiting on you right now."
+                            leases={actionRequired}
+                            tone="attention"
+                        />
 
-                    <LeaseSection
-                        title="Needs your action"
-                        description="Agreements waiting on your review, documents, or signature."
-                        emptyLabel="Nothing is waiting on you right now."
-                        leases={actionRequired}
-                        tone="attention"
-                    />
+                        {/* ── Waiting on Landlord ── */}
+                        <LeaseSection
+                            title="Waiting on landlord"
+                            description="Leases you already signed that are still being reviewed."
+                            emptyLabel="No leases are waiting on landlord approval."
+                            leases={pendingLandlord}
+                            tone="default"
+                        />
 
-                    <LeaseSection
-                        title="Waiting on landlord"
-                        description="Leases you already signed that are still being reviewed."
-                        emptyLabel="No leases are waiting on landlord approval."
-                        leases={pendingLandlord}
-                        tone="default"
-                    />
+                        {/* ── History ── */}
+                        <LeaseSection
+                            title="Past leases"
+                            description="Ended, rejected, and archived agreements kept for reference."
+                            emptyLabel="No past leases yet."
+                            leases={history}
+                            tone="muted"
+                        />
+                        
+                    </div>
+                )}
+            </div>
+        </PullToRefresh>
+    )
+}
 
-                    <LeaseSection
-                        title="Past leases"
-                        description="Ended, rejected, and archived agreements kept for reference."
-                        emptyLabel="No past leases yet."
-                        leases={history}
-                        tone="muted"
-                    />
-                </div>
-            )}
+/* ── UI Helpers ── */
+
+function SectionHeader({ title, description }: { title: string; description: string }) {
+    return (
+        <div className="px-5 pb-3 sm:px-6">
+            <h2 className="text-[17px] font-bold tracking-[-0.03em] text-neutral-950">{title}</h2>
+            <p className="mt-0.5 text-[13px] text-neutral-500">{description}</p>
+        </div>
+    )
+}
+
+function MiniStat({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
+    return (
+        <div className="flex items-center gap-3 rounded-[16px] bg-white px-4 py-3 ring-1 ring-inset ring-neutral-200/60">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100/80">
+                <Icon className="h-4 w-4 text-neutral-500" strokeWidth={2.2} />
+            </div>
+            <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-neutral-400">{label}</p>
+                <p className="mt-0.5 text-[14px] font-semibold text-neutral-950">{value}</p>
+            </div>
         </div>
     )
 }
@@ -247,100 +275,100 @@ function LeaseSection({
     leases: TenantLease[]
     tone: 'default' | 'attention' | 'muted'
 }) {
+    if (leases.length === 0 && tone !== 'attention' && tone !== 'default') return null
+
     return (
-        <section className="space-y-3">
+        <section>
             <SectionHeader title={title} description={description} />
-            {leases.length === 0 ? (
-                <div className="border-y border-dashed border-neutral-200 py-5 text-sm text-neutral-500">
-                    {emptyLabel}
+            <div className="px-4 sm:px-6">
+                <div className="overflow-hidden rounded-[20px] border border-neutral-200/80 bg-white">
+                    {leases.length === 0 ? (
+                        <div className="px-5 py-6 text-center text-[13px] text-neutral-500">
+                            {emptyLabel}
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-neutral-100/60">
+                            {leases.map((lease) => (
+                                <LeaseRow key={lease._id} lease={lease} tone={tone} />
+                            ))}
+                        </div>
+                    )}
                 </div>
-            ) : (
-                <div className="divide-y divide-neutral-100 border-y border-neutral-200 bg-white">
-                    {leases.map((lease) => (
-                        <LeaseRow key={lease._id} lease={lease} tone={tone} />
-                    ))}
-                </div>
-            )}
+            </div>
         </section>
     )
 }
 
-function LeaseRow({
-    lease,
-    tone,
-}: {
-    lease: TenantLease
-    tone: 'default' | 'attention' | 'muted'
-}) {
+function LeaseRow({ lease, tone }: { lease: TenantLease; tone: 'default' | 'attention' | 'muted' }) {
     const statusTone =
         tone === 'attention'
-            ? 'border-amber-200 bg-amber-50 text-amber-700'
+            ? 'border-amber-200/80 bg-amber-50 text-amber-800'
             : tone === 'muted'
-                ? 'border-neutral-200 bg-neutral-50 text-neutral-500'
-                : 'border-neutral-200 bg-neutral-50 text-neutral-700'
+                ? 'border-neutral-200 bg-neutral-100/50 text-neutral-500'
+                : 'border-blue-200/80 bg-blue-50 text-blue-800'
 
     return (
-        <Link href={`/tenant/leases/${lease._id}`} className="block">
-            <article className="flex items-center gap-4 py-4 transition-colors hover:bg-neutral-50">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[18px] bg-neutral-100">
+        <Link href={`/tenant/leases/${lease._id}`} className="group block focus:outline-none">
+            <article className="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-neutral-50 sm:px-5">
+                <div className="relative flex h-[60px] w-[60px] shrink-0 items-center justify-center overflow-hidden rounded-[16px] bg-neutral-100 ring-1 ring-inset ring-neutral-200/60">
                     {lease.property?.imageUrl ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img
                             src={lease.property.imageUrl}
                             alt={lease.property?.title || 'Property'}
-                            className="h-full w-full object-cover"
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                     ) : (
-                        <Building2 className="h-5 w-5 text-neutral-400" strokeWidth={1.8} />
+                        <Building2 className="h-6 w-6 text-neutral-400" strokeWidth={1.8} />
                     )}
+                    <div className="absolute inset-0 ring-1 ring-inset ring-black/5" />
                 </div>
 
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                        <h3 className="truncate text-sm font-semibold text-neutral-950">
+                        <h3 className="truncate text-[15px] font-semibold text-neutral-950">
                             {lease.property?.title || 'Property'}
                         </h3>
-                        <span className={cn('inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold', statusTone)}>
+                        <span className={cn('shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.04em]', statusTone)}>
                             {LEASE_STATUS_LABELS[lease.status] || lease.status}
                         </span>
                     </div>
-                    <p className="mt-1 truncate text-sm text-neutral-500">
+                    <p className="mt-0.5 truncate text-[13px] text-neutral-500">
                         {lease.property?.address || 'Address not available'}
                     </p>
-                    <div className="mt-2 flex items-center gap-2 text-xs text-neutral-400">
-                        <span>{formatCurrency(lease.monthlyRent ?? 0)}/mo</span>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[12px] font-medium text-neutral-400">
+                        <span className="text-neutral-600">{formatCurrency(lease.monthlyRent ?? 0)}/mo</span>
                         <span>•</span>
                         <span>Ends {format(new Date(lease.endDate), 'MMM d, yyyy')}</span>
                     </div>
                 </div>
 
-                <ChevronRight className="h-5 w-5 shrink-0 text-neutral-300" strokeWidth={2} />
+                <ChevronRight className="h-5 w-5 shrink-0 text-neutral-300 transition-transform group-hover:translate-x-0.5 group-hover:text-neutral-400" strokeWidth={2.2} />
             </article>
         </Link>
     )
 }
 
-function SectionHeader({ title, description }: { title: string; description: string }) {
+function PageSkeleton() {
     return (
-        <div>
-            <h2 className="text-[18px] font-semibold tracking-[-0.03em] text-neutral-950">{title}</h2>
-            <p className="mt-1 text-sm text-neutral-500">{description}</p>
+        <div className="mx-auto min-h-screen max-w-[820px] bg-white pb-16 font-sans">
+            <div className="h-14 border-b border-neutral-100/60 bg-white" />
+            <div className="px-4 pt-6 sm:px-6">
+                <div className="h-10 w-48 rounded-[12px] bg-neutral-100" />
+                <div className="mt-4 flex gap-2">
+                    <div className="h-9 w-24 rounded-full bg-neutral-100" />
+                    <div className="h-9 w-28 rounded-full bg-neutral-100" />
+                    <div className="h-9 w-28 rounded-full bg-neutral-100" />
+                </div>
+            </div>
+            <div className="mt-8 px-4 sm:px-6">
+                <div className="h-[280px] w-full rounded-[24px] bg-neutral-100" />
+                <div className="mt-8 space-y-4">
+                    <div className="h-6 w-32 rounded-lg bg-neutral-100" />
+                    <div className="h-[240px] w-full rounded-[20px] bg-neutral-100" />
+                </div>
+            </div>
         </div>
-    )
-}
-
-function InlineMeta({
-    icon: Icon,
-    label,
-}: {
-    icon: React.ElementType
-    label: string
-}) {
-    return (
-        <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-sm text-neutral-700">
-            <Icon className="h-4 w-4 text-neutral-500" strokeWidth={2} />
-            {label}
-        </span>
     )
 }
 

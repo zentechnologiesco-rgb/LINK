@@ -37,7 +37,7 @@ export function PropertyApprovalActions({ propertyId }: PropertyApprovalActionsP
         setIsApproving(true)
         try {
             await approveProperty({ propertyId })
-            toast.success('Property approved successfully')
+            toast.success('Property approved. The landlord can publish it when ready.')
             router.refresh()
         } catch (error) {
             toast.error('Failed to approve property')
@@ -98,8 +98,8 @@ export function PropertyApprovalActions({ propertyId }: PropertyApprovalActionsP
                     <DialogHeader>
                         <DialogTitle>Reject Property</DialogTitle>
                         <DialogDescription>
-                            Please provide a reason for rejecting this property listing.
-                            This will be visible to the landlord.
+                            Explain what needs to change before this listing can be approved.
+                            Your note will be shown to the landlord during resubmission.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
@@ -108,7 +108,7 @@ export function PropertyApprovalActions({ propertyId }: PropertyApprovalActionsP
                         </Label>
                         <Textarea
                             id="rejection-notes"
-                            placeholder="e.g., Unclear images, missing information, inappropriate content..."
+                            placeholder="e.g. Please replace unclear exterior photos and add the full street address."
                             value={rejectionNotes}
                             onChange={(e) => setRejectionNotes(e.target.value)}
                             rows={4}

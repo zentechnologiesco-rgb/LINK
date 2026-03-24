@@ -9,6 +9,7 @@
  */
 
 import type * as admin from "../admin.js";
+import type * as announcements from "../announcements.js";
 import type * as audit from "../audit.js";
 import type * as auth from "../auth.js";
 import type * as crons from "../crons.js";
@@ -20,11 +21,15 @@ import type * as http from "../http.js";
 import type * as inquiries from "../inquiries.js";
 import type * as leaseTemplates from "../leaseTemplates.js";
 import type * as leases from "../leases.js";
+import type * as lib_avatar from "../lib/avatar.js";
+import type * as lib_propertyInventory from "../lib/propertyInventory.js";
+import type * as lib_userPreferences from "../lib/userPreferences.js";
 import type * as messages from "../messages.js";
 import type * as payments from "../payments.js";
 import type * as properties from "../properties.js";
 import type * as recentlyViewed from "../recentlyViewed.js";
 import type * as savedProperties from "../savedProperties.js";
+import type * as support from "../support.js";
 import type * as users from "../users.js";
 import type * as verification from "../verification.js";
 
@@ -36,6 +41,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
+  announcements: typeof announcements;
   audit: typeof audit;
   auth: typeof auth;
   crons: typeof crons;
@@ -47,11 +53,15 @@ declare const fullApi: ApiFromModules<{
   inquiries: typeof inquiries;
   leaseTemplates: typeof leaseTemplates;
   leases: typeof leases;
+  "lib/avatar": typeof lib_avatar;
+  "lib/propertyInventory": typeof lib_propertyInventory;
+  "lib/userPreferences": typeof lib_userPreferences;
   messages: typeof messages;
   payments: typeof payments;
   properties: typeof properties;
   recentlyViewed: typeof recentlyViewed;
   savedProperties: typeof savedProperties;
+  support: typeof support;
   users: typeof users;
   verification: typeof verification;
 }>;

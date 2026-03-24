@@ -4,13 +4,13 @@ import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Users, Building2, FileText, MessageSquare, Shield, Trash2 } from 'lucide-react'
-import { format } from 'date-fns'
+import { Users, Building2, FileText, MessageSquare, Shield, Trash2, type LucideIcon } from 'lucide-react'
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../../convex/_generated/api"
 
 import { Id } from "../../../../convex/_generated/dataModel"
 import { toast } from 'sonner'
+import { getPropertyWorkflow } from '@/lib/property-workflow'
 
 const roleColors: Record<string, string> = {
     tenant: 'bg-blue-100 text-blue-700',
@@ -18,7 +18,30 @@ const roleColors: Record<string, string> = {
     admin: 'bg-purple-100 text-purple-700',
 }
 
-function StatsCard({ title, value, icon: Icon, color }: { title: string; value: number; icon: any; color: string }) {
+type AdminUser = {
+    _id: Id<"users">
+    fullName?: string | null
+    email: string
+    role: 'tenant' | 'landlord' | 'admin'
+}
+
+type AdminProperty = {
+    _id: Id<"properties">
+    title: string
+    priceNad?: number
+    isAvailable: boolean
+    approvalStatus?: 'pending' | 'approved' | 'rejected'
+    publicationStatus?: 'published' | 'unpublished'
+    availableUnitCount?: number
+    activeLeaseCount?: number
+    reservedLeaseCount?: number
+    landlord?: {
+        fullName?: string | null
+        email?: string | null
+    } | null
+}
+
+function StatsCard({ title, value, icon: Icon, color }: { title: string; value: number; icon: LucideIcon; color: string }) {
     const colorClasses: Record<string, string> = {
         blue: 'bg-blue-100 text-blue-600',
         green: 'bg-green-100 text-green-600',
@@ -46,8 +69,8 @@ function StatsCard({ title, value, icon: Icon, color }: { title: string; value: 
 function AdminDashboardContent() {
     const isAdmin = useQuery(api.admin.isAdmin)
     const stats = useQuery(api.admin.getStats)
-    const users = useQuery(api.admin.getAllUsers)
-    const properties = useQuery(api.admin.getAllProperties)
+    const users = useQuery(api.admin.getAllUsers) as AdminUser[] | undefined
+    const properties = useQuery(api.admin.getAllProperties) as AdminProperty[] | undefined
 
     const updateUserRole = useMutation(api.admin.updateUserRole)
     const togglePropertyAvailability = useMutation(api.admin.togglePropertyAvailability)
@@ -89,19 +112,19 @@ function AdminDashboardContent() {
     const handleToggleRole = async (userId: Id<"users">, currentRole: string) => {
         try {
             const newRole = currentRole === 'tenant' ? 'landlord' : 'tenant'
-            await updateUserRole({ userId, role: newRole as any })
+            await updateUserRole({ userId, role: newRole })
             toast.success('User role updated')
-        } catch (error) {
+        } catch {
             toast.error('Failed to update role')
         }
     }
 
-    const handleToggleAvailability = async (propertyId: Id<"properties">, isAvailable: boolean) => {
+    const handleToggleAvailability = async (propertyId: Id<"properties">, isPublished: boolean) => {
         try {
-            await togglePropertyAvailability({ propertyId, isAvailable: !isAvailable })
-            toast.success(isAvailable ? 'Property hidden' : 'Property shown')
+            await togglePropertyAvailability({ propertyId, isAvailable: !isPublished })
+            toast.success(isPublished ? 'Listing taken off market' : 'Listing published')
         } catch (error) {
-            toast.error('Failed to update property')
+            toast.error(error instanceof Error ? error.message : 'Failed to update property')
         }
     }
 
@@ -110,7 +133,7 @@ function AdminDashboardContent() {
         try {
             await deleteProperty({ propertyId })
             toast.success('Property deleted')
-        } catch (error) {
+        } catch {
             toast.error('Failed to delete property')
         }
     }
@@ -152,7 +175,7 @@ function AdminDashboardContent() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
-                                    {users.slice(0, 10).map((u: any) => (
+                                    {users.slice(0, 10).map((u) => (
                                         <tr key={u._id} className="hover:bg-slate-50/50">
                                             <td className="p-3">
                                                 <p className="font-medium">{u.fullName || 'Unnamed'}</p>
@@ -197,38 +220,60 @@ function AdminDashboardContent() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
-                                    {properties.slice(0, 10).map((p: any) => (
-                                        <tr key={p._id} className="hover:bg-slate-50/50">
-                                            <td className="p-3">
-                                                <p className="font-medium truncate max-w-[150px]">{p.title}</p>
-                                                <p className="text-xs text-muted-foreground">N$ {p.priceNad?.toLocaleString()}</p>
-                                            </td>
-                                            <td className="p-3 text-muted-foreground">
-                                                {p.landlord?.fullName || p.landlord?.email || '-'}
-                                            </td>
-                                            <td className="p-3">
-                                                <Badge variant={p.isAvailable ? 'default' : 'secondary'}>
-                                                    {p.isAvailable ? 'Active' : 'Hidden'}
-                                                </Badge>
-                                            </td>
-                                            <td className="p-3 flex gap-1">
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    onClick={() => handleToggleAvailability(p._id, p.isAvailable)}
-                                                >
-                                                    {p.isAvailable ? 'Hide' : 'Show'}
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    className="text-red-600 hover:text-red-700"
-                                                    onClick={() => handleDeleteProperty(p._id)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </td>
-                                        </tr>
+                                    {properties.slice(0, 10).map((p) => (
+                                        (() => {
+                                            const workflow = getPropertyWorkflow({
+                                                approvalStatus: p.approvalStatus,
+                                                publicationStatus: p.publicationStatus,
+                                                availableUnitCount: p.availableUnitCount,
+                                                isAvailable: p.isAvailable,
+                                                activeLeaseCount: p.activeLeaseCount,
+                                                reservedLeaseCount: p.reservedLeaseCount,
+                                            })
+                                            const isPublished = p.publicationStatus === 'published'
+
+                                            return (
+                                                <tr key={p._id} className="hover:bg-slate-50/50">
+                                                    <td className="p-3">
+                                                        <p className="font-medium truncate max-w-[150px]">{p.title}</p>
+                                                        <p className="text-xs text-muted-foreground">N$ {p.priceNad?.toLocaleString()}</p>
+                                                    </td>
+                                                    <td className="p-3 text-muted-foreground">
+                                                        {p.landlord?.fullName || p.landlord?.email || '-'}
+                                                    </td>
+                                                    <td className="p-3">
+                                                        <Badge className={workflow.badgeClassName}>
+                                                            {workflow.label}
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="p-3 flex gap-1">
+                                                        {p.approvalStatus === 'approved' ? (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={() => handleToggleAvailability(p._id, isPublished)}
+                                                            >
+                                                                {isPublished ? 'Hide' : 'Publish'}
+                                                            </Button>
+                                                        ) : (
+                                                            <Link href={`/admin/property-requests/${p._id}`}>
+                                                                <Button size="sm" variant="ghost">
+                                                                    {p.approvalStatus === 'pending' ? 'Review' : 'Details'}
+                                                                </Button>
+                                                            </Link>
+                                                        )}
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            className="text-red-600 hover:text-red-700"
+                                                            onClick={() => handleDeleteProperty(p._id)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+                                            )
+                                        })()
                                     ))}
                                 </tbody>
                             </table>

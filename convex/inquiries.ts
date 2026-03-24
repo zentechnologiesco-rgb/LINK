@@ -22,6 +22,7 @@ export const getForTenant = query({
         const enrichedInquiries = await Promise.all(
             inquiries.map(async (inquiry) => {
                 const property = await ctx.db.get(inquiry.propertyId);
+                const unit = inquiry.unitId ? await ctx.db.get(inquiry.unitId) : null;
                 return {
                     ...inquiry,
                     property: property ? {
@@ -29,6 +30,10 @@ export const getForTenant = query({
                         address: property.address,
                         images: property.images,
                         priceNad: property.priceNad,
+                    } : null,
+                    unit: unit ? {
+                        title: unit.title,
+                        unitCode: unit.unitCode,
                     } : null,
                 };
             })
@@ -57,12 +62,17 @@ export const getForLandlord = query({
         const enrichedInquiries = await Promise.all(
             inquiries.map(async (inquiry) => {
                 const property = await ctx.db.get(inquiry.propertyId);
+                const unit = inquiry.unitId ? await ctx.db.get(inquiry.unitId) : null;
                 const tenant = await ctx.db.get(inquiry.tenantId);
                 return {
                     ...inquiry,
                     property: property ? {
                         title: property.title,
                         address: property.address,
+                    } : null,
+                    unit: unit ? {
+                        title: unit.title,
+                        unitCode: unit.unitCode,
                     } : null,
                     tenant: tenant ? {
                         fullName: tenant.fullName,
@@ -84,12 +94,14 @@ export const getById = query({
         if (!inquiry) return null;
 
         const property = await ctx.db.get(inquiry.propertyId);
+        const unit = inquiry.unitId ? await ctx.db.get(inquiry.unitId) : null;
         const tenant = await ctx.db.get(inquiry.tenantId);
         const landlord = await ctx.db.get(inquiry.landlordId);
 
         return {
             ...inquiry,
             property,
+            unit,
             tenant: tenant ? { fullName: tenant.fullName, email: tenant.email, phone: tenant.phone } : null,
             landlord: landlord ? { fullName: landlord.fullName, email: landlord.email } : null,
         };
@@ -100,6 +112,7 @@ export const getById = query({
 export const create = mutation({
     args: {
         propertyId: v.id("properties"),
+        unitId: v.optional(v.id("propertyUnits")),
         message: v.string(),
         phone: v.optional(v.string()), // Used to update profile if needed or just logged
         moveInDate: v.optional(v.string()),
@@ -110,6 +123,10 @@ export const create = mutation({
 
         const property = await ctx.db.get(args.propertyId);
         if (!property) throw new Error("Property not found");
+        const unit = args.unitId ? await ctx.db.get(args.unitId) : null;
+        if (args.unitId && (!unit || unit.propertyId !== args.propertyId)) {
+            throw new Error("Unit not found for this property");
+        }
 
         let inquiryId;
 
@@ -117,7 +134,12 @@ export const create = mutation({
         const existing = await ctx.db
             .query("inquiries")
             .withIndex("by_tenantId", (q) => q.eq("tenantId", userId))
-            .filter((q) => q.eq(q.field("propertyId"), args.propertyId))
+            .filter((q) =>
+                q.and(
+                    q.eq(q.field("propertyId"), args.propertyId),
+                    args.unitId ? q.eq(q.field("unitId"), args.unitId) : q.eq(q.field("unitId"), undefined),
+                ),
+            )
             .first();
 
         if (existing) {
@@ -129,6 +151,7 @@ export const create = mutation({
         } else {
             inquiryId = await ctx.db.insert("inquiries", {
                 propertyId: args.propertyId,
+                unitId: args.unitId,
                 tenantId: userId,
                 landlordId: property.landlordId,
                 message: args.message, // Initial message context
@@ -198,6 +221,7 @@ export const getUserInquiries = query({
             const otherPartyId = isLandlord ? inquiry.tenantId : inquiry.landlordId;
             const otherParty = await ctx.db.get(otherPartyId);
             const property = await ctx.db.get(inquiry.propertyId);
+            const unit = inquiry.unitId ? await ctx.db.get(inquiry.unitId) : null;
 
             // Get last message? Ideally yes for sorting.
             // For now, let's just return basic info. 
@@ -209,9 +233,21 @@ export const getUserInquiries = query({
                 .order("desc")
                 .first();
 
+            const unreadMessages = await ctx.db
+                .query("messages")
+                .withIndex("by_inquiryId", (q) => q.eq("inquiryId", inquiry._id))
+                .filter((q) =>
+                    q.and(
+                        q.eq(q.field("readAt"), undefined),
+                        q.neq(q.field("senderId"), userId)
+                    )
+                )
+                .collect();
+
             return {
                 ...inquiry,
                 property: property ? { title: property.title } : null,
+                unit: unit ? { title: unit.title, unitCode: unit.unitCode } : null,
                 otherParty: otherParty ? {
                     _id: otherParty._id,
                     fullName: otherParty.fullName,
@@ -221,8 +257,10 @@ export const getUserInquiries = query({
                 lastMessage: lastMessage ? {
                     content: lastMessage.content,
                     createdAt: lastMessage._creationTime,
+                    senderId: lastMessage.senderId,
                 } : null,
                 updatedAt: lastMessage ? lastMessage._creationTime : inquiry._creationTime,
+                unreadCount: unreadMessages.length,
             };
         }));
 
@@ -234,6 +272,7 @@ export const getUserInquiries = query({
 export const getOrCreateForProperty = mutation({
     args: {
         propertyId: v.id("properties"),
+        unitId: v.optional(v.id("propertyUnits")),
     },
     handler: async (ctx, args) => {
         const userId = await auth.getUserId(ctx);
@@ -241,6 +280,10 @@ export const getOrCreateForProperty = mutation({
 
         const property = await ctx.db.get(args.propertyId);
         if (!property) throw new Error("Property not found");
+        const unit = args.unitId ? await ctx.db.get(args.unitId) : null;
+        if (args.unitId && (!unit || unit.propertyId !== args.propertyId)) {
+            throw new Error("Unit not found for this property");
+        }
 
         // Prevent landlords from creating inquiries with themselves
         if (property.landlordId === userId) {
@@ -251,7 +294,12 @@ export const getOrCreateForProperty = mutation({
         const existing = await ctx.db
             .query("inquiries")
             .withIndex("by_tenantId", (q) => q.eq("tenantId", userId))
-            .filter((q) => q.eq(q.field("propertyId"), args.propertyId))
+            .filter((q) =>
+                q.and(
+                    q.eq(q.field("propertyId"), args.propertyId),
+                    args.unitId ? q.eq(q.field("unitId"), args.unitId) : q.eq(q.field("unitId"), undefined),
+                ),
+            )
             .first();
 
         if (existing) {
@@ -261,6 +309,7 @@ export const getOrCreateForProperty = mutation({
         // Create new inquiry
         const inquiryId = await ctx.db.insert("inquiries", {
             propertyId: args.propertyId,
+            unitId: args.unitId,
             tenantId: userId,
             landlordId: property.landlordId,
             message: "", // No initial message, chat will be empty

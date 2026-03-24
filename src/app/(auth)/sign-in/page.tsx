@@ -1,14 +1,11 @@
 'use client'
 
-import { useState, Suspense, useEffect } from 'react'
+import { useState, Suspense, useEffect, FormEvent } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { Eye, EyeOff, ArrowLeft, AlertCircle, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, ArrowLeft, Loader2, AlertCircle } from 'lucide-react'
 import { useAuthActions } from "@convex-dev/auth/react"
 import { useUser } from '@/components/providers/UserProvider'
 import { getFriendlyAuthError, getSignInFieldErrors, type AuthField, type AuthFieldErrors } from '@/lib/auth-feedback'
@@ -23,7 +20,6 @@ function SignInContent() {
     const { signIn } = useAuthActions()
     const { isAuthenticated, isLoading: authLoading } = useUser()
 
-    // Get the redirect URL from query params
     const redirectUrl = searchParams.get('redirect')
 
     useEffect(() => {
@@ -40,7 +36,7 @@ function SignInContent() {
         setFormError(null)
     }
 
-    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    async function handleSubmit(e: FormEvent<HTMLFormElement>) {
         e.preventDefault()
 
         const formData = new FormData(e.currentTarget)
@@ -52,8 +48,8 @@ function SignInContent() {
         const nextFieldErrors = getSignInFieldErrors(values)
         if (Object.keys(nextFieldErrors).length > 0) {
             setFieldErrors(nextFieldErrors)
-            setFormError('Please fix the highlighted fields and try again.')
-            toast.error('Please check your email and password.')
+            setFormError('Please check the highlighted fields below.')
+            toast.error('Check your email and password.')
             return
         }
 
@@ -65,7 +61,7 @@ function SignInContent() {
         try {
             await signIn("password", formData)
             router.refresh()
-            // Redirect handled by useEffect or router.push in Convex
+            // Redirect handled by useEffect or Convex
         } catch (error) {
             console.error(error)
             const feedback = getFriendlyAuthError(error, 'signIn')
@@ -79,151 +75,148 @@ function SignInContent() {
     if (authLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-white">
-                <Loader2 className="h-8 w-8 animate-spin text-neutral-900" />
+                <Loader2 className="h-8 w-8 animate-spin text-neutral-300" />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-white relative overflow-hidden flex flex-col font-sans selection:bg-neutral-200">
-            {/* Header */}
-            <header className="relative z-10 flex items-center justify-between px-6 py-6 sm:px-10">
-                <Link
-                    href="/"
-                    className="flex items-center justify-center w-11 h-11 border border-neutral-200 text-neutral-900 transition-all rounded-full hover:bg-neutral-50 active:scale-95"
+        <div className="min-h-screen bg-white relative flex flex-col font-sans selection:bg-neutral-200">
+            {/* iOS Top Nav Area */}
+            <header className="safe-top flex items-center justify-between px-4 h-[60px] sm:h-[72px] shrink-0">
+                <button
+                    onClick={() => router.back()}
+                    className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors -ml-2 text-neutral-900 outline-none"
+                    aria-label="Go back"
                 >
-                    <ArrowLeft className="h-5 w-5" strokeWidth={2.5} />
-                </Link>
-                <Link href="/" className="font-semibold text-3xl tracking-tighter text-neutral-900 absolute left-1/2 -translate-x-1/2">
-                    LINK
-                </Link>
-                <div className="w-11" />
+                    <ArrowLeft className="h-[22px] w-[22px]" strokeWidth={2.5} />
+                </button>
             </header>
 
-            {/* Main Content */}
-            <main className="flex-1 flex flex-col justify-center px-6 pb-12 relative z-10 w-full max-w-[500px] mx-auto">
-                <div className="w-full space-y-8">
-                    {/* Header Text */}
-                    <div className="space-y-3">
-                        <h1 className="text-[36px] sm:text-[44px] font-semibold text-neutral-900 tracking-[-0.03em] leading-tight text-center">
-                            Welcome back
-                        </h1>
-                        <p className="text-neutral-500 text-[17px] font-medium text-center mt-2">
-                            Sign in to continue your journey
-                        </p>
-                    </div>
-
-                    {/* Form Card */}
-                    <div className="bg-white border border-neutral-200/60 rounded-[32px] p-6 sm:p-10">
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            {formError && (
-                                <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
-                                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                                    <p className="text-[14px] font-medium leading-5">{formError}</p>
-                                </div>
-                            )}
-                            <div className="space-y-5">
-                                {/* Email */}
-                                <div className="space-y-2.5">
-                                    <Label htmlFor="email" className="text-[14px] font-semibold text-neutral-900 tracking-tight ml-1">
-                                        Email Address
-                                    </Label>
-                                    <Input
-                                        id="email"
-                                        name="email"
-                                        type="email"
-                                        placeholder="name@example.com"
-                                        required
-                                        disabled={isLoading}
-                                        aria-invalid={!!fieldErrors.email}
-                                        onChange={() => clearFieldError('email')}
-                                        className={cn(
-                                            "h-14 rounded-2xl bg-[#F8F9FA] border border-neutral-200 hover:border-neutral-300 focus:bg-white focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 transition-all font-medium placeholder:text-neutral-400 placeholder:font-medium px-5 text-[16px]",
-                                            fieldErrors.email && "border-red-300 bg-red-50/60 focus:border-red-500 focus:ring-red-500/20"
-                                        )}
-                                    />
-                                    {fieldErrors.email && (
-                                        <p className="ml-1 text-[13px] font-medium text-red-600">{fieldErrors.email}</p>
-                                    )}
-                                </div>
-
-                                {/* Password */}
-                                <div className="space-y-2.5">
-                                    <div className="flex items-center justify-between ml-1">
-                                        <Label htmlFor="password" className="text-[14px] font-semibold text-neutral-900 tracking-tight">
-                                            Password
-                                        </Label>
-                                        <Link
-                                            href="/forgot-password"
-                                            className="text-[13px] font-medium text-neutral-500 hover:text-neutral-900 transition-colors underline underline-offset-2"
-                                        >
-                                            Forgot password?
-                                        </Link>
-                                    </div>
-                                    <div className="relative">
-                                        <Input
-                                            id="password"
-                                            name="password"
-                                            type={showPassword ? 'text' : 'password'}
-                                            required
-                                            disabled={isLoading}
-                                            aria-invalid={!!fieldErrors.password}
-                                            onChange={() => clearFieldError('password')}
-                                            className={cn(
-                                                "h-14 rounded-2xl bg-[#F8F9FA] border border-neutral-200 hover:border-neutral-300 focus:bg-white focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 transition-all font-medium placeholder:text-neutral-400 placeholder:font-medium px-5 text-[16px] pr-12",
-                                                fieldErrors.password && "border-red-300 bg-red-50/60 focus:border-red-500 focus:ring-red-500/20"
-                                            )}
-                                            placeholder="Enter your password"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-900 transition-colors p-1"
-                                        >
-                                            {showPassword ? (
-                                                <EyeOff className="h-5 w-5" strokeWidth={2.5} />
-                                            ) : (
-                                                <Eye className="h-5 w-5" strokeWidth={2.5} />
-                                            )}
-                                        </button>
-                                    </div>
-                                    {fieldErrors.password && (
-                                        <p className="ml-1 text-[13px] font-medium text-red-600">{fieldErrors.password}</p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Submit Button */}
-                            <Button
-                                type="submit"
-                                disabled={isLoading}
-                                className="w-full h-14 bg-[#C4F135] hover:bg-[#b5e02a] text-black font-semibold text-[17px] rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center mt-8 border-0 shadow-none"
-                            >
-                                {isLoading ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                        Signing you in...
-                                    </>
-                                ) : (
-                                    'Sign In'
-                                )}
-                            </Button>
-                        </form>
-                    </div>
-
-                    {/* Sign Up Link */}
-                    <div className="text-center pt-2">
-                        <p className="text-neutral-500 font-medium text-[15px]">
-                            Don't have an account?{' '}
-                            <Link
-                                href={redirectUrl ? `/sign-up?redirect=${encodeURIComponent(redirectUrl)}` : '/sign-up'}
-                                className="text-black font-semibold hover:underline decoration-2 underline-offset-4 decoration-[#C4F135]"
-                            >
-                                Create one now
-                            </Link>
-                        </p>
-                    </div>
+            {/* Main Content Area */}
+            <main className="flex-1 flex flex-col px-6 sm:px-12 w-full max-w-[480px] mx-auto pb-8">
+                
+                {/* Large Native Title */}
+                <div className="mt-2 mb-10">
+                    <h1 className="text-[34px] sm:text-[40px] font-bold text-neutral-900 tracking-tight leading-tight">
+                        Sign in
+                    </h1>
+                    <p className="text-[17px] text-neutral-500 font-medium mt-1.5 tracking-tight">
+                        Please enter your details to continue.
+                    </p>
                 </div>
+
+                {/* Form Elements */}
+                <form onSubmit={handleSubmit} className="flex-1 flex flex-col" noValidate>
+                    {formError && (
+                        <div className="mb-6 flex items-start gap-3 rounded-[16px] bg-red-50 px-4 py-3 text-red-700">
+                            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" strokeWidth={2.5} />
+                            <p className="text-[14px] font-semibold leading-relaxed tracking-tight">{formError}</p>
+                        </div>
+                    )}
+
+                    <div className="space-y-5 flex-1 pb-10">
+                        {/* Email Native Input */}
+                        <div className="space-y-2">
+                            <label htmlFor="email" className="text-[13px] font-bold text-neutral-900 tracking-wide uppercase px-1">
+                                Email Address
+                            </label>
+                            <div className="relative">
+                                <input
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    placeholder="name@example.com"
+                                    required
+                                    disabled={isLoading}
+                                    aria-invalid={!!fieldErrors.email}
+                                    onChange={() => clearFieldError('email')}
+                                    className={cn(
+                                        "w-full h-14 rounded-[16px] bg-neutral-100 border-[1.5px] border-transparent outline-none px-4 text-[16px] font-medium transition-all text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-black focus:shadow-[0_0_0_4px_rgba(0,0,0,0.05)]",
+                                        fieldErrors.email && "border-red-400 focus:border-red-500 focus:shadow-[0_0_0_4px_rgba(239,68,68,0.1)] bg-red-50"
+                                    )}
+                                />
+                                {fieldErrors.email && (
+                                    <p className="mt-2 ml-1 text-[13px] font-semibold text-red-500 tracking-tight">{fieldErrors.email}</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Password Native Input */}
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between px-1">
+                                <label htmlFor="password" className="text-[13px] font-bold text-neutral-900 tracking-wide uppercase">
+                                    Password
+                                </label>
+                                <Link
+                                    href="/forgot-password"
+                                    className="text-[13px] font-bold text-black hover:text-neutral-600 transition-colors"
+                                    tabIndex={-1}
+                                >
+                                    Forgot?
+                                </Link>
+                            </div>
+                            <div className="relative">
+                                <input
+                                    id="password"
+                                    name="password"
+                                    type={showPassword ? 'text' : 'password'}
+                                    required
+                                    disabled={isLoading}
+                                    aria-invalid={!!fieldErrors.password}
+                                    onChange={() => clearFieldError('password')}
+                                    placeholder="Enter your password"
+                                    className={cn(
+                                        "w-full h-14 rounded-[16px] bg-neutral-100 border-[1.5px] border-transparent outline-none pl-4 pr-12 text-[16px] font-medium transition-all text-neutral-900 placeholder:text-neutral-400 focus:bg-white focus:border-black focus:shadow-[0_0_0_4px_rgba(0,0,0,0.05)]",
+                                        fieldErrors.password && "border-red-400 focus:border-red-500 focus:shadow-[0_0_0_4px_rgba(239,68,68,0.1)] bg-red-50"
+                                    )}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 flex items-center justify-center text-neutral-400 hover:text-neutral-900 transition-colors outline-none rounded-full"
+                                    aria-label={showPassword ? "Hide password" : "Show password"}
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="h-[22px] w-[22px]" strokeWidth={2} />
+                                    ) : (
+                                        <Eye className="h-[22px] w-[22px]" strokeWidth={2} />
+                                    )}
+                                </button>
+                            </div>
+                            {fieldErrors.password && (
+                                <p className="mt-2 ml-1 text-[13px] font-semibold text-red-500 tracking-tight">{fieldErrors.password}</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Bottom Sticky-like Action Area */}
+                    <div className="mt-auto space-y-4">
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full h-14 bg-black text-white hover:bg-neutral-800 disabled:opacity-50 disabled:active:scale-100 font-bold text-[17px] tracking-tight rounded-[16px] active:scale-[0.98] transition-all flex items-center justify-center shadow-md select-none outline-none focus-visible:ring-4 focus-visible:ring-black/20"
+                        >
+                            {isLoading ? (
+                                <Loader2 className="h-[22px] w-[22px] animate-spin" />
+                            ) : (
+                                'Sign In'
+                            )}
+                        </button>
+                        
+                        <div className="text-center pt-1.5 pb-2">
+                            <p className="text-[15px] font-medium text-neutral-500">
+                                Don't have an account?{' '}
+                                <Link
+                                    href={redirectUrl ? `/sign-up?redirect=${encodeURIComponent(redirectUrl)}` : '/sign-up'}
+                                    className="text-black font-bold outline-none rounded-md focus-visible:ring-2 focus-visible:ring-black"
+                                >
+                                    Sign up
+                                </Link>
+                            </p>
+                        </div>
+                    </div>
+                </form>
             </main>
         </div>
     )
@@ -233,7 +226,7 @@ export default function SignInPage() {
     return (
         <Suspense fallback={
             <div className="min-h-screen flex items-center justify-center bg-white">
-                <Loader2 className="h-8 w-8 animate-spin text-neutral-900" />
+                <Loader2 className="h-8 w-8 animate-spin text-neutral-300" />
             </div>
         }>
             <SignInContent />

@@ -14,9 +14,9 @@ interface RequestFiltersProps {
 
 const statusOptions = [
     { value: 'all', label: 'All' },
-    { value: 'pending', label: 'Pending' },
+    { value: 'pending', label: 'In Review' },
     { value: 'approved', label: 'Approved' },
-    { value: 'rejected', label: 'Rejected' },
+    { value: 'rejected', label: 'Needs Changes' },
 ]
 
 export function RequestFilters({ currentStatus, currentSearch }: RequestFiltersProps) {

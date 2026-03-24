@@ -12,6 +12,7 @@ import {
     Cat,
     Check,
     ChevronLeft,
+    ChevronRight,
     CircleParking,
     Cigarette,
     Clock3,
@@ -20,7 +21,9 @@ import {
     Eye,
     FileText,
     Home,
+    Layers3,
     Loader2,
+    MapPin,
     MessageSquareMore,
     PawPrint,
     Rabbit,
@@ -55,12 +58,28 @@ import {
     type PetPolicy,
 } from '@/constants/lease'
 
+/* ── Formats ── */
 const currency = new Intl.NumberFormat('en-NA', {
     style: 'currency',
     currency: 'NAD',
     maximumFractionDigits: 0,
 })
 
+function formatCurrency(value: number | null | undefined) {
+    return currency.format(value || 0)
+}
+
+function getOrdinal(n: number) {
+    if (n > 3 && n < 21) return 'th'
+    switch (n % 10) {
+        case 1: return 'st'
+        case 2: return 'nd'
+        case 3: return 'rd'
+        default: return 'th'
+    }
+}
+
+/* ── Types & Maps ── */
 type TenantDocumentUpload = {
     type: string
     storageId: Id<'_storage'>
@@ -76,7 +95,18 @@ const petPolicyIconMap: Record<PetPolicy, ElementType> = {
     negotiable: MessageSquareMore,
 }
 
+const utilityIconMap: Record<string, ElementType> = {
+    Electricity: Zap,
+    Water: Zap,
+    Gas: Zap,
+    Internet: Zap,
+    Trash: Zap,
+    Sewage: Zap,
+}
+
+/* ── Main Component ── */
 export function LeaseDetailClient({ leaseId }: { leaseId: string }) {
+    // ── Queries ──
     const lease = useQuery(api.leases.getById, { leaseId: leaseId as Id<'leases'> })
     const payments = useQuery(api.payments.getByLease, { leaseId: leaseId as Id<'leases'> })
     const documentUrls = useQuery(
@@ -86,47 +116,50 @@ export function LeaseDetailClient({ leaseId }: { leaseId: string }) {
             : 'skip',
     )
 
+    // ── Mutations ──
     const landlordDecision = useMutation(api.leases.landlordDecision)
     const requestRevision = useMutation(api.leases.requestRevision)
     const terminateLease = useMutation(api.leases.terminate)
     const sendToTenant = useMutation(api.leases.sendToTenant)
 
+    // ── State ──
     const [signatureData, setSignatureData] = useState('')
     const [revisionNotes, setRevisionNotes] = useState('')
     const [rejectReason, setRejectReason] = useState('')
     const [terminateReason, setTerminateReason] = useState('')
+
     const [isApproving, setIsApproving] = useState(false)
     const [isSending, setIsSending] = useState(false)
     const [isRequestingRevision, setIsRequestingRevision] = useState(false)
     const [isRejecting, setIsRejecting] = useState(false)
     const [isTerminating, setIsTerminating] = useState(false)
+
     const [showApproveDialog, setShowApproveDialog] = useState(false)
     const [showRevisionDialog, setShowRevisionDialog] = useState(false)
     const [showRejectDialog, setShowRejectDialog] = useState(false)
     const [showTerminateDialog, setShowTerminateDialog] = useState(false)
 
+    // ── Render: Loading & Error ──
     if (lease === undefined || payments === undefined) {
-        return (
-            <div className="min-h-[60vh] flex items-center justify-center">
-                <div className="flex flex-col items-center gap-3">
-                    <div className="h-8 w-8 rounded-full border-2 border-neutral-200 border-t-neutral-900 animate-spin" />
-                    <p className="text-sm font-medium text-neutral-400">Loading lease...</p>
-                </div>
-            </div>
-        )
+        return <PageSkeleton />
     }
 
     if (!lease) {
         return (
-            <div className="py-20 text-center">
-                <h2 className="text-lg font-semibold text-neutral-900">Lease not found</h2>
-                <Link href="/landlord/leases" className="mt-2 inline-flex text-sm text-neutral-500 underline">
+            <div className="flex min-h-screen flex-col items-center justify-center bg-white px-5 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100">
+                    <FileText className="h-7 w-7 text-neutral-400" strokeWidth={1.8} />
+                </div>
+                <h2 className="mt-5 text-lg font-semibold text-neutral-900">Lease not found</h2>
+                <p className="mt-2 text-sm text-neutral-500">The lease you&rsquo;re looking for doesn&rsquo;t exist or was removed.</p>
+                <Link href="/landlord/leases" className="mt-6 flex h-11 items-center rounded-full bg-neutral-950 px-6 text-sm font-semibold text-white active:scale-95">
                     Back to leases
                 </Link>
             </div>
         )
     }
 
+    // ── Computations ──
     const daysRemaining = lease.status === 'approved' && lease.endDate
         ? differenceInDays(new Date(lease.endDate), new Date())
         : null
@@ -163,94 +196,68 @@ export function LeaseDetailClient({ leaseId }: { leaseId: string }) {
         { icon: CircleParking, label: lease.parkingIncluded ? 'Parking included' : 'No parking' },
         { icon: Cigarette, label: lease.smokingAllowed ? 'Smoking allowed' : 'No smoking' },
         { icon: Home, label: lease.sublettingAllowed ? 'Subletting allowed' : 'No subletting' },
-        ...(lease.utilitiesIncluded?.map((utility: string) => ({ icon: Zap, label: utility })) ?? []),
+        ...(lease.utilitiesIncluded?.map((utility: string) => ({ icon: utilityIconMap[utility] || Zap, label: utility })) ?? []),
     ]
 
-    const headerPills = [
-        { icon: Wallet2, label: 'Rent', value: formatCurrency(lease.monthlyRent) },
-        { icon: Wallet2, label: 'Deposit', value: formatCurrency(lease.deposit ?? 0) },
-        {
-            icon: Clock3,
-            label: lease.status === 'approved' ? 'Days left' : 'Term',
-            value: daysRemaining !== null
-                ? `${Math.max(daysRemaining, 0)} days`
-                : `${Math.ceil(Math.abs(new Date(lease.endDate).getTime() - new Date(lease.startDate).getTime()) / (1000 * 60 * 60 * 24 * 30))} months`,
-        },
-        { icon: User, label: 'Tenant', value: lease.tenant?.fullName || 'Tenant' },
-    ]
-
+    // ── Action Bar Configuration ──
     const actionBar = (() => {
         if (lease.status === 'draft') {
             return {
-                primaryLabel: 'Send to tenant',
-                primaryAction: async () => {
-                    setIsSending(true)
-                    try {
-                        await sendToTenant({ leaseId: leaseId as Id<'leases'> })
-                        toast.success('Lease sent to tenant!')
-                    } catch (error: unknown) {
-                        toast.error(error instanceof Error ? error.message : 'Failed to send')
-                    } finally {
-                        setIsSending(false)
-                    }
+                primary: {
+                    label: 'Send to tenant',
+                    disabled: false,
+                    icon: Send,
+                    danger: false,
+                    action: async () => {
+                        setIsSending(true)
+                        try {
+                            await sendToTenant({ leaseId: leaseId as Id<'leases'> })
+                            toast.success('Lease sent to tenant!')
+                        } catch (error: unknown) {
+                            toast.error(error instanceof Error ? error.message : 'Failed to send')
+                        } finally {
+                            setIsSending(false)
+                        }
+                    },
                 },
-                primaryDisabled: isSending,
-                primaryIcon: isSending ? Loader2 : Send,
-                primaryDanger: false,
-                secondary: null,
+                secondary: [],
             }
         }
-
         if (lease.status === 'tenant_signed') {
             return {
-                primaryLabel: 'Approve lease',
-                primaryAction: () => setShowApproveDialog(true),
-                primaryDisabled: false,
-                primaryIcon: Check,
-                primaryDanger: false,
-                secondary: {
-                    first: {
-                        label: 'Request revision',
-                        action: () => setShowRevisionDialog(true),
-                        icon: RotateCcw,
-                    },
-                    second: {
-                        label: 'Reject',
-                        action: () => setShowRejectDialog(true),
-                        icon: X,
-                        danger: true,
-                    },
+                primary: {
+                    label: 'Approve',
+                    disabled: false,
+                    icon: Check,
+                    danger: false,
+                    action: () => setShowApproveDialog(true),
                 },
+                secondary: [
+                    { label: 'Revise', icon: RotateCcw, danger: false, action: () => setShowRevisionDialog(true) },
+                    { label: 'Reject', icon: X, danger: true, action: () => setShowRejectDialog(true) },
+                ],
             }
         }
-
         if (lease.status === 'approved') {
             return {
-                primaryLabel: 'Terminate lease',
-                primaryAction: () => setShowTerminateDialog(true),
-                primaryDisabled: false,
-                primaryIcon: Ban,
-                primaryDanger: true,
-                secondary: null,
+                primary: null,
+                secondary: [
+                    { label: 'Terminate lease', icon: Ban, danger: true, action: () => setShowTerminateDialog(true) },
+                ],
             }
         }
-
         return null
     })()
 
+    // ── Handlers ──
     const handleApprove = async () => {
         if (!signatureData) {
             toast.error('Please sign the lease first')
             return
         }
-
         setIsApproving(true)
         try {
-            await landlordDecision({
-                leaseId: leaseId as Id<'leases'>,
-                approved: true,
-                signatureData,
-            })
+            await landlordDecision({ leaseId: leaseId as Id<'leases'>, approved: true, signatureData })
             toast.success('Lease approved. Property marked as leased.')
             setShowApproveDialog(false)
             setSignatureData('')
@@ -264,11 +271,7 @@ export function LeaseDetailClient({ leaseId }: { leaseId: string }) {
     const handleReject = async () => {
         setIsRejecting(true)
         try {
-            await landlordDecision({
-                leaseId: leaseId as Id<'leases'>,
-                approved: false,
-                notes: rejectReason,
-            })
+            await landlordDecision({ leaseId: leaseId as Id<'leases'>, approved: false, notes: rejectReason })
             toast.success('Lease rejected.')
             setShowRejectDialog(false)
             setRejectReason('')
@@ -284,13 +287,9 @@ export function LeaseDetailClient({ leaseId }: { leaseId: string }) {
             toast.error('Please provide revision notes')
             return
         }
-
         setIsRequestingRevision(true)
         try {
-            await requestRevision({
-                leaseId: leaseId as Id<'leases'>,
-                notes: revisionNotes,
-            })
+            await requestRevision({ leaseId: leaseId as Id<'leases'>, notes: revisionNotes })
             toast.success('Revision request sent to tenant.')
             setShowRevisionDialog(false)
             setRevisionNotes('')
@@ -304,10 +303,7 @@ export function LeaseDetailClient({ leaseId }: { leaseId: string }) {
     const handleTerminate = async () => {
         setIsTerminating(true)
         try {
-            await terminateLease({
-                leaseId: leaseId as Id<'leases'>,
-                reason: terminateReason,
-            })
+            await terminateLease({ leaseId: leaseId as Id<'leases'>, reason: terminateReason })
             toast.success('Lease terminated. Property is now available.')
             setShowTerminateDialog(false)
             setTerminateReason('')
@@ -319,573 +315,529 @@ export function LeaseDetailClient({ leaseId }: { leaseId: string }) {
     }
 
     return (
-        <>
-            <div className="mx-auto max-w-[820px] font-sans pb-28">
-                <section className="border-b border-neutral-100 pb-6">
+        <div className="mx-auto min-h-screen max-w-[820px] bg-white pb-32 font-sans">
+            {/* ── Sticky Header ── */}
+            <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-2xl">
+                <div className="flex h-14 items-center justify-between px-3 sm:px-4">
                     <Link
                         href="/landlord/leases"
-                        className="inline-flex items-center gap-1.5 text-sm text-neutral-500 transition-colors hover:text-neutral-900"
+                        className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-600 transition-colors active:scale-95 hover:bg-neutral-100"
+                        aria-label="Back to leases"
                     >
-                        <ChevronLeft className="h-4 w-4" strokeWidth={2.2} />
-                        Leases
+                        <ChevronLeft className="h-6 w-6" strokeWidth={2} />
                     </Link>
+                    <p className="text-[15px] font-semibold tracking-[-0.02em] text-neutral-950">
+                        {lease.property?.title || 'Lease Detail'}
+                    </p>
+                    <div className="w-10" /> {/* Spacer for centering */}
+                </div>
+            </header>
 
-                    <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-start">
-                        <div className="h-28 w-full shrink-0 overflow-hidden rounded-[24px] bg-neutral-100 sm:h-28 sm:w-32">
-                            {lease.property?.imageUrl ? (
-                                /* eslint-disable-next-line @next/next/no-img-element */
-                                <img
-                                    src={lease.property.imageUrl}
-                                    alt={lease.property?.title || 'Property'}
-                                    className="h-full w-full object-cover"
-                                />
-                            ) : (
-                                <div className="flex h-full items-center justify-center text-neutral-400">
-                                    <Building2 className="h-8 w-8" strokeWidth={1.8} />
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-3">
-                                <p className="text-sm font-medium text-neutral-500">Lease detail</p>
-                                <LeaseStatusBadge status={lease.status} />
-                            </div>
-                            <h1 className="mt-2 text-[2rem] font-semibold tracking-[-0.04em] text-neutral-950">
-                                {lease.property?.title || 'Property'}
-                            </h1>
-                            <p className="mt-2 text-[15px] leading-7 text-neutral-600">
-                                {lease.property?.address || 'Address not available'}
-                            </p>
-                            <p className="mt-2 text-sm text-neutral-500">
-                                Tenant: {lease.tenant?.fullName || 'Tenant'}{lease.tenant?.email ? ` • ${lease.tenant.email}` : ''}
-                            </p>
-                        </div>
-                    </div>
-
-                    {lease.status === 'revision_requested' && (
-                        <div className="mt-5 rounded-[24px] border border-amber-200 bg-amber-50/80 px-5 py-4">
-                            <p className="text-sm font-semibold text-amber-900">Waiting for tenant updates</p>
-                            <p className="mt-1 text-sm leading-6 text-amber-800">
-                                {lease.landlordNotes || 'A revision request was sent and the tenant still needs to update the submission.'}
-                            </p>
+            {/* ── Hero Section ── */}
+            <div className="px-5 pt-2 sm:px-6">
+                {/* Property thumbnail full width */}
+                <div className="relative aspect-[21/9] w-full overflow-hidden rounded-[20px] bg-neutral-100 sm:aspect-[21/7]">
+                    {lease.property?.imageUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                            src={lease.property.imageUrl}
+                            alt={lease.property?.title || 'Property'}
+                            className="absolute inset-0 h-full w-full object-cover"
+                        />
+                    ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-neutral-400">
+                            <Building2 className="h-10 w-10" strokeWidth={1.5} />
                         </div>
                     )}
-
-                    <div className="mt-5 flex flex-wrap gap-2">
-                        {headerPills.map((pill) => (
-                            <HeaderPill key={pill.label} icon={pill.icon} label={pill.label} value={pill.value} />
-                        ))}
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/60" />
+                    <div className="absolute bottom-4 left-4 right-4">
+                        <LeaseStatusBadge status={lease.status} />
                     </div>
-                </section>
+                </div>
 
-                <div className="space-y-8 pt-6">
-                    <DetailSection
-                        title="Progress"
-                        description="Track the current lease state and the steps already completed."
-                    >
-                        <LeaseStatusTimeline
-                            status={lease.status}
-                            createdAt={lease._creationTime}
-                            sentAt={lease.sentAt}
-                            signedAt={lease.signedAt}
-                            approvedAt={lease.approvedAt}
-                        />
-                    </DetailSection>
+                {/* Title & Tenant block */}
+                <div className="mt-5">
+                    <h1 className="text-[2rem] font-bold tracking-[-0.04em] text-neutral-950 sm:text-[2.25rem]">
+                        {lease.property?.title || 'Property'}
+                    </h1>
+                    <div className="mt-1.5 flex items-center gap-1.5 text-[15px] text-neutral-500">
+                        <MapPin className="h-4 w-4 shrink-0" strokeWidth={2} />
+                        <span className="truncate">{lease.property?.address || 'Address not available'}</span>
+                    </div>
 
-                    <DetailSection
-                        title="Payment summary"
-                        description="Snapshot of collected, pending, and overdue amounts for this agreement."
-                    >
-                        <div className="flex flex-wrap gap-2">
-                            <InlineMetric label="Collected" value={formatCurrency(totalCollected)} tone="success" />
-                            <InlineMetric label="Pending" value={formatCurrency(totalPending)} tone="default" />
-                            <InlineMetric label="Overdue" value={formatCurrency(totalOverdue)} tone="danger" />
+                    <div className="mt-6 flex items-center gap-3.5 rounded-[20px] border border-neutral-200/80 bg-neutral-50/50 p-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-white ring-1 ring-neutral-200/60 shadow-sm">
+                            <User className="h-5 w-5 text-neutral-500" strokeWidth={2} />
                         </div>
+                        <div className="min-w-0">
+                            <p className="truncate text-[15px] font-semibold text-neutral-950">
+                                {lease.tenant?.fullName || 'Unassigned Tenant'}
+                            </p>
+                            <p className="truncate text-[13px] text-neutral-500">
+                                {lease.tenant?.email || 'No email attached'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                        <div className="mt-5 divide-y divide-neutral-100 border-y border-neutral-200 bg-white">
-                            {payments.length > 0 ? (
-                                payments.slice(0, 6).map((payment) => (
-                                    <div key={payment._id} className="flex items-center justify-between gap-3 py-4">
+            {/* ── Banner: Revision ── */}
+            {lease.status === 'revision_requested' && (
+                <div className="px-5 pt-6 sm:px-6">
+                    <div className="rounded-[20px] border border-amber-200 bg-amber-50 px-5 py-4">
+                        <p className="text-[14px] font-bold text-amber-900">Waiting for tenant updates</p>
+                        <p className="mt-1 text-[13px] leading-6 text-amber-800">
+                            {lease.landlordNotes || 'A revision request was sent and the tenant still needs to update the submission.'}
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Main Content Grid ── */}
+            <div className="mt-8 space-y-8">
+
+                {/* Term Overview */}
+                <GroupedSection title="Term overview">
+                    <ListRow icon={Wallet2} label="Monthly rent" value={formatCurrency(lease.monthlyRent)} />
+                    <ListRow icon={Wallet2} label="Deposit" value={formatCurrency(lease.deposit ?? 0)} />
+                    <ListRow
+                        icon={Clock3}
+                        label={lease.status === 'approved' ? 'Days remaining' : 'Lease term'}
+                        value={daysRemaining !== null
+                            ? `${Math.max(daysRemaining, 0)} days`
+                            : `${Math.ceil(Math.abs(new Date(lease.endDate).getTime() - new Date(lease.startDate).getTime()) / (1000 * 60 * 60 * 24 * 30))} months`
+                        }
+                    />
+                </GroupedSection>
+
+                {/* Progress */}
+                <SectionHeader title="Timeline" description="Track the current state of this lease." />
+                <div className="px-5 sm:px-6">
+                    <LeaseStatusTimeline
+                        status={lease.status}
+                        createdAt={lease._creationTime}
+                        sentAt={lease.sentAt}
+                        signedAt={lease.signedAt}
+                        approvedAt={lease.approvedAt}
+                    />
+                </div>
+
+                {/* Payments */}
+                <SectionHeader title="Financials" description="Snapshot of payments related to this lease." />
+                <div className="px-5 sm:px-6">
+                    <div className="flex flex-wrap gap-2 pb-4">
+                        <MiniStat label="Collected" value={formatCurrency(totalCollected)} tone="success" />
+                        <MiniStat label="Pending" value={formatCurrency(totalPending)} tone="default" />
+                        <MiniStat label="Overdue" value={formatCurrency(totalOverdue)} tone="danger" />
+                    </div>
+                    <div className="overflow-hidden rounded-[20px] border border-neutral-200/80 bg-neutral-50/50">
+                        {payments.length > 0 ? (
+                            <div className="divide-y divide-neutral-200/60">
+                                {payments.slice(0, 5).map((payment) => (
+                                    <div key={payment._id} className="flex items-center justify-between px-4 py-3 sm:px-5">
                                         <div>
-                                            <p className="text-sm font-semibold capitalize text-neutral-950">
+                                            <p className="text-[14px] font-semibold capitalize text-neutral-950">
                                                 {payment.type.replace('_', ' ')}
                                             </p>
-                                            <p className="mt-1 text-sm text-neutral-500">
+                                            <p className="mt-0.5 text-[12px] text-neutral-500">
                                                 Due {format(new Date(payment.dueDate), 'MMM d, yyyy')}
                                             </p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-sm font-semibold text-neutral-950">
+                                            <p className="text-[14px] font-semibold text-neutral-950">
                                                 {formatCurrency(payment.amount)}
                                             </p>
-                                            <p
-                                                className={cn(
-                                                    'mt-1 text-xs font-medium capitalize',
-                                                    payment.status === 'paid' && 'text-emerald-700',
-                                                    payment.status === 'pending' && 'text-neutral-500',
-                                                    payment.status === 'overdue' && 'text-red-600'
-                                                )}
-                                            >
+                                            <p className={cn(
+                                                'mt-0.5 text-[11px] font-bold uppercase tracking-wide',
+                                                payment.status === 'paid' && 'text-emerald-600',
+                                                payment.status === 'pending' && 'text-neutral-500',
+                                                payment.status === 'overdue' && 'text-red-600'
+                                            )}>
                                                 {payment.status}
                                             </p>
                                         </div>
                                     </div>
-                                ))
-                            ) : (
-                                <div className="py-5 text-sm text-neutral-500">
-                                    Payment items will appear here once this lease starts generating payment records.
-                                </div>
-                            )}
-                        </div>
-                    </DetailSection>
-
-                    <DetailSection
-                        title="Rules and policies"
-                        description="The rent terms, operational rules, and property policies attached to this lease."
-                    >
-                        <div className="flex flex-wrap gap-2">
-                            {policyItems.map((item) => (
-                                <PolicyPill key={item.label} icon={item.icon} label={item.label} />
-                            ))}
-                        </div>
-                    </DetailSection>
-
-                    <DetailSection
-                        title="Lease period"
-                        description="Start and end dates for this agreement."
-                    >
-                        <div className="space-y-3">
-                            <ValueRow label="Start date" value={format(new Date(lease.startDate), 'MMM d, yyyy')} />
-                            <ValueRow label="End date" value={format(new Date(lease.endDate), 'MMM d, yyyy')} />
-                            {daysRemaining !== null && (
-                                <ValueRow label="Time remaining" value={`${Math.max(daysRemaining, 0)} days`} />
-                            )}
-                        </div>
-                    </DetailSection>
-
-                    <DetailSection
-                        title="Agreement terms"
-                        description="The clauses currently included in the lease document."
-                    >
-                        <div className="divide-y divide-neutral-100 border-y border-neutral-200 bg-white">
-                            {leaseClauses.length > 0 ? (
-                                leaseClauses.map((clause, index: number) => (
-                                    <div key={clause.id?.trim() || `clause_${index}`} className="py-5">
-                                        <p className="text-sm font-semibold text-neutral-950">
-                                            {index + 1}. {clause.title}
-                                        </p>
-                                        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
-                                            {clause.content}
-                                        </p>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="py-5 text-sm text-neutral-500">
-                                    No clauses are available on this lease yet.
-                                </div>
-                            )}
-                        </div>
-                    </DetailSection>
-
-                    {lease.tenantDocuments && lease.tenantDocuments.length > 0 && (
-                        <DetailSection
-                            title="Tenant documents"
-                            description="Files submitted by the tenant for review."
-                        >
-                            <div className="divide-y divide-neutral-100 border-y border-neutral-200 bg-white">
-                                {lease.tenantDocuments.map((document, index: number) => {
-                                    const documentUrl = documentUrlMap[document.storageId] ?? null
-                                    const documentLabel = TENANT_DOCUMENT_LABELS[document.type as keyof typeof TENANT_DOCUMENT_LABELS] || document.type.replace(/_/g, ' ')
-
-                                    return (
-                                        <div key={`${document.storageId}-${index}`} className="flex items-center justify-between gap-4 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex h-11 w-11 items-center justify-center rounded-[14px] border border-neutral-200 bg-neutral-50 text-neutral-500">
-                                                    <FileText className="h-4 w-4" strokeWidth={2} />
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-semibold text-neutral-950">
-                                                        {documentLabel}
-                                                    </p>
-                                                    <p className="mt-1 text-sm text-neutral-500">
-                                                        Uploaded {format(new Date(document.uploadedAt), 'MMM d, yyyy')}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {documentUrl ? (
-                                                <div className="flex items-center gap-2">
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="h-10 rounded-full border-neutral-200 bg-white px-4 text-sm font-medium text-neutral-700"
-                                                        onClick={() => window.open(documentUrl, '_blank', 'noopener,noreferrer')}
-                                                    >
-                                                        <Eye className="mr-1.5 h-4 w-4" strokeWidth={2} />
-                                                        View
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-10 w-10 rounded-full border border-neutral-200 text-neutral-500 shadow-none hover:bg-neutral-50 hover:text-neutral-900"
-                                                        onClick={() => window.open(documentUrl, '_blank', 'noopener,noreferrer')}
-                                                    >
-                                                        <Download className="h-4 w-4" strokeWidth={2} />
-                                                        <span className="sr-only">Open document</span>
-                                                    </Button>
-                                                </div>
-                                            ) : (
-                                                <span className="text-xs font-medium text-amber-700">
-                                                    File unavailable
-                                                </span>
-                                            )}
-                                        </div>
-                                    )
-                                })}
+                                ))}
                             </div>
-
-                            {documentUrls === undefined && (
-                                <p className="mt-3 text-xs text-neutral-400">
-                                    Fetching secure document links...
-                                </p>
-                            )}
-
-                            {lease.tenantSignatureData && lease.status !== 'revision_requested' && (
-                                <div className="mt-5 rounded-[24px] border border-neutral-200 bg-neutral-50/70 px-5 py-4">
-                                    <p className="text-sm font-semibold text-neutral-950">Tenant signature</p>
-                                    <div className="mt-3 rounded-[18px] border border-neutral-200 bg-white p-3">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                            src={lease.tenantSignatureData}
-                                            alt="Tenant signature"
-                                            className="h-16"
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                        </DetailSection>
-                    )}
-
-                    <DetailSection
-                        title="Decision guide"
-                        description="The likely next move for this lease based on its current state."
-                    >
-                        <div className="text-sm leading-7 text-neutral-600">
-                            {lease.status === 'draft' && (
-                                <p>Review the terms one more time, then send the lease to the tenant for signature.</p>
-                            )}
-                            {lease.status === 'sent_to_tenant' && (
-                                <p>The lease is waiting for the tenant to review the terms, upload documents, and sign.</p>
-                            )}
-                            {lease.status === 'tenant_signed' && (
-                                <p>Everything is back from the tenant. Approve to activate the lease, request changes, or reject the agreement.</p>
-                            )}
-                            {lease.status === 'revision_requested' && (
-                                <p>The lease has been returned for updates. Wait for the tenant to resend the revised submission.</p>
-                            )}
-                            {lease.status === 'approved' && (
-                                <p>The lease is active. Continue monitoring term progress and payment performance, or terminate if needed.</p>
-                            )}
-                            {['rejected', 'terminated', 'expired'].includes(lease.status) && (
-                                <p>This lease is closed. You can still review the full record, terms, and submission history here.</p>
-                            )}
-                        </div>
-                    </DetailSection>
+                        ) : (
+                            <div className="px-5 py-6 text-center text-[13px] text-neutral-500">
+                                No payment records generated yet.
+                            </div>
+                        )}
+                        {payments.length > 5 && (
+                            <Link href="/landlord/payments" className="block border-t border-neutral-200/60 bg-white py-3 text-center text-[13px] font-semibold text-neutral-600 hover:bg-neutral-50">
+                                View all payments
+                            </Link>
+                        )}
+                    </div>
                 </div>
 
-                {actionBar && (
-                    <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 px-4">
-                        <div className="mx-auto max-w-[820px]">
-                            <div className="pointer-events-auto flex flex-col gap-3 rounded-[28px] border border-neutral-200 bg-white/92 p-3 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-4">
-                                <div className="hidden sm:block">
-                                    <p className="text-sm font-semibold text-neutral-950">
-                                        {lease.property?.title || 'Lease action'}
-                                    </p>
-                                    <p className="mt-1 text-sm text-neutral-500">
-                                        {lease.status === 'draft' && 'Send the agreement when the draft is ready.'}
-                                        {lease.status === 'tenant_signed' && 'A decision is needed from you to move this lease forward.'}
-                                        {lease.status === 'approved' && 'End the active lease if the tenancy should close.'}
-                                    </p>
+                {/* Policies */}
+                <GroupedSection title="Rules & Policies">
+                    <div className="p-4 sm:p-5">
+                        <div className="flex flex-wrap gap-1.5">
+                            {policyItems.map((item) => (
+                                <MiniPill key={item.label} icon={item.icon} label={item.label} />
+                            ))}
+                        </div>
+                    </div>
+                </GroupedSection>
+
+                {/* Dates */}
+                <GroupedSection title="Lease Period">
+                    <ListRow icon={CalendarRange} label="Start date" value={format(new Date(lease.startDate), 'MMM d, yyyy')} />
+                    <ListRow icon={CalendarRange} label="End date" value={format(new Date(lease.endDate), 'MMM d, yyyy')} />
+                    {daysRemaining !== null && (
+                        <ListRow icon={Clock3} label="Time remaining" value={`${Math.max(daysRemaining, 0)} days`} />
+                    )}
+                </GroupedSection>
+
+                {/* Clauses */}
+                <GroupedSection title="Agreement Terms">
+                    {leaseClauses.length > 0 ? (
+                        leaseClauses.map((clause, index: number) => (
+                            <ListStackItem key={clause.id?.trim() || `clause_${index}`}>
+                                <p className="text-[14px] font-semibold text-neutral-950">
+                                    {index + 1}. {clause.title}
+                                </p>
+                                <p className="mt-1 whitespace-pre-wrap text-[13px] leading-6 text-neutral-500">
+                                    {clause.content}
+                                </p>
+                            </ListStackItem>
+                        ))
+                    ) : (
+                        <div className="px-5 py-6 text-center text-[13px] text-neutral-500">
+                            No clauses are available on this lease yet.
+                        </div>
+                    )}
+                </GroupedSection>
+
+                {/* Documents & Signatures */}
+                {((lease.tenantDocuments && lease.tenantDocuments.length > 0) || lease.tenantSignatureData) && (
+                    <GroupedSection title="Documents & Signatures">
+                        {lease.tenantDocuments?.map((document, index) => {
+                            const documentUrl = documentUrlMap[document.storageId] ?? null
+                            const documentLabel = TENANT_DOCUMENT_LABELS[document.type as keyof typeof TENANT_DOCUMENT_LABELS] || document.type.replace(/_/g, ' ')
+
+                            return (
+                                <ListDocumentItem
+                                    key={document.storageId}
+                                    title={documentLabel}
+                                    subtitle={`Uploaded ${format(new Date(document.uploadedAt), 'MMM d, yyyy')}`}
+                                    url={documentUrl}
+                                />
+                            )
+                        })}
+
+                        {documentUrls === undefined && lease.tenantDocuments?.length && (
+                            <div className="px-5 py-4 text-[12px] text-neutral-400">
+                                Fetching secure document links...
+                            </div>
+                        )}
+
+                        {lease.tenantSignatureData && lease.status !== 'revision_requested' && (
+                            <div className="p-4 sm:p-5">
+                                <p className="text-[13px] font-medium text-neutral-500">Tenant signature</p>
+                                <div className="mt-2 flex h-20 items-center justify-center rounded-[16px] border border-neutral-200/80 bg-neutral-50">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={lease.tenantSignatureData} alt="Tenant signature" className="h-12" />
                                 </div>
+                            </div>
+                        )}
+                    </GroupedSection>
+                )}
 
-                                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-                                    {actionBar.secondary && (
-                                        <>
-                                            <Button
-                                                variant="outline"
-                                                onClick={actionBar.secondary.first.action}
-                                                className="h-11 rounded-full border-neutral-200 bg-white px-5 text-sm font-medium text-neutral-700"
-                                            >
-                                                <actionBar.secondary.first.icon className="mr-2 h-4 w-4" strokeWidth={2} />
-                                                {actionBar.secondary.first.label}
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                onClick={actionBar.secondary.second.action}
-                                                className={cn(
-                                                    'h-11 rounded-full px-5 text-sm font-medium',
-                                                    actionBar.secondary.second.danger
-                                                        ? 'border-red-200 bg-white text-red-600 hover:bg-red-50'
-                                                        : 'border-neutral-200 bg-white text-neutral-700'
-                                                )}
-                                            >
-                                                <actionBar.secondary.second.icon className="mr-2 h-4 w-4" strokeWidth={2} />
-                                                {actionBar.secondary.second.label}
-                                            </Button>
-                                        </>
-                                    )}
+            </div>
 
-                                    <Button
-                                        onClick={actionBar.primaryAction}
-                                        disabled={actionBar.primaryDisabled}
+            {/* ── Bottom Action Bar ── */}
+            {actionBar && (
+                <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-4 pb-5">
+                    <div className="mx-auto max-w-[820px]">
+                        <div className="pointer-events-auto flex items-center justify-between gap-3 rounded-[24px] border border-neutral-200/80 bg-white/90 p-3 shadow-xl shadow-neutral-950/5 backdrop-blur-xl">
+
+                            <div className="hidden min-w-0 sm:block sm:px-2">
+                                <p className="text-[14px] font-semibold text-neutral-950">Actions</p>
+                                <p className="truncate text-[12px] text-neutral-500">
+                                    {lease.status === 'draft' ? 'Send draft to the tenant for review.' : ''}
+                                    {lease.status === 'tenant_signed' ? 'Review tenant docs and make a final decision.' : ''}
+                                    {lease.status === 'approved' ? 'Terminate early if necessary.' : ''}
+                                </p>
+                            </div>
+
+                            <div className="flex w-full items-center justify-end gap-2.5 sm:w-auto">
+                                {actionBar.secondary.map((action, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={action.action}
                                         className={cn(
-                                            'h-11 rounded-full px-5 text-sm font-medium text-white',
-                                            actionBar.primaryDanger
-                                                ? 'bg-red-600 hover:bg-red-700'
-                                                : 'bg-neutral-950 hover:bg-neutral-800'
+                                            'flex h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[16px] text-[14px] font-semibold transition-all active:scale-95 sm:flex-initial sm:px-5',
+                                            action.danger
+                                                ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                                                : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200/80'
                                         )}
                                     >
-                                        <actionBar.primaryIcon className={cn('mr-2 h-4 w-4', actionBar.primaryDisabled && 'animate-spin')} strokeWidth={2} />
-                                        {actionBar.primaryLabel}
-                                    </Button>
-                                </div>
+                                        <action.icon className="h-4 w-4" strokeWidth={2.2} />
+                                        {action.label}
+                                    </button>
+                                ))}
+
+                                {actionBar.primary && (
+                                    <button
+                                        onClick={actionBar.primary.action}
+                                        disabled={actionBar.primary.disabled || isSending}
+                                        className={cn(
+                                            'flex h-[44px] flex-1 items-center justify-center gap-1.5 rounded-[16px] px-5 text-[14px] font-semibold text-white transition-all active:scale-95 disabled:opacity-50 sm:flex-initial',
+                                            actionBar.primary.danger ? 'bg-red-600' : 'bg-neutral-950'
+                                        )}
+                                    >
+                                        {(actionBar.primary.disabled && lease.status === 'draft') || isSending ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <actionBar.primary.icon className="h-4 w-4" strokeWidth={2.2} />
+                                        )}
+                                        {actionBar.primary.label}
+                                    </button>
+                                )}
                             </div>
+
                         </div>
                     </div>
-                )}
-            </div>
-
-            <Dialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
-                <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto rounded-[30px] sm:max-w-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-semibold tracking-[-0.03em]">
-                            Approve lease
-                        </DialogTitle>
-                    </DialogHeader>
-
-                    <div className="mt-4 space-y-6">
-                        <div className="rounded-[24px] border border-neutral-200 bg-neutral-50/70 px-5 py-4">
-                            <p className="text-sm font-semibold text-neutral-950">Approval summary</p>
-                            <div className="mt-3 space-y-3">
-                                <ValueRow label="Property" value={lease.property?.title || 'Property'} />
-                                <ValueRow label="Tenant" value={lease.tenant?.fullName || 'Tenant'} />
-                                <ValueRow label="Monthly rent" value={formatCurrency(lease.monthlyRent)} />
-                                <ValueRow label="Deposit" value={formatCurrency(lease.deposit ?? 0)} />
-                            </div>
-                        </div>
-
-                        <div>
-                            <p className="text-sm font-semibold text-neutral-950">Landlord signature</p>
-                            <p className="mt-1 text-xs text-neutral-500">
-                                Add your signature to activate this lease and generate payment records.
-                            </p>
-                            <div className="mt-3">
-                                <SignatureCanvas
-                                    onSignatureChange={(data) => setSignatureData(data || '')}
-                                    disabled={isApproving}
-                                />
-                            </div>
-                        </div>
-
-                        <Button
-                            onClick={handleApprove}
-                            disabled={isApproving || !signatureData}
-                            className="h-12 w-full rounded-[22px] bg-neutral-950 text-white hover:bg-neutral-800"
-                        >
-                            {isApproving ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Check className="mr-2 h-4 w-4" strokeWidth={2} />
-                            )}
-                            Confirm approval
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={showRevisionDialog} onOpenChange={setShowRevisionDialog}>
-                <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto rounded-[30px] sm:max-w-xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-semibold tracking-[-0.03em]">
-                            Request revision
-                        </DialogTitle>
-                    </DialogHeader>
-
-                    <div className="mt-4 space-y-4">
-                        <p className="text-sm leading-6 text-neutral-500">
-                            Tell the tenant what needs to be updated before this lease can move forward.
-                        </p>
-                        <Textarea
-                            value={revisionNotes}
-                            onChange={(e) => setRevisionNotes(e.target.value)}
-                            placeholder="Explain what the tenant should update before resubmitting."
-                            rows={5}
-                            className="rounded-[18px] border-neutral-200 bg-neutral-50 shadow-none focus-visible:border-[#1d9bf0] focus-visible:ring-4 focus-visible:ring-[#1d9bf0]/10"
-                        />
-                        <Button
-                            onClick={handleRequestRevision}
-                            disabled={isRequestingRevision}
-                            className="h-12 w-full rounded-[22px] bg-neutral-950 text-white hover:bg-neutral-800"
-                        >
-                            {isRequestingRevision ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <RotateCcw className="mr-2 h-4 w-4" strokeWidth={2} />
-                            )}
-                            Send revision request
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-                <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto rounded-[30px] sm:max-w-xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-semibold tracking-[-0.03em]">
-                            Reject lease
-                        </DialogTitle>
-                    </DialogHeader>
-
-                    <div className="mt-4 space-y-4">
-                        <div className="rounded-[24px] border border-red-200 bg-red-50/80 px-5 py-4">
-                            <p className="text-sm font-semibold text-red-900">This decision closes the current approval flow.</p>
-                            <p className="mt-1 text-sm leading-6 text-red-800">
-                                Add a reason so the tenant has a clear record of why the lease was rejected.
-                            </p>
-                        </div>
-                        <Textarea
-                            value={rejectReason}
-                            onChange={(e) => setRejectReason(e.target.value)}
-                            placeholder="Reason for rejection..."
-                            rows={5}
-                            className="rounded-[18px] border-neutral-200 bg-neutral-50 shadow-none focus-visible:border-red-300 focus-visible:ring-4 focus-visible:ring-red-100"
-                        />
-                        <Button
-                            onClick={handleReject}
-                            disabled={isRejecting}
-                            className="h-12 w-full rounded-[22px] bg-red-600 text-white hover:bg-red-700"
-                        >
-                            {isRejecting ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <X className="mr-2 h-4 w-4" strokeWidth={2} />
-                            )}
-                            Confirm rejection
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={showTerminateDialog} onOpenChange={setShowTerminateDialog}>
-                <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto rounded-[30px] sm:max-w-xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-semibold tracking-[-0.03em]">
-                            Terminate lease
-                        </DialogTitle>
-                    </DialogHeader>
-
-                    <div className="mt-4 space-y-4">
-                        <div className="rounded-[24px] border border-red-200 bg-red-50/80 px-5 py-4">
-                            <p className="text-sm font-semibold text-red-900">Terminating will end the lease and reopen the property.</p>
-                            <p className="mt-1 text-sm leading-6 text-red-800">
-                                Add a reason so the termination is recorded clearly in the lease history.
-                            </p>
-                        </div>
-                        <Textarea
-                            value={terminateReason}
-                            onChange={(e) => setTerminateReason(e.target.value)}
-                            placeholder="Reason for termination..."
-                            rows={5}
-                            className="rounded-[18px] border-neutral-200 bg-neutral-50 shadow-none focus-visible:border-red-300 focus-visible:ring-4 focus-visible:ring-red-100"
-                        />
-                        <Button
-                            onClick={handleTerminate}
-                            disabled={isTerminating}
-                            className="h-12 w-full rounded-[22px] bg-red-600 text-white hover:bg-red-700"
-                        >
-                            {isTerminating ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Ban className="mr-2 h-4 w-4" strokeWidth={2} />
-                            )}
-                            Confirm termination
-                        </Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
-        </>
-    )
-}
-
-function DetailSection({ title, description, children }: { title: string; description: string; children: ReactNode }) {
-    return (
-        <section>
-            <div>
-                <h2 className="text-[18px] font-semibold tracking-[-0.03em] text-neutral-950">{title}</h2>
-                <p className="mt-1 text-sm text-neutral-500">{description}</p>
-            </div>
-            <div className="mt-5">{children}</div>
-        </section>
-    )
-}
-
-function HeaderPill({ icon: Icon, label, value }: { icon: ElementType; label: string; value: string }) {
-    return (
-        <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-sm text-neutral-700">
-            <Icon className="h-4 w-4 text-neutral-500" strokeWidth={2} />
-            <span className="font-medium text-neutral-500">{label}</span>
-            <span className="font-semibold text-neutral-950">{value}</span>
-        </span>
-    )
-}
-
-function InlineMetric({ label, value, tone }: { label: string; value: string; tone: 'default' | 'success' | 'danger' }) {
-    return (
-        <span
-            className={cn(
-                'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm',
-                tone === 'default' && 'border-neutral-200 bg-neutral-50 text-neutral-700',
-                tone === 'success' && 'border-emerald-200 bg-emerald-50 text-emerald-700',
-                tone === 'danger' && 'border-red-200 bg-red-50 text-red-700'
+                </div>
             )}
-        >
-            <span className="font-medium">{label}</span>
-            <span className="font-semibold">{value}</span>
-        </span>
+
+            {/* ── Dialogs (iOS Modal Style) ── */}
+
+            {/* Approve Dialog */}
+            <IOSDialog open={showApproveDialog} onOpenChange={setShowApproveDialog} title="Approve Lease">
+                <div className="space-y-5">
+                    <div className="rounded-[20px] bg-neutral-50 p-4 ring-1 ring-inset ring-neutral-200/80">
+                        <div className="flex justify-between border-b border-neutral-200/60 pb-2">
+                            <span className="text-[13px] text-neutral-500">Rent</span>
+                            <span className="text-[13px] font-bold text-neutral-900">{formatCurrency(lease.monthlyRent)}</span>
+                        </div>
+                        <div className="flex justify-between pt-2">
+                            <span className="text-[13px] text-neutral-500">Tenant</span>
+                            <span className="text-[13px] font-bold text-neutral-900">{lease.tenant?.fullName || 'Tenant'}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <p className="text-[14px] font-semibold text-neutral-950">Landlord signature</p>
+                        <p className="mt-0.5 text-[12px] text-neutral-500">Require signature to finalize the agreement.</p>
+                        <div className="mt-3">
+                            <SignatureCanvas onSignatureChange={(data) => setSignatureData(data || '')} disabled={isApproving} />
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleApprove}
+                        disabled={isApproving || !signatureData}
+                        className="flex h-12 w-full items-center justify-center gap-2 rounded-[20px] bg-neutral-950 text-[15px] font-bold text-white transition-all active:scale-95 disabled:opacity-50"
+                    >
+                        {isApproving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" strokeWidth={2.5} />}
+                        Confirm Approval
+                    </button>
+                </div>
+            </IOSDialog>
+
+            {/* Revision Dialog */}
+            <IOSDialog open={showRevisionDialog} onOpenChange={setShowRevisionDialog} title="Request Revision">
+                <div className="space-y-5">
+                    <p className="text-[14px] leading-6 text-neutral-600">
+                        Ask the tenant to fix or update something in their submission. They will get a notification to review these notes.
+                    </p>
+                    <Textarea
+                        value={revisionNotes}
+                        onChange={(e) => setRevisionNotes(e.target.value)}
+                        placeholder="E.g., Please upload a clearer copy of your ID..."
+                        rows={4}
+                        className="rounded-[16px] border-neutral-200 bg-neutral-50 px-4 py-3 text-[14px] shadow-none focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-neutral-950"
+                    />
+                    <button
+                        onClick={handleRequestRevision}
+                        disabled={isRequestingRevision || !revisionNotes.trim()}
+                        className="flex h-12 w-full items-center justify-center gap-2 rounded-[20px] bg-neutral-950 text-[15px] font-bold text-white transition-all active:scale-95 disabled:opacity-50"
+                    >
+                        {isRequestingRevision ? <Loader2 className="h-5 w-5 animate-spin" /> : <RotateCcw className="h-5 w-5" strokeWidth={2.5} />}
+                        Send Request
+                    </button>
+                </div>
+            </IOSDialog>
+
+            {/* Reject Dialog */}
+            <IOSDialog open={showRejectDialog} onOpenChange={setShowRejectDialog} title="Reject Lease">
+                <div className="space-y-5">
+                    <div className="rounded-[20px] bg-red-50 p-4 ring-1 ring-inset ring-red-200">
+                        <p className="text-[13px] font-bold text-red-900">This action is final.</p>
+                        <p className="text-[12px] leading-5 text-red-800">The lease will be marked as rejected and closed. Add a reason for clarity.</p>
+                    </div>
+                    <Textarea
+                        value={rejectReason}
+                        onChange={(e) => setRejectReason(e.target.value)}
+                        placeholder="Why is this lease being rejected?"
+                        rows={4}
+                        className="rounded-[16px] border-red-200 bg-red-50/50 px-4 py-3 text-[14px] text-red-900 shadow-none focus-visible:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-500"
+                    />
+                    <button
+                        onClick={handleReject}
+                        disabled={isRejecting}
+                        className="flex h-12 w-full items-center justify-center gap-2 rounded-[20px] bg-red-600 text-[15px] font-bold text-white transition-all active:scale-95 disabled:opacity-50"
+                    >
+                        {isRejecting ? <Loader2 className="h-5 w-5 animate-spin" /> : <X className="h-5 w-5" strokeWidth={2.5} />}
+                        Confirm Rejection
+                    </button>
+                </div>
+            </IOSDialog>
+
+            {/* Terminate Dialog */}
+            <IOSDialog open={showTerminateDialog} onOpenChange={setShowTerminateDialog} title="Terminate Lease">
+                <div className="space-y-5">
+                    <div className="rounded-[20px] bg-red-50 p-4 ring-1 ring-inset ring-red-200">
+                        <p className="text-[13px] font-bold text-red-900">End this active lease.</p>
+                        <p className="text-[12px] leading-5 text-red-800">The lease will be closed and the property will become available again.</p>
+                    </div>
+                    <Textarea
+                        value={terminateReason}
+                        onChange={(e) => setTerminateReason(e.target.value)}
+                        placeholder="Reason for early termination..."
+                        rows={4}
+                        className="rounded-[16px] border-red-200 bg-red-50/50 px-4 py-3 text-[14px] text-red-900 shadow-none focus-visible:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-500"
+                    />
+                    <button
+                        onClick={handleTerminate}
+                        disabled={isTerminating}
+                        className="flex h-12 w-full items-center justify-center gap-2 rounded-[20px] bg-red-600 text-[15px] font-bold text-white transition-all active:scale-95 disabled:opacity-50"
+                    >
+                        {isTerminating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Ban className="h-5 w-5" strokeWidth={2.5} />}
+                        Confirm Termination
+                    </button>
+                </div>
+            </IOSDialog>
+
+        </div>
     )
 }
 
-function PolicyPill({ icon: Icon, label }: { icon: ElementType; label: string }) {
+/* ── UI Helpers ── */
+
+function SectionHeader({ title, description }: { title: string; description?: string }) {
     return (
-        <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-sm text-neutral-700">
-            <Icon className="h-4 w-4 text-neutral-500" strokeWidth={2} />
+        <div className="px-5 pb-3 pt-2 sm:px-6">
+            <h2 className="text-[17px] font-bold tracking-[-0.03em] text-neutral-950">{title}</h2>
+            {description && <p className="mt-0.5 text-[13px] text-neutral-500">{description}</p>}
+        </div>
+    )
+}
+
+function GroupedSection({ title, children }: { title: string; children: ReactNode }) {
+    return (
+        <div>
+            <SectionHeader title={title} />
+            <div className="px-4 sm:px-5">
+                <div className="overflow-hidden rounded-[20px] border border-neutral-200/80 bg-white">
+                    <div className="divide-y divide-neutral-100">
+                        {children}
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+function ListRow({ icon: Icon, label, value }: { icon: ElementType; label: string; value: string }) {
+    return (
+        <div className="flex items-center justify-between px-4 py-3.5 sm:px-5">
+            <div className="flex items-center gap-3 text-[14px] text-neutral-600">
+                <Icon className="h-4 w-4 text-neutral-400" strokeWidth={2} />
+                <span>{label}</span>
+            </div>
+            <span className="text-[14px] font-semibold text-neutral-950">{value}</span>
+        </div>
+    )
+}
+
+function ListStackItem({ children }: { children: ReactNode }) {
+    return (
+        <div className="px-4 py-4 sm:px-5">
+            {children}
+        </div>
+    )
+}
+
+function ListDocumentItem({ title, subtitle, url }: { title: string; subtitle: string; url: string | null }) {
+    return (
+        <div className="flex items-center justify-between px-4 py-3.5 sm:px-5">
+            <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-neutral-100 text-neutral-500">
+                    <FileText className="h-4 w-4" strokeWidth={2} />
+                </div>
+                <div className="min-w-0">
+                    <p className="truncate text-[14px] font-semibold text-neutral-950">{title}</p>
+                    <p className="text-[12px] text-neutral-500">{subtitle}</p>
+                </div>
+            </div>
+            {url ? (
+                <button
+                    onClick={() => window.open(url, '_blank')}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-700 transition-colors active:bg-neutral-200"
+                >
+                    <Eye className="h-4 w-4" strokeWidth={2} />
+                </button>
+            ) : (
+                <span className="text-[11px] font-bold uppercase tracking-wide text-neutral-400">Loading</span>
+            )}
+        </div>
+    )
+}
+
+function MiniPill({ icon: Icon, label }: { icon: ElementType; label: string }) {
+    return (
+        <span className="inline-flex items-center gap-1.5 rounded-[10px] border border-neutral-100 bg-neutral-50 px-2.5 py-1.5 text-[12px] font-medium text-neutral-600">
+            <Icon className="h-3.5 w-3.5 text-neutral-400" strokeWidth={2} />
             {label}
         </span>
     )
 }
 
-function ValueRow({ label, value }: { label: string; value: string }) {
+function MiniStat({ label, value, tone }: { label: string; value: string; tone: 'default' | 'success' | 'danger' }) {
     return (
-        <div className="flex items-start justify-between gap-4">
-            <p className="text-sm text-neutral-500">{label}</p>
-            <p className="text-right text-sm font-semibold text-neutral-950">{value}</p>
+        <div className={cn(
+            'flex-1 rounded-[16px] border px-3 py-2.5',
+            tone === 'default' && 'border-neutral-200/80 bg-neutral-50',
+            tone === 'success' && 'border-emerald-200 bg-emerald-50 text-emerald-900',
+            tone === 'danger' && 'border-red-200 bg-red-50 text-red-900'
+        )}>
+            <p className="text-[11px] font-bold uppercase tracking-[0.06em] opacity-60">{label}</p>
+            <p className="mt-0.5 text-[16px] font-bold tracking-tight">{value}</p>
         </div>
     )
 }
 
-function formatCurrency(value: number | null | undefined) {
-    return currency.format(value || 0)
+function IOSDialog({ open, onOpenChange, title, children }: { open: boolean; onOpenChange: (o: boolean) => void; title: string; children: ReactNode }) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="fixed bottom-0 top-auto translate-y-0 rounded-t-[32px] sm:bottom-auto sm:top-[50%] sm:-translate-y-1/2 sm:rounded-[32px] max-h-[90vh] w-full max-w-md gap-0 border-0 p-6 shadow-2xl overflow-y-auto">
+                <div className="mx-auto mb-6 h-1 w-12 rounded-full bg-neutral-200 sm:hidden" />
+                <DialogTitle className="mb-6 text-[22px] font-bold tracking-[-0.04em] text-neutral-950">{title}</DialogTitle>
+                {children}
+            </DialogContent>
+        </Dialog>
+    )
 }
 
-function getOrdinal(n: number) {
-    if (n > 3 && n < 21) return 'th'
-    switch (n % 10) {
-        case 1: return 'st'
-        case 2: return 'nd'
-        case 3: return 'rd'
-        default: return 'th'
-    }
+function PageSkeleton() {
+    return (
+        <div className="mx-auto min-h-screen max-w-[820px] bg-white pb-16 font-sans">
+            <div className="h-14 border-b border-neutral-100 bg-white" />
+            <div className="px-5 pt-4 sm:px-6">
+                <div className="aspect-[21/9] w-full rounded-[20px] bg-neutral-100 sm:aspect-[21/7]" />
+                <div className="mt-5 space-y-2">
+                    <div className="h-8 w-64 rounded-xl bg-neutral-100" />
+                    <div className="h-4 w-40 rounded-lg bg-neutral-100" />
+                </div>
+                <div className="mt-6 h-20 rounded-[20px] bg-neutral-50" />
+            </div>
+            <div className="mt-10 flex justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-neutral-300" />
+            </div>
+        </div>
+    )
 }

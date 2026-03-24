@@ -242,8 +242,8 @@ export const generateScheduleForLease = internalMutation({
     },
 });
 
-// Mark overdue payments & auto-create late fees
-export const markOverdue = mutation({
+// Mark overdue payments & auto-create late fees (cron-only internal job)
+export const markOverdue = internalMutation({
     args: {},
     handler: async (ctx) => {
         const today = formatDateOnly(new Date());
