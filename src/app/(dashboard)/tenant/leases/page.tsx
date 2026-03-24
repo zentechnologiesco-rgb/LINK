@@ -1,253 +1,349 @@
 'use client'
 
-import { useQuery } from "convex/react"
-import { api } from "../../../../../convex/_generated/api"
 import Link from 'next/link'
+import { useQuery } from 'convex/react'
+import { differenceInDays, format } from 'date-fns'
 import {
-    Building2,
-    Calendar,
-    ChevronRight,
-    Loader2,
-    FileText,
-    CheckCircle2,
-    Clock,
     AlertCircle,
-    Wallet,
+    Building2,
+    CalendarRange,
+    CheckCircle2,
+    ChevronRight,
+    Clock3,
+    FileText,
+    Wallet2,
 } from 'lucide-react'
+
+import { api } from '../../../../../convex/_generated/api'
+import { LEASE_STATUS_LABELS, type LeaseStatus } from '@/constants/lease'
 import { cn } from '@/lib/utils'
-import { format, differenceInDays } from 'date-fns'
-import {
-    LEASE_STATUS_LABELS,
-    type LeaseStatus,
-} from '@/constants/lease'
+
+type TenantLease = {
+    _id: string
+    status: LeaseStatus
+    startDate: string
+    endDate: string
+    monthlyRent?: number | null
+    property?: {
+        title?: string | null
+        address?: string | null
+        imageUrl?: string | null
+    } | null
+}
+
+const currency = new Intl.NumberFormat('en-NA', {
+    style: 'currency',
+    currency: 'NAD',
+    maximumFractionDigits: 0,
+})
 
 export default function TenantLeasesPage() {
-    const leases = useQuery(api.leases.getForTenant, {})
+    const leases = useQuery(api.leases.getForTenant, {}) as TenantLease[] | undefined
 
     if (leases === undefined) {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-3">
                     <div className="h-8 w-8 rounded-full border-2 border-neutral-200 border-t-neutral-900 animate-spin" />
-                    <p className="text-sm text-neutral-400 font-medium">Loading leases...</p>
+                    <p className="text-sm font-medium text-neutral-400">Loading leases...</p>
                 </div>
             </div>
         )
     }
 
-    // Active lease goes first, then action required, then history
-    const activeLease = leases.find((l: any) => l.status === 'approved')
-    const actionRequired = leases.filter((l: any) =>
-        ['sent_to_tenant', 'revision_requested'].includes(l.status)
-    )
-    const pendingLandlord = leases.filter((l: any) => l.status === 'tenant_signed')
-    const history = leases.filter((l: any) =>
-        ['expired', 'terminated', 'rejected'].includes(l.status)
-    )
+    const activeLease = leases.find((lease) => lease.status === 'approved') ?? null
+    const actionRequired = leases.filter((lease) => ['sent_to_tenant', 'revision_requested'].includes(lease.status))
+    const pendingLandlord = leases.filter((lease) => lease.status === 'tenant_signed')
+    const history = leases.filter((lease) => ['expired', 'terminated', 'rejected'].includes(lease.status))
+
+    const summaryItems = [
+        {
+            label: 'Active',
+            value: activeLease ? '1' : '0',
+            icon: CheckCircle2,
+        },
+        {
+            label: 'Needs you',
+            value: actionRequired.length.toString(),
+            icon: AlertCircle,
+        },
+        {
+            label: 'Waiting',
+            value: pendingLandlord.length.toString(),
+            icon: Clock3,
+        },
+        {
+            label: 'History',
+            value: history.length.toString(),
+            icon: FileText,
+        },
+    ]
 
     return (
-        <div className="font-sans pb-6">
-            {/* Header */}
-            <div className="mb-6 flex items-start justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-semibold text-neutral-900">My Leases</h1>
-                    <p className="text-sm text-neutral-500 mt-0.5">Your current and past rental agreements</p>
-                </div>
-                <Link href="/tenant/payments">
-                    <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-neutral-200 px-4 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50">
-                        <Wallet className="h-4 w-4" />
+        <div className="mx-auto max-w-[760px] font-sans pb-10">
+            <section className="border-b border-neutral-100 pb-6">
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="max-w-2xl">
+                        <p className="text-sm font-medium text-neutral-500">Tenant leases</p>
+                        <h1 className="mt-2 text-[2rem] font-semibold tracking-[-0.04em] text-neutral-950 sm:text-[2.5rem]">
+                            My leases
+                        </h1>
+                        <p className="mt-3 text-[15px] leading-7 text-neutral-600">
+                            Track your current agreement, anything waiting on your signature, and past leases in one clean timeline.
+                        </p>
+                    </div>
+
+                    <Link
+                        href="/tenant/payments"
+                        className="inline-flex h-11 items-center gap-2 rounded-full border border-neutral-200 bg-white px-5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
+                    >
+                        <Wallet2 className="h-4 w-4" strokeWidth={2} />
                         Payments
-                    </button>
-                </Link>
-            </div>
+                    </Link>
+                </div>
+
+                {leases.length > 0 && (
+                    <div className="mt-5 flex flex-wrap gap-2">
+                        {summaryItems.map((item) => {
+                            const Icon = item.icon
+                            return (
+                                <span
+                                    key={item.label}
+                                    className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-sm text-neutral-700"
+                                >
+                                    <Icon className="h-4 w-4 text-neutral-500" strokeWidth={2} />
+                                    <span className="font-semibold text-neutral-950">{item.value}</span>
+                                    <span>{item.label}</span>
+                                </span>
+                            )
+                        })}
+                    </div>
+                )}
+            </section>
 
             {leases.length === 0 ? (
-                <div className="py-16 text-center">
-                    <div className="h-16 w-16 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4">
-                        <FileText className="h-7 w-7 text-neutral-400" />
+                <div className="py-20 text-center">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50 text-neutral-500">
+                        <FileText className="h-6 w-6" strokeWidth={2} />
                     </div>
-                    <h3 className="text-lg font-semibold text-neutral-900 mb-2">
-                        No leases found
-                    </h3>
-                    <p className="text-sm text-neutral-500 max-w-xs mx-auto mb-6">
-                        When a landlord sends you a lease agreement, it will appear here.
+                    <h2 className="mt-5 text-xl font-semibold tracking-[-0.03em] text-neutral-950">
+                        No leases yet
+                    </h2>
+                    <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-neutral-500">
+                        When a landlord sends you a lease agreement, it will appear here for review and signature.
                     </p>
-                    <Link href="/">
-                        <button className="bg-neutral-900 hover:bg-neutral-800 text-white font-medium rounded-xl h-11 px-6 transition-colors">
-                            Browse Properties
-                        </button>
+                    <Link
+                        href="/"
+                        className="mt-6 inline-flex h-11 items-center rounded-full bg-neutral-950 px-5 text-sm font-medium text-white transition-colors hover:bg-neutral-800"
+                    >
+                        Browse properties
                     </Link>
                 </div>
             ) : (
-                <div className="space-y-6">
-                    {/* Active Lease Highlight */}
+                <div className="space-y-8 pt-6">
                     {activeLease && (
-                        <div>
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
-                                    Current Lease
-                                </span>
-                            </div>
-                            <Link href={`/tenant/leases/${activeLease._id}`}>
-                                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 transition-all hover:shadow-sm">
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div className="h-14 w-14 rounded-xl bg-white overflow-hidden shrink-0 border border-emerald-100">
+                        <section className="space-y-3">
+                            <SectionHeader
+                                title="Current lease"
+                                description="Your active agreement and next timeline milestone."
+                            />
+                            <Link href={`/tenant/leases/${activeLease._id}`} className="block">
+                                <article className="rounded-[28px] border border-neutral-200 bg-neutral-50/80 p-5 transition-colors hover:bg-neutral-50 sm:p-6">
+                                    <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+                                        <div className="h-24 w-full overflow-hidden rounded-[22px] bg-neutral-100 sm:h-24 sm:w-28">
                                             {activeLease.property?.imageUrl ? (
                                                 /* eslint-disable-next-line @next/next/no-img-element */
                                                 <img
                                                     src={activeLease.property.imageUrl}
-                                                    alt={activeLease.property.title}
-                                                    className="w-full h-full object-cover"
+                                                    alt={activeLease.property.title || 'Property'}
+                                                    className="h-full w-full object-cover"
                                                 />
                                             ) : (
-                                                <div className="w-full h-full flex items-center justify-center bg-neutral-100">
-                                                    <Building2 className="h-6 w-6 text-neutral-400" />
+                                                <div className="flex h-full items-center justify-center text-neutral-400">
+                                                    <Building2 className="h-7 w-7" strokeWidth={1.8} />
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="font-semibold text-emerald-900 truncate">
-                                                    {activeLease.property?.title}
-                                                </h3>
-                                                <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 whitespace-nowrap">
-                                                    <CheckCircle2 className="h-3 w-3" />
+
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                                                    <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2} />
                                                     Active
                                                 </span>
+                                                <span className="text-xs font-medium uppercase tracking-[0.14em] text-neutral-400">
+                                                    Lease overview
+                                                </span>
                                             </div>
-                                            <p className="text-xs text-emerald-700/80 truncate">
-                                                {activeLease.property?.address}
+                                            <h2 className="mt-3 truncate text-[1.35rem] font-semibold tracking-[-0.04em] text-neutral-950">
+                                                {activeLease.property?.title || 'Property'}
+                                            </h2>
+                                            <p className="mt-1 truncate text-sm text-neutral-500">
+                                                {activeLease.property?.address || 'Address not available'}
                                             </p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-between text-sm pt-3 border-t border-emerald-100/60">
-                                        <div>
-                                            <p className="font-semibold text-emerald-900">
-                                                N${activeLease.monthlyRent?.toLocaleString()}
-                                            </p>
-                                            <p className="text-xs text-emerald-700/60 font-medium uppercase tracking-wide">Monthly Rent</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="flex items-center justify-end gap-1.5 text-emerald-900 font-semibold">
-                                                <Calendar className="h-4 w-4 text-emerald-600" />
-                                                {format(new Date(activeLease.endDate), 'MMM yyyy')}
+
+                                            <div className="mt-4 flex flex-wrap gap-2">
+                                                <InlineMeta
+                                                    icon={Wallet2}
+                                                    label={formatCurrency(activeLease.monthlyRent ?? 0)}
+                                                />
+                                                <InlineMeta
+                                                    icon={CalendarRange}
+                                                    label={`Ends ${format(new Date(activeLease.endDate), 'MMM d, yyyy')}`}
+                                                />
+                                                <InlineMeta
+                                                    icon={Clock3}
+                                                    label={`${Math.max(differenceInDays(new Date(activeLease.endDate), new Date()), 0)} days left`}
+                                                />
                                             </div>
-                                            <p className="text-xs text-emerald-700/60 font-medium uppercase tracking-wide">Ends At</p>
                                         </div>
+
+                                        <ChevronRight className="hidden h-5 w-5 shrink-0 text-neutral-300 sm:block" strokeWidth={2} />
                                     </div>
-                                </div>
+                                </article>
                             </Link>
-                        </div>
+                        </section>
                     )}
 
-                    {/* Needs Action */}
-                    {actionRequired.length > 0 && (
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
-                                    Action Required
-                                </span>
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                                    {actionRequired.length}
-                                </span>
-                            </div>
-                            {actionRequired.map((lease: any) => (
-                                <LeaseCard key={lease._id} lease={lease} highlight />
-                            ))}
-                        </div>
-                    )}
+                    <LeaseSection
+                        title="Needs your action"
+                        description="Agreements waiting on your review, documents, or signature."
+                        emptyLabel="Nothing is waiting on you right now."
+                        leases={actionRequired}
+                        tone="attention"
+                    />
 
-                    {/* Wait For Landlord */}
-                    {pendingLandlord.length > 0 && (
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
-                                    Pending Landlord Approval
-                                </span>
-                            </div>
-                            {pendingLandlord.map((lease: any) => (
-                                <LeaseCard key={lease._id} lease={lease} />
-                            ))}
-                        </div>
-                    )}
+                    <LeaseSection
+                        title="Waiting on landlord"
+                        description="Leases you already signed that are still being reviewed."
+                        emptyLabel="No leases are waiting on landlord approval."
+                        leases={pendingLandlord}
+                        tone="default"
+                    />
 
-                    {/* Past Leases */}
-                    {history.length > 0 && (
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-neutral-500 uppercase tracking-wide">
-                                    Past Leases
-                                </span>
-                            </div>
-                            {history.map((lease: any) => (
-                                <LeaseCard key={lease._id} lease={lease} />
-                            ))}
-                        </div>
-                    )}
+                    <LeaseSection
+                        title="Past leases"
+                        description="Ended, rejected, and archived agreements kept for reference."
+                        emptyLabel="No past leases yet."
+                        leases={history}
+                        tone="muted"
+                    />
                 </div>
             )}
         </div>
     )
 }
 
-function LeaseCard({ lease, highlight }: { lease: any; highlight?: boolean }) {
-    const statusStyles: Record<string, string> = {
-        sent_to_tenant: 'bg-blue-50 text-blue-700',
-        tenant_signed: 'bg-amber-50 text-amber-700',
-        approved: 'bg-emerald-50 text-emerald-700',
-        rejected: 'bg-red-50 text-red-700',
-        revision_requested: 'bg-orange-50 text-orange-700',
-        expired: 'bg-neutral-100 text-neutral-500',
-        terminated: 'bg-red-50 text-red-600',
-    }
+function LeaseSection({
+    title,
+    description,
+    emptyLabel,
+    leases,
+    tone,
+}: {
+    title: string
+    description: string
+    emptyLabel: string
+    leases: TenantLease[]
+    tone: 'default' | 'attention' | 'muted'
+}) {
+    return (
+        <section className="space-y-3">
+            <SectionHeader title={title} description={description} />
+            {leases.length === 0 ? (
+                <div className="border-y border-dashed border-neutral-200 py-5 text-sm text-neutral-500">
+                    {emptyLabel}
+                </div>
+            ) : (
+                <div className="divide-y divide-neutral-100 border-y border-neutral-200 bg-white">
+                    {leases.map((lease) => (
+                        <LeaseRow key={lease._id} lease={lease} tone={tone} />
+                    ))}
+                </div>
+            )}
+        </section>
+    )
+}
+
+function LeaseRow({
+    lease,
+    tone,
+}: {
+    lease: TenantLease
+    tone: 'default' | 'attention' | 'muted'
+}) {
+    const statusTone =
+        tone === 'attention'
+            ? 'border-amber-200 bg-amber-50 text-amber-700'
+            : tone === 'muted'
+                ? 'border-neutral-200 bg-neutral-50 text-neutral-500'
+                : 'border-neutral-200 bg-neutral-50 text-neutral-700'
 
     return (
-        <Link href={`/tenant/leases/${lease._id}`}>
-            <div className={cn(
-                'flex items-center gap-4 p-4 rounded-xl border transition-all hover:shadow-sm cursor-pointer',
-                highlight
-                    ? 'bg-amber-50/40 border-amber-200'
-                    : 'bg-white border-neutral-200 hover:border-neutral-300'
-            )}>
-                {/* Property Image */}
-                <div className="h-12 w-12 rounded-xl bg-neutral-100 overflow-hidden flex items-center justify-center shrink-0">
+        <Link href={`/tenant/leases/${lease._id}`} className="block">
+            <article className="flex items-center gap-4 py-4 transition-colors hover:bg-neutral-50">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[18px] bg-neutral-100">
                     {lease.property?.imageUrl ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img
                             src={lease.property.imageUrl}
-                            alt=""
-                            className="w-full h-full object-cover"
+                            alt={lease.property?.title || 'Property'}
+                            className="h-full w-full object-cover"
                         />
                     ) : (
-                        <Building2 className="h-5 w-5 text-neutral-400" />
+                        <Building2 className="h-5 w-5 text-neutral-400" strokeWidth={1.8} />
                     )}
                 </div>
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-semibold text-neutral-900 truncate">
+                        <h3 className="truncate text-sm font-semibold text-neutral-950">
                             {lease.property?.title || 'Property'}
                         </h3>
-                        {highlight && <AlertCircle className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
+                        <span className={cn('inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold', statusTone)}>
+                            {LEASE_STATUS_LABELS[lease.status] || lease.status}
+                        </span>
                     </div>
-                    <div className="flex items-center gap-2 mt-1 truncate">
-                        <span className={cn(
-                            'inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap',
-                            statusStyles[lease.status] || 'bg-neutral-100 text-neutral-600'
-                        )}>
-                            {LEASE_STATUS_LABELS[lease.status as LeaseStatus] || lease.status}
-                        </span>
-                        <span className="text-xs text-neutral-400 truncate">
-                            N${lease.monthlyRent?.toLocaleString()}/mo
-                        </span>
+                    <p className="mt-1 truncate text-sm text-neutral-500">
+                        {lease.property?.address || 'Address not available'}
+                    </p>
+                    <div className="mt-2 flex items-center gap-2 text-xs text-neutral-400">
+                        <span>{formatCurrency(lease.monthlyRent ?? 0)}/mo</span>
+                        <span>•</span>
+                        <span>Ends {format(new Date(lease.endDate), 'MMM d, yyyy')}</span>
                     </div>
                 </div>
 
-                <div className="text-right shrink-0">
-                    <ChevronRight className="h-4 w-4 text-neutral-300 ml-auto" />
-                </div>
-            </div>
+                <ChevronRight className="h-5 w-5 shrink-0 text-neutral-300" strokeWidth={2} />
+            </article>
         </Link>
     )
+}
+
+function SectionHeader({ title, description }: { title: string; description: string }) {
+    return (
+        <div>
+            <h2 className="text-[18px] font-semibold tracking-[-0.03em] text-neutral-950">{title}</h2>
+            <p className="mt-1 text-sm text-neutral-500">{description}</p>
+        </div>
+    )
+}
+
+function InlineMeta({
+    icon: Icon,
+    label,
+}: {
+    icon: React.ElementType
+    label: string
+}) {
+    return (
+        <span className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-sm text-neutral-700">
+            <Icon className="h-4 w-4 text-neutral-500" strokeWidth={2} />
+            {label}
+        </span>
+    )
+}
+
+function formatCurrency(value: number) {
+    return currency.format(value || 0)
 }

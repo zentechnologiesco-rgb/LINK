@@ -46,7 +46,7 @@ function Skeleton({
 function PropertyCardSkeleton({ className }: { className?: string }) {
     return (
         <div className={cn("block w-full h-full", className)}>
-            <div className="relative w-full rounded-[24px] overflow-hidden bg-neutral-100 aspect-square shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]">
+            <div className="relative w-full rounded-[16px] overflow-hidden bg-neutral-100 aspect-square shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]">
                 {/* Image Area Skeleton */}
                 <Skeleton className="absolute inset-0 rounded-none bg-neutral-200/50" />
                 

@@ -1,37 +1,42 @@
 'use client'
 
-import { cn } from '@/lib/utils'
-import { Switch } from '@/components/ui/switch'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { type ElementType, type ReactNode } from 'react'
 import {
-    PET_POLICIES,
-    PET_POLICY_LABELS,
-    PET_POLICY_ICONS,
-    UTILITY_OPTIONS,
+    Ban,
+    Car,
+    Cat,
+    Check,
+    Cigarette,
+    Dog,
+    Droplets,
+    Flame,
+    Home,
+    MessageSquareMore,
+    Minus,
+    PawPrint,
+    Plus,
+    Rabbit,
+    Trash2,
+    Wifi,
+    Zap,
+} from 'lucide-react'
+
+import { cn } from '@/lib/utils'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import {
+    DURATION_PRESETS,
     LATE_FEE_TYPES,
     LATE_FEE_TYPE_LABELS,
-    MAINTENANCE_OPTIONS,
     MAINTENANCE_LABELS,
-    DURATION_PRESETS,
-    type PetPolicy,
+    MAINTENANCE_OPTIONS,
+    PET_POLICIES,
+    PET_POLICY_LABELS,
+    UTILITY_OPTIONS,
     type LateFeeType,
     type MaintenanceOption,
+    type PetPolicy,
 } from '@/constants/lease'
-import {
-    Dog,
-    Zap,
-    Car,
-    Wrench,
-    Calendar,
-    Clock,
-    DollarSign,
-    Users,
-    Cigarette,
-    Home,
-    Minus,
-    Plus,
-} from 'lucide-react'
 
 export interface RentalRulesData {
     startDate: string
@@ -60,6 +65,27 @@ interface RentalRulesConfiguratorProps {
     showFinancials?: boolean
 }
 
+const inputClassName =
+    'h-12 rounded-[16px] border-neutral-200 bg-neutral-50 px-4 text-[15px] font-medium text-neutral-900 shadow-none focus-visible:border-[#1d9bf0] focus-visible:ring-4 focus-visible:ring-[#1d9bf0]/10'
+
+const petPolicyMeta: Record<PetPolicy, { icon: ElementType }> = {
+    no_pets: { icon: Ban },
+    cats_only: { icon: Cat },
+    dogs_only: { icon: Dog },
+    small_pets: { icon: Rabbit },
+    all_pets: { icon: PawPrint },
+    negotiable: { icon: MessageSquareMore },
+}
+
+const utilityIconMap: Record<string, ElementType> = {
+    Electricity: Zap,
+    Water: Droplets,
+    Gas: Flame,
+    Internet: Wifi,
+    Trash: Trash2,
+    Sewage: Droplets,
+}
+
 export function RentalRulesConfigurator({
     data,
     onChange,
@@ -72,10 +98,11 @@ export function RentalRulesConfigurator({
     }
 
     const toggleUtility = (utility: string) => {
-        const updated = data.utilitiesIncluded.includes(utility)
-            ? data.utilitiesIncluded.filter((u) => u !== utility)
+        const nextUtilities = data.utilitiesIncluded.includes(utility)
+            ? data.utilitiesIncluded.filter((currentUtility) => currentUtility !== utility)
             : [...data.utilitiesIncluded, utility]
-        update({ utilitiesIncluded: updated })
+
+        update({ utilitiesIncluded: nextUtilities })
     }
 
     const setDuration = (months: number) => {
@@ -86,337 +113,394 @@ export function RentalRulesConfigurator({
     }
 
     return (
-        <div className="space-y-6">
-            {/* ── Dates ── */}
+        <div className="space-y-10">
             {showDates && (
-                <section>
-                    <SectionHeader icon={Calendar} label="Lease Period" />
-                    <div className="grid grid-cols-2 gap-3 mb-3">
-                        <div>
-                            <Label className="text-xs text-neutral-500 mb-1.5 block">Start Date</Label>
+                <SectionBlock
+                    title="Lease period"
+                    description="Set the dates first, then use a preset when you want the standard terms."
+                >
+                    <GroupSurface>
+                        <FieldRow label="Start date">
                             <Input
                                 type="date"
                                 value={data.startDate}
-                                onChange={(e) => update({ startDate: e.target.value })}
+                                onChange={(event) => update({ startDate: event.target.value })}
                                 disabled={disabled}
-                                className="h-12 rounded-xl bg-neutral-50 border-neutral-200 text-neutral-900 font-medium"
+                                className={inputClassName}
                             />
-                        </div>
-                        <div>
-                            <Label className="text-xs text-neutral-500 mb-1.5 block">End Date</Label>
+                        </FieldRow>
+                        <FieldRow label="End date">
                             <Input
                                 type="date"
                                 value={data.endDate}
-                                onChange={(e) => update({ endDate: e.target.value })}
+                                onChange={(event) => update({ endDate: event.target.value })}
                                 disabled={disabled}
-                                className="h-12 rounded-xl bg-neutral-50 border-neutral-200 text-neutral-900 font-medium"
+                                className={inputClassName}
                             />
-                        </div>
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                        {DURATION_PRESETS.map((preset) => (
-                            <button
-                                key={preset.months}
-                                type="button"
-                                onClick={() => setDuration(preset.months)}
-                                disabled={disabled}
-                                className="px-3 py-1.5 rounded-full text-xs font-semibold bg-neutral-100 text-neutral-700 hover:bg-neutral-200 transition-colors disabled:opacity-50"
-                            >
-                                {preset.label}
-                            </button>
-                        ))}
-                    </div>
-                </section>
+                        </FieldRow>
+                        <FieldRow label="Duration">
+                            <div className="flex flex-wrap gap-2">
+                                {DURATION_PRESETS.map((preset) => (
+                                    <button
+                                        key={preset.months}
+                                        type="button"
+                                        onClick={() => setDuration(preset.months)}
+                                        disabled={disabled}
+                                        className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-neutral-900 disabled:opacity-50"
+                                    >
+                                        {preset.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </FieldRow>
+                    </GroupSurface>
+                </SectionBlock>
             )}
 
-            {/* ── Financials ── */}
             {showFinancials && (
-                <section>
-                    <SectionHeader icon={DollarSign} label="Financials" />
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                        <div>
-                            <Label className="text-xs text-neutral-500 mb-1.5 block">Monthly Rent (N$)</Label>
+                <SectionBlock
+                    title="Pricing"
+                    description="Keep the financial terms clear and legible."
+                >
+                    <GroupSurface>
+                        <FieldRow label="Monthly rent">
                             <Input
                                 type="number"
                                 min={0}
                                 value={data.monthlyRent || ''}
-                                onChange={(e) => update({ monthlyRent: Number(e.target.value) })}
+                                onChange={(event) => update({ monthlyRent: Number(event.target.value) })}
                                 disabled={disabled}
-                                className="h-12 rounded-xl bg-neutral-50 border-neutral-200 text-neutral-900 font-bold text-lg"
+                                className={cn(inputClassName, 'font-semibold')}
                                 placeholder="0"
                             />
-                        </div>
-                        <div>
-                            <Label className="text-xs text-neutral-500 mb-1.5 block">Deposit (N$)</Label>
-                            <Input
-                                type="number"
-                                min={0}
-                                value={data.deposit || ''}
-                                onChange={(e) => update({ deposit: Number(e.target.value) })}
-                                disabled={disabled}
-                                className="h-12 rounded-xl bg-neutral-50 border-neutral-200 text-neutral-900 font-bold text-lg"
-                                placeholder="0"
-                            />
-                            {data.monthlyRent > 0 && data.deposit !== data.monthlyRent && (
-                                <button
-                                    type="button"
-                                    onClick={() => update({ deposit: data.monthlyRent })}
+                        </FieldRow>
+                        <FieldRow label="Deposit">
+                            <div className="space-y-2">
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    value={data.deposit || ''}
+                                    onChange={(event) => update({ deposit: Number(event.target.value) })}
                                     disabled={disabled}
-                                    className="text-xs text-neutral-500 hover:text-neutral-900 mt-1.5 underline underline-offset-2"
-                                >
-                                    Same as rent
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </section>
+                                    className={cn(inputClassName, 'font-semibold')}
+                                    placeholder="0"
+                                />
+                                {data.monthlyRent > 0 && data.deposit !== data.monthlyRent && (
+                                    <button
+                                        type="button"
+                                        onClick={() => update({ deposit: data.monthlyRent })}
+                                        disabled={disabled}
+                                        className="text-sm font-medium text-neutral-500 transition-colors hover:text-neutral-900"
+                                    >
+                                        Match deposit to rent
+                                    </button>
+                                )}
+                            </div>
+                        </FieldRow>
+                    </GroupSurface>
+                </SectionBlock>
             )}
 
-            {/* ── Rent Due Day ── */}
-            <section>
-                <SectionHeader icon={Clock} label="Payment Rules" />
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <Label className="text-xs text-neutral-500 mb-1.5 block">Rent Due Day</Label>
-                        <div className="flex items-center gap-2">
+            <SectionBlock
+                title="Payment rules"
+                description="Define due dates, grace, and late fee behavior."
+            >
+                <GroupSurface>
+                    <FieldRow label="Rent due day">
+                        <div className="flex items-center gap-3">
                             <Input
                                 type="number"
                                 min={1}
                                 max={28}
                                 value={data.rentDueDay}
-                                onChange={(e) => update({ rentDueDay: Math.min(28, Math.max(1, Number(e.target.value))) })}
+                                onChange={(event) =>
+                                    update({ rentDueDay: Math.min(28, Math.max(1, Number(event.target.value))) })
+                                }
                                 disabled={disabled}
-                                className="h-12 rounded-xl bg-neutral-50 border-neutral-200 text-neutral-900 font-bold text-center w-20"
+                                className={cn(inputClassName, 'w-24 text-center font-semibold')}
                             />
-                            <span className="text-xs text-neutral-400">of each month</span>
+                            <span className="text-sm text-neutral-500">of each month</span>
                         </div>
-                    </div>
-                    <div>
-                        <Label className="text-xs text-neutral-500 mb-1.5 block">Grace Period</Label>
-                        <div className="flex items-center gap-2">
+                    </FieldRow>
+                    <FieldRow label="Grace period">
+                        <div className="flex items-center gap-3">
                             <Input
                                 type="number"
                                 min={0}
                                 max={15}
                                 value={data.gracePeriodDays}
-                                onChange={(e) => update({ gracePeriodDays: Math.min(15, Math.max(0, Number(e.target.value))) })}
+                                onChange={(event) =>
+                                    update({ gracePeriodDays: Math.min(15, Math.max(0, Number(event.target.value))) })
+                                }
                                 disabled={disabled}
-                                className="h-12 rounded-xl bg-neutral-50 border-neutral-200 text-neutral-900 font-bold text-center w-20"
+                                className={cn(inputClassName, 'w-24 text-center font-semibold')}
                             />
-                            <span className="text-xs text-neutral-400">days</span>
+                            <span className="text-sm text-neutral-500">days</span>
                         </div>
-                    </div>
-                </div>
+                    </FieldRow>
+                    <FieldRow label="Late fee">
+                        <div className="space-y-3">
+                            <div className="flex flex-wrap gap-2">
+                                {LATE_FEE_TYPES.map((type) => (
+                                    <button
+                                        key={type}
+                                        type="button"
+                                        onClick={() => update({ lateFeeType: type })}
+                                        disabled={disabled}
+                                        className={cn(
+                                            'rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
+                                            data.lateFeeType === type
+                                                ? 'border-[#1d9bf0]/30 bg-[#1d9bf0]/10 text-[#1d9bf0]'
+                                                : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100'
+                                        )}
+                                    >
+                                        {LATE_FEE_TYPE_LABELS[type]}
+                                    </button>
+                                ))}
+                            </div>
 
-                {/* Late Fee */}
-                <div className="mt-4 p-4 rounded-xl bg-neutral-50 border border-neutral-100">
-                    <Label className="text-xs text-neutral-500 mb-3 block">Late Payment Fee</Label>
-                    <div className="flex items-center gap-3">
-                        <div className="flex rounded-xl overflow-hidden border border-neutral-200">
-                            {LATE_FEE_TYPES.map((type) => (
+                            <div className="flex items-center gap-3">
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    max={data.lateFeeType === 'percentage' ? 25 : 10000}
+                                    value={data.lateFeeAmount}
+                                    onChange={(event) => update({ lateFeeAmount: Number(event.target.value) })}
+                                    disabled={disabled}
+                                    className={cn(inputClassName, 'w-28 text-center font-semibold')}
+                                />
+                                <span className="text-sm text-neutral-500">
+                                    {data.lateFeeType === 'percentage' ? '% of rent' : 'N$'}
+                                </span>
+                            </div>
+                        </div>
+                    </FieldRow>
+                </GroupSurface>
+            </SectionBlock>
+
+            <SectionBlock
+                title="Policies"
+                description="Use lightweight selectors instead of stacked cards."
+            >
+                <GroupSurface>
+                    <FieldRow label="Pet policy">
+                        <div className="flex flex-wrap gap-2">
+                            {PET_POLICIES.map((policy) => {
+                                const PolicyIcon = petPolicyMeta[policy].icon
+                                const isSelected = data.petPolicy === policy
+
+                                return (
+                                    <SelectorPill
+                                        key={policy}
+                                        icon={PolicyIcon}
+                                        label={PET_POLICY_LABELS[policy]}
+                                        selected={isSelected}
+                                        onClick={() => update({ petPolicy: policy })}
+                                        disabled={disabled}
+                                    />
+                                )
+                            })}
+                        </div>
+                    </FieldRow>
+
+                    <FieldRow label="Utilities">
+                        <div className="flex flex-wrap gap-2">
+                            {UTILITY_OPTIONS.map((utility) => {
+                                const UtilityIcon = utilityIconMap[utility] ?? Zap
+                                const isSelected = data.utilitiesIncluded.includes(utility)
+
+                                return (
+                                    <SelectorPill
+                                        key={utility}
+                                        icon={isSelected ? Check : UtilityIcon}
+                                        label={utility}
+                                        selected={isSelected}
+                                        onClick={() => toggleUtility(utility)}
+                                        disabled={disabled}
+                                    />
+                                )
+                            })}
+                        </div>
+                    </FieldRow>
+
+                    <FieldRow label="Maintenance">
+                        <div className="flex flex-wrap gap-2">
+                            {MAINTENANCE_OPTIONS.map((option) => (
                                 <button
-                                    key={type}
+                                    key={option}
                                     type="button"
-                                    onClick={() => update({ lateFeeType: type })}
+                                    onClick={() => update({ maintenanceResponsibility: option })}
                                     disabled={disabled}
                                     className={cn(
-                                        'px-4 py-2.5 text-xs font-semibold transition-colors',
-                                        data.lateFeeType === type
-                                            ? 'bg-neutral-900 text-white'
-                                            : 'bg-white text-neutral-600 hover:bg-neutral-50'
+                                        'rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
+                                        data.maintenanceResponsibility === option
+                                            ? 'border-[#1d9bf0]/30 bg-[#1d9bf0]/10 text-[#1d9bf0]'
+                                            : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100'
                                     )}
                                 >
-                                    {LATE_FEE_TYPE_LABELS[type]}
+                                    {MAINTENANCE_LABELS[option]}
                                 </button>
                             ))}
                         </div>
-                        <Input
-                            type="number"
-                            min={0}
-                            max={data.lateFeeType === 'percentage' ? 25 : 10000}
-                            value={data.lateFeeAmount}
-                            onChange={(e) => update({ lateFeeAmount: Number(e.target.value) })}
-                            disabled={disabled}
-                            className="h-10 rounded-xl bg-white border-neutral-200 text-neutral-900 font-bold text-center w-24"
-                        />
-                        <span className="text-xs text-neutral-400 whitespace-nowrap">
-                            {data.lateFeeType === 'percentage' ? '% of rent' : 'N$'}
-                        </span>
-                    </div>
-                </div>
-            </section>
+                    </FieldRow>
+                </GroupSurface>
+            </SectionBlock>
 
-            {/* ── Pet Policy ── */}
-            <section>
-                <SectionHeader icon={Dog} label="Pet Policy" />
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                    {PET_POLICIES.map((policy) => (
-                        <button
-                            key={policy}
-                            type="button"
-                            onClick={() => update({ petPolicy: policy })}
-                            disabled={disabled}
-                            className={cn(
-                                'flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all text-center',
-                                data.petPolicy === policy
-                                    ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm'
-                                    : 'bg-white border-neutral-200 text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50'
-                            )}
-                        >
-                            <span className="text-lg">{PET_POLICY_ICONS[policy]}</span>
-                            <span className="text-[10px] font-semibold uppercase tracking-wide leading-tight">
-                                {PET_POLICY_LABELS[policy]}
-                            </span>
-                        </button>
-                    ))}
-                </div>
-            </section>
-
-            {/* ── Utilities ── */}
-            <section>
-                <SectionHeader icon={Zap} label="Utilities Included" />
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {UTILITY_OPTIONS.map((utility) => {
-                        const isSelected = data.utilitiesIncluded.includes(utility)
-                        return (
-                            <button
-                                key={utility}
-                                type="button"
-                                onClick={() => toggleUtility(utility)}
-                                disabled={disabled}
-                                className={cn(
-                                    'flex items-center gap-2.5 p-3 rounded-xl border transition-all',
-                                    isSelected
-                                        ? 'bg-neutral-900 text-white border-neutral-900'
-                                        : 'bg-white border-neutral-200 text-neutral-600 hover:border-neutral-300'
-                                )}
-                            >
-                                <div className={cn(
-                                    'h-5 w-5 rounded-md flex items-center justify-center text-xs',
-                                    isSelected ? 'bg-white/20' : 'bg-neutral-100'
-                                )}>
-                                    {isSelected ? '✓' : ''}
-                                </div>
-                                <span className="text-sm font-medium">{utility}</span>
-                            </button>
-                        )
-                    })}
-                </div>
-            </section>
-
-            {/* ── Toggle Rules ── */}
-            <section>
-                <SectionHeader icon={Home} label="Property Rules" />
-                <div className="space-y-1">
+            <SectionBlock
+                title="Property rules"
+                description="Keep the house rules compact and easy to scan."
+            >
+                <GroupSurface>
                     <ToggleRow
                         icon={Car}
-                        label="Parking Included"
-                        description="A parking spot is included with this rental"
+                        label="Parking included"
+                        description="A parking spot is bundled into this rental."
                         checked={data.parkingIncluded}
-                        onChange={(v) => update({ parkingIncluded: v })}
+                        onChange={(value) => update({ parkingIncluded: value })}
                         disabled={disabled}
                     />
                     <ToggleRow
                         icon={Cigarette}
-                        label="Smoking Allowed"
-                        description="Smoking permitted inside the property"
+                        label="Smoking allowed"
+                        description="Smoking is permitted inside the property."
                         checked={data.smokingAllowed}
-                        onChange={(v) => update({ smokingAllowed: v })}
+                        onChange={(value) => update({ smokingAllowed: value })}
                         disabled={disabled}
                     />
                     <ToggleRow
                         icon={Home}
-                        label="Subletting Allowed"
-                        description="Tenant may sublet with written consent"
+                        label="Subletting allowed"
+                        description="The tenant may sublet with written consent."
                         checked={data.sublettingAllowed}
-                        onChange={(v) => update({ sublettingAllowed: v })}
+                        onChange={(value) => update({ sublettingAllowed: value })}
                         disabled={disabled}
                     />
-                </div>
-            </section>
+                </GroupSurface>
+            </SectionBlock>
 
-            {/* ── Maintenance ── */}
-            <section>
-                <SectionHeader icon={Wrench} label="Maintenance Responsibility" />
-                <div className="flex rounded-xl overflow-hidden border border-neutral-200">
-                    {MAINTENANCE_OPTIONS.map((option) => (
-                        <button
-                            key={option}
-                            type="button"
-                            onClick={() => update({ maintenanceResponsibility: option })}
-                            disabled={disabled}
-                            className={cn(
-                                'flex-1 py-3 text-sm font-semibold transition-colors',
-                                data.maintenanceResponsibility === option
-                                    ? 'bg-neutral-900 text-white'
-                                    : 'bg-white text-neutral-600 hover:bg-neutral-50'
-                            )}
-                        >
-                            {MAINTENANCE_LABELS[option]}
-                        </button>
-                    ))}
-                </div>
-            </section>
-
-            {/* ── Occupancy & Notice ── */}
-            <section>
-                <SectionHeader icon={Users} label="Occupancy & Notice" />
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <Label className="text-xs text-neutral-500 mb-2 block">Max Occupants</Label>
-                        <div className="flex items-center gap-2">
+            <SectionBlock
+                title="Occupancy and notice"
+                description="Finish the operational details with as little noise as possible."
+            >
+                <GroupSurface>
+                    <FieldRow label="Max occupants">
+                        <div className="flex items-center gap-3">
                             <button
                                 type="button"
                                 onClick={() => update({ maxOccupants: Math.max(1, data.maxOccupants - 1) })}
                                 disabled={disabled || data.maxOccupants <= 1}
-                                className="h-10 w-10 rounded-xl bg-neutral-100 flex items-center justify-center text-neutral-600 hover:bg-neutral-200 disabled:opacity-30 transition-colors"
+                                className="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50 text-neutral-700 transition-colors hover:bg-neutral-100 disabled:opacity-40"
                             >
-                                <Minus className="h-4 w-4" />
+                                <Minus className="h-4 w-4" strokeWidth={2.2} />
                             </button>
-                            <span className="text-2xl font-bold text-neutral-900 w-10 text-center">
-                                {data.maxOccupants}
-                            </span>
+                            <div className="min-w-[56px] text-center">
+                                <p className="text-[1.35rem] font-semibold tracking-[-0.04em] text-neutral-950">
+                                    {data.maxOccupants}
+                                </p>
+                            </div>
                             <button
                                 type="button"
                                 onClick={() => update({ maxOccupants: Math.min(20, data.maxOccupants + 1) })}
                                 disabled={disabled || data.maxOccupants >= 20}
-                                className="h-10 w-10 rounded-xl bg-neutral-100 flex items-center justify-center text-neutral-600 hover:bg-neutral-200 disabled:opacity-30 transition-colors"
+                                className="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50 text-neutral-700 transition-colors hover:bg-neutral-100 disabled:opacity-40"
                             >
-                                <Plus className="h-4 w-4" />
+                                <Plus className="h-4 w-4" strokeWidth={2.2} />
                             </button>
                         </div>
-                    </div>
-                    <div>
-                        <Label className="text-xs text-neutral-500 mb-2 block">Notice Period</Label>
-                        <div className="flex items-center gap-2">
+                    </FieldRow>
+                    <FieldRow label="Notice period">
+                        <div className="flex items-center gap-3">
                             <Input
                                 type="number"
                                 min={7}
                                 max={90}
                                 value={data.noticePeriodDays}
-                                onChange={(e) => update({ noticePeriodDays: Math.min(90, Math.max(7, Number(e.target.value))) })}
+                                onChange={(event) =>
+                                    update({ noticePeriodDays: Math.min(90, Math.max(7, Number(event.target.value))) })
+                                }
                                 disabled={disabled}
-                                className="h-12 rounded-xl bg-neutral-50 border-neutral-200 text-neutral-900 font-bold text-center w-20"
+                                className={cn(inputClassName, 'w-28 text-center font-semibold')}
                             />
-                            <span className="text-xs text-neutral-400">days</span>
+                            <span className="text-sm text-neutral-500">days</span>
                         </div>
-                    </div>
-                </div>
-            </section>
+                    </FieldRow>
+                </GroupSurface>
+            </SectionBlock>
         </div>
     )
 }
 
-// ── Helpers ──
-
-function SectionHeader({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
+function SectionBlock({
+    title,
+    description,
+    children,
+}: {
+    title: string
+    description: string
+    children: ReactNode
+}) {
     return (
-        <div className="flex items-center gap-2 mb-3">
-            <div className="h-7 w-7 rounded-lg bg-neutral-100 flex items-center justify-center">
-                <Icon className="h-3.5 w-3.5 text-neutral-600" />
+        <section>
+            <div className="mb-5">
+                <h3 className="text-[18px] font-semibold tracking-[-0.03em] text-neutral-950">{title}</h3>
+                <p className="mt-1 text-sm leading-6 text-neutral-500">{description}</p>
             </div>
-            <span className="text-sm font-semibold text-neutral-900">{label}</span>
+            {children}
+        </section>
+    )
+}
+
+function GroupSurface({ children }: { children: ReactNode }) {
+    return (
+        <div className="divide-y divide-neutral-100 border-y border-neutral-200 bg-white">
+            {children}
         </div>
+    )
+}
+
+function FieldRow({
+    label,
+    children,
+}: {
+    label: string
+    children: ReactNode
+}) {
+    return (
+        <div className="grid gap-3 px-0 py-5 sm:grid-cols-[180px,minmax(0,1fr)] sm:items-center">
+            <p className="text-sm font-medium text-neutral-500">{label}</p>
+            <div>{children}</div>
+        </div>
+    )
+}
+
+function SelectorPill({
+    icon: Icon,
+    label,
+    selected,
+    onClick,
+    disabled,
+}: {
+    icon: ElementType
+    label: string
+    selected: boolean
+    onClick: () => void
+    disabled?: boolean
+}) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            disabled={disabled}
+            className={cn(
+                'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
+                selected
+                    ? 'border-[#1d9bf0]/30 bg-[#1d9bf0]/10 text-[#1d9bf0]'
+                    : 'border-neutral-200 bg-neutral-50 text-neutral-700 hover:bg-neutral-100'
+            )}
+        >
+            <Icon className="h-4 w-4" strokeWidth={2} />
+            {label}
+        </button>
     )
 }
 
@@ -428,27 +512,28 @@ function ToggleRow({
     onChange,
     disabled,
 }: {
-    icon: React.ElementType
+    icon: ElementType
     label: string
     description: string
     checked: boolean
-    onChange: (v: boolean) => void
+    onChange: (value: boolean) => void
     disabled?: boolean
 }) {
     return (
-        <div className="flex items-center justify-between p-3.5 rounded-xl hover:bg-neutral-50 transition-colors">
-            <div className="flex items-center gap-3">
-                <Icon className="h-4 w-4 text-neutral-400" />
+        <div className="flex items-center justify-between gap-4 px-0 py-5">
+            <div className="flex items-start gap-3">
+                <Icon className="mt-0.5 h-4 w-4 text-neutral-500" strokeWidth={2} />
                 <div>
-                    <p className="text-sm font-medium text-neutral-900">{label}</p>
-                    <p className="text-xs text-neutral-400">{description}</p>
+                    <p className="text-sm font-semibold text-neutral-950">{label}</p>
+                    <p className="mt-1 text-sm leading-6 text-neutral-500">{description}</p>
                 </div>
             </div>
+
             <Switch
                 checked={checked}
                 onCheckedChange={onChange}
                 disabled={disabled}
-                className="data-[state=checked]:bg-neutral-900"
+                className="shadow-none data-[state=checked]:bg-[#1d9bf0]"
             />
         </div>
     )

@@ -2,13 +2,15 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { toast } from 'sonner'
-import { User, Shield, Loader2, Camera, ChevronRight, Lock, Mail, Phone, Upload, LogOut } from 'lucide-react'
+import { User, Shield, Loader2, Camera, ChevronRight, Lock, Mail, Phone, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Header } from '@/components/layout/Header'
 import { MobileNav } from '@/components/layout/MobileNav'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { useAuthActions } from "@convex-dev/auth/react"
+import { getDisplayName } from '@/lib/user-name'
 import { useRouter } from 'next/navigation'
 
 const TABS = [
@@ -25,6 +27,7 @@ export default function SettingsPage() {
 
     const [saving, setSaving] = useState(false)
     const [uploading, setUploading] = useState(false)
+    const [saveFeedback, setSaveFeedback] = useState<'idle' | 'success'>('idle')
     const [activeTab, setActiveTab] = useState('profile')
     const [profile, setProfile] = useState({
         firstName: '',
@@ -33,6 +36,9 @@ export default function SettingsPage() {
     })
     const [initialized, setInitialized] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
+
+    const getErrorMessage = (error: unknown, fallbackMessage: string) =>
+        error instanceof Error ? error.message : fallbackMessage
 
     useEffect(() => {
         if (user && !initialized) {
@@ -46,18 +52,45 @@ export default function SettingsPage() {
         }
     }, [user, initialized])
 
+    useEffect(() => {
+        if (saveFeedback !== 'success') return
+
+        const timeoutId = window.setTimeout(() => {
+            setSaveFeedback('idle')
+        }, 1600)
+
+        return () => window.clearTimeout(timeoutId)
+    }, [saveFeedback])
+
+    const fullName = `${profile.firstName} ${profile.surname}`.trim()
+    const hasProfileChanges = Boolean(
+        user &&
+        initialized &&
+        (
+            fullName !== (user.fullName || '').trim() ||
+            profile.phone !== (user.phone || '')
+        )
+    )
+    const avatarActivity = uploading
+        ? 'uploading'
+        : saving
+            ? 'saving'
+            : hasProfileChanges
+                ? 'typing'
+                : saveFeedback
+
     const handleSaveProfile = async () => {
         if (!user) return
         setSaving(true)
         try {
-            const fullName = `${profile.firstName} ${profile.surname}`.trim()
             await updateProfile({
                 fullName: fullName,
                 phone: profile.phone,
             })
+            setSaveFeedback('success')
             toast.success('Profile updated')
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to update profile')
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, 'Failed to update profile'))
         }
         setSaving(false)
     }
@@ -94,8 +127,8 @@ export default function SettingsPage() {
             const { storageId } = await response.json()
             await updateProfile({ avatarUrl: storageId })
             toast.success('Profile picture updated')
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to upload avatar')
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, 'Failed to upload avatar'))
         } finally {
             setUploading(false)
             if (fileInputRef.current) fileInputRef.current.value = ''
@@ -173,16 +206,11 @@ export default function SettingsPage() {
                         <div className="bg-white rounded-xl border border-neutral-200 p-4">
                             <div className="flex items-center gap-4">
                                 <div className="relative group">
-                                    <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full overflow-hidden bg-neutral-100 border border-neutral-200">
-                                        {user?.avatarUrl ? (
-                                            // eslint-disable-next-line @next/next/no-img-element
-                                            <img src={user.avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
-                                        ) : (
-                                            <div className="h-full w-full flex items-center justify-center text-neutral-300">
-                                                <User className="h-7 w-7" />
-                                            </div>
-                                        )}
-                                    </div>
+                                    <UserAvatar
+                                        activity={avatarActivity}
+                                        className="h-16 w-16 sm:h-20 sm:w-20 border border-neutral-200"
+                                        user={user}
+                                    />
                                     <button
                                         onClick={() => fileInputRef.current?.click()}
                                         disabled={uploading}
@@ -204,7 +232,7 @@ export default function SettingsPage() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <h2 className="font-semibold text-neutral-900 truncate">
-                                        {user?.fullName || 'Your Name'}
+                                        {getDisplayName(user, 'Your Name')}
                                     </h2>
                                     <p className="text-sm text-neutral-500 truncate">{user?.email}</p>
                                 </div>

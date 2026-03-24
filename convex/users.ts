@@ -1,23 +1,17 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { type QueryCtx, mutation, query } from "./_generated/server";
+import { type Doc } from "./_generated/dataModel";
 import { auth } from "./auth";
+import { resolveAvatarUrl } from "./lib/avatar";
 
 // Helper to resolve avatar URL
-async function getUserWithAvatarUrl(ctx: any, user: any) {
+async function getUserWithAvatarUrl(ctx: QueryCtx, user: Doc<"users"> | null) {
     if (!user) return null;
 
-    if (user.avatarUrl && !user.avatarUrl.startsWith("http")) {
-        try {
-            const url = await ctx.storage.getUrl(user.avatarUrl);
-            // If URL is valid, use it. If null (file not found), set avatarUrl to null to trigger fallback
-            return { ...user, avatarUrl: url || null };
-        } catch (error) {
-            console.error("Failed to generate storage URL for avatar:", error);
-            // On error, also clear the invalid ID to trigger fallback
-            return { ...user, avatarUrl: null };
-        }
-    }
-    return user;
+    return {
+        ...user,
+        avatarUrl: await resolveAvatarUrl(ctx, user.avatarUrl),
+    };
 }
 
 // Get current authenticated user

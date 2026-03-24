@@ -47,12 +47,12 @@ export const TrustCard = memo(function TrustCard({
             className="group block w-full outline-none"
         >
             <div className={cn(
-                "relative w-full rounded-[24px] overflow-hidden bg-neutral-100",
+                "relative w-full rounded-[16px] overflow-hidden bg-neutral-100",
                 "transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]",
                 "shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]",
                 "hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.2)] hover:-translate-y-1.5"
             )}>
-                {/* Image — Square aspect ratio like Airbnb */}
+                {/* Image — Square ratio for the feed layout */}
                 <div className="relative w-full aspect-square">
                     <Image
                         src={imageSrc}

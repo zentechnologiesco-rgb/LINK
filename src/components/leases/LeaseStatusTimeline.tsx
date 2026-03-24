@@ -1,18 +1,19 @@
 'use client'
 
-import { Badge } from '@/components/ui/badge'
-import {
-    FileText,
-    Send,
-    PenTool,
-    CheckCircle2,
-    XCircle,
-    RefreshCcw,
-    Clock,
-    AlertTriangle,
-    Check
-} from 'lucide-react'
+import { type ElementType } from 'react'
 import { format } from 'date-fns'
+import {
+    AlertTriangle,
+    Check,
+    CheckCircle2,
+    Clock3,
+    FileText,
+    PenTool,
+    RefreshCcw,
+    Send,
+    XCircle,
+} from 'lucide-react'
+
 import { cn } from '@/lib/utils'
 
 interface LeaseStatusTimelineProps {
@@ -23,18 +24,64 @@ interface LeaseStatusTimelineProps {
     approvedAt?: string | number | null
 }
 
-const statusConfig: Record<string, {
-    icon: React.ElementType
+type StatusMeta = {
+    icon: ElementType
     label: string
-}> = {
-    draft: { icon: FileText, label: 'Draft' },
-    sent_to_tenant: { icon: Send, label: 'Sent to Tenant' },
-    tenant_signed: { icon: PenTool, label: 'Tenant Signed' },
-    approved: { icon: CheckCircle2, label: 'Approved' },
-    rejected: { icon: XCircle, label: 'Rejected' },
-    revision_requested: { icon: RefreshCcw, label: 'Revision Requested' },
-    expired: { icon: Clock, label: 'Expired' },
-    terminated: { icon: AlertTriangle, label: 'Terminated' },
+    badgeClassName: string
+}
+
+const statusConfig: Record<string, StatusMeta> = {
+    draft: {
+        icon: FileText,
+        label: 'Draft',
+        badgeClassName: 'border-neutral-200 bg-neutral-50 text-neutral-700',
+    },
+    sent_to_tenant: {
+        icon: Send,
+        label: 'Sent to tenant',
+        badgeClassName: 'border-sky-200 bg-sky-50 text-sky-700',
+    },
+    tenant_signed: {
+        icon: PenTool,
+        label: 'Tenant signed',
+        badgeClassName: 'border-amber-200 bg-amber-50 text-amber-700',
+    },
+    approved: {
+        icon: CheckCircle2,
+        label: 'Approved',
+        badgeClassName: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    },
+    rejected: {
+        icon: XCircle,
+        label: 'Rejected',
+        badgeClassName: 'border-red-200 bg-red-50 text-red-700',
+    },
+    revision_requested: {
+        icon: RefreshCcw,
+        label: 'Revision requested',
+        badgeClassName: 'border-amber-200 bg-amber-50 text-amber-700',
+    },
+    expired: {
+        icon: Clock3,
+        label: 'Expired',
+        badgeClassName: 'border-neutral-200 bg-neutral-50 text-neutral-500',
+    },
+    terminated: {
+        icon: AlertTriangle,
+        label: 'Terminated',
+        badgeClassName: 'border-red-200 bg-red-50 text-red-700',
+    },
+}
+
+const currentStatusIndexMap: Record<string, number> = {
+    draft: 0,
+    sent_to_tenant: 1,
+    tenant_signed: 2,
+    revision_requested: 2,
+    approved: 3,
+    rejected: 2,
+    terminated: 3,
+    expired: 3,
 }
 
 export function LeaseStatusTimeline({
@@ -42,99 +89,90 @@ export function LeaseStatusTimeline({
     createdAt,
     sentAt,
     signedAt,
-    approvedAt
+    approvedAt,
 }: LeaseStatusTimelineProps) {
-    const currentStatusIndexMap: Record<string, number> = {
-        draft: 0,
-        sent_to_tenant: 1,
-        tenant_signed: 2,
-        revision_requested: 2,
-        approved: 3,
-        rejected: 2,
-        terminated: 3,
-        expired: 3,
-    }
     const currentStatusIndex = currentStatusIndexMap[status] ?? 0
-    const config = statusConfig[status] || statusConfig.draft
+    const currentStatus = statusConfig[status] || statusConfig.draft
 
     const steps = [
-        { key: 'draft', label: 'Created', date: createdAt },
-        { key: 'sent_to_tenant', label: 'Sent', date: sentAt },
-        { key: 'tenant_signed', label: 'Signed', date: signedAt },
+        { key: 'draft', label: 'Draft created', date: createdAt },
+        { key: 'sent_to_tenant', label: 'Sent to tenant', date: sentAt },
+        { key: 'tenant_signed', label: status === 'revision_requested' ? 'Returned by tenant' : 'Tenant signed', date: signedAt },
         { key: 'approved', label: 'Approved', date: approvedAt },
     ]
 
     return (
-        <div className="space-y-6">
-            {/* Current Status Badge */}
-            <div className="flex items-center gap-2">
-                <Badge className="bg-neutral-900 text-white hover:bg-neutral-800 rounded-lg px-3 py-1.5 font-bold uppercase tracking-wide text-[10px] border-0">
-                    <config.icon className="h-3 w-3 mr-1.5" />
-                    {config.label}
-                </Badge>
+        <div className="space-y-5">
+            <div className="flex flex-wrap items-center gap-2">
+                <LeaseStatusBadge status={status} />
+                <p className="text-sm text-neutral-500">
+                    {currentStatus.label} is the current lease state.
+                </p>
             </div>
 
             {status === 'revision_requested' && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">Returned For Changes</p>
-                    <p className="mt-1 text-sm text-amber-800">The landlord reviewed the submission and asked the tenant to update documents and sign again.</p>
+                <div className="rounded-[20px] border border-amber-200 bg-amber-50/80 px-4 py-4">
+                    <p className="text-sm font-semibold text-amber-900">Returned for changes</p>
+                    <p className="mt-1 text-sm leading-6 text-amber-800">
+                        The lease was reviewed and sent back for updated documents or another signature pass.
+                    </p>
                 </div>
             )}
 
-            {/* Timeline */}
-            <div className="relative pl-1">
+            <div className="divide-y divide-neutral-100 border-y border-neutral-200 bg-white">
                 {steps.map((step, index) => {
-                    const isPast = index < currentStatusIndex
-                    const isActive = index === currentStatusIndex
-                    // const isFuture = index > currentStatusIndex
-                    // Using variable for isFuture to avoid lint warning if needed, or just check stepIndex directly.
-                    const isFuture = index > currentStatusIndex
-
-                    const stepConfig = statusConfig[step.key]
+                    const stepMeta = statusConfig[step.key] || statusConfig.draft
+                    const isCompleted = index < currentStatusIndex
+                    const isCurrent = index === currentStatusIndex
 
                     return (
-                        <div key={step.key} className="relative flex items-start gap-4 pb-8 last:pb-0">
-                            {/* Connector Line */}
-                            {index < steps.length - 1 && (
-                                <div
-                                    className={cn(
-                                        "absolute left-[15px] top-10 h-[calc(100%-10px)] w-px",
-                                        isPast ? "bg-neutral-900" : "bg-neutral-200 border-l border-dashed border-neutral-300 w-0 h-full"
-                                    )}
-                                />
+                        <div
+                            key={step.key}
+                            className={cn(
+                                'flex items-start gap-4 py-5',
+                                isCurrent && 'bg-neutral-50/70'
                             )}
-
-                            {/* Step Icon */}
+                        >
                             <div
                                 className={cn(
-                                    "relative z-10 flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-300",
-                                    isPast ? "bg-neutral-900 border-neutral-900 text-white" :
-                                        isActive ? "bg-white border-2 border-neutral-900 text-neutral-900 shadow-none" :
-                                            "bg-white border-2 border-neutral-200 text-neutral-300"
+                                    'mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border',
+                                    isCompleted
+                                        ? 'border-neutral-900 bg-neutral-900 text-white'
+                                        : isCurrent
+                                            ? 'border-sky-200 bg-sky-50 text-sky-700'
+                                            : 'border-neutral-200 bg-white text-neutral-300'
                                 )}
                             >
-                                {isPast ? (
-                                    <Check className="h-4 w-4" strokeWidth={3} />
-                                ) : isActive ? (
-                                    <stepConfig.icon className="h-4 w-4" strokeWidth={2.5} />
+                                {isCompleted ? (
+                                    <Check className="h-4 w-4" strokeWidth={2.5} />
+                                ) : isCurrent ? (
+                                    <stepMeta.icon className="h-4 w-4" strokeWidth={2} />
                                 ) : (
-                                    <div className="h-2 w-2 rounded-full bg-current" />
+                                    <div className="h-2.5 w-2.5 rounded-full bg-current" />
                                 )}
                             </div>
 
-                            {/* Step Content */}
-                            <div className="flex-1 min-w-0 pt-1">
-                                <p className={cn(
-                                    "text-sm font-bold uppercase tracking-wide leading-none font-mono",
-                                    isFuture ? "text-neutral-300" : "text-neutral-900"
-                                )}>
-                                    {step.label}
-                                </p>
-                                {step.date && (
-                                    <p className="text-[10px] text-neutral-500 font-medium mt-1.5 uppercase tracking-wider">
-                                        {format(new Date(step.date), 'MMM d, h:mm a')}
-                                    </p>
-                                )}
+                            <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <div>
+                                        <p className="text-sm font-semibold text-neutral-950">{step.label}</p>
+                                        <p className="mt-1 text-sm text-neutral-500">
+                                            {step.date ? format(new Date(step.date), 'MMM d, yyyy') : 'Not reached yet'}
+                                        </p>
+                                    </div>
+                                    <span
+                                        className={cn(
+                                            'rounded-full px-2.5 py-1 text-xs font-semibold',
+                                            isCompleted
+                                                ? 'bg-neutral-100 text-neutral-700'
+                                                : isCurrent
+                                                    ? 'bg-sky-100 text-sky-700'
+                                                    : 'bg-neutral-100 text-neutral-400'
+                                        )}
+                                    >
+                                        {isCompleted ? 'Completed' : isCurrent ? 'Current' : 'Upcoming'}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     )
@@ -146,11 +184,17 @@ export function LeaseStatusTimeline({
 
 export function LeaseStatusBadge({ status }: { status: string }) {
     const config = statusConfig[status] || statusConfig.draft
+    const Icon = config.icon
 
     return (
-        <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider bg-white border-neutral-200 text-neutral-900 px-2 py-0.5 rounded-md">
-            <config.icon className="h-3 w-3 mr-1.5" strokeWidth={2} />
+        <span
+            className={cn(
+                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold',
+                config.badgeClassName
+            )}
+        >
+            <Icon className="h-3.5 w-3.5" strokeWidth={2} />
             {config.label}
-        </Badge>
+        </span>
     )
 }
