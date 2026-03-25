@@ -11,7 +11,7 @@ function CreatePropertyContent() {
 
   if (currentUser === undefined) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F2F2F7]">
+      <div className="flex min-h-screen items-center justify-center bg-white">
         <Loader2 className="h-7 w-7 animate-spin text-neutral-400" />
       </div>
     );
@@ -27,7 +27,7 @@ function CreatePropertyContent() {
     return null;
   }
 
-  return <PropertyForm mode="create" />;
+  return <PropertyForm mode="create" pageBackgroundClassName="bg-white" />;
 }
 
 export default function CreatePropertyPage() {

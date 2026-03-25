@@ -239,6 +239,10 @@ function requiresUnitSelection(
     blockedPropertyIds: Set<Id<'properties'>>,
     blockedUnitIds: Set<Id<'propertyUnits'>>,
 ) {
+    if (property.listingType === 'single_home') {
+        return false
+    }
+
     return getLeaseableUnits(property, blockedPropertyIds, blockedUnitIds).length > 1
 }
 
@@ -385,7 +389,12 @@ export function CreateLeaseClient() {
     // ── Property selection ──
     const handlePropertySelect = (property: LandlordProperty) => {
         const leaseableUnits = getLeaseableUnits(property, blockedPropertyIds, blockedUnitIds)
-        const autoSelectedUnit = leaseableUnits.length === 1 ? leaseableUnits[0] : null
+        const autoSelectedUnit =
+            property.listingType === 'single_home'
+                ? null
+                : leaseableUnits.length === 1
+                    ? leaseableUnits[0]
+                    : null
 
         setSelectedProperty(property)
         setSelectedUnit(autoSelectedUnit)
@@ -411,7 +420,12 @@ export function CreateLeaseClient() {
         if (!property) return
 
         const leaseableUnits = getLeaseableUnits(property, blockedPropertyIds, blockedUnitIds)
-        const autoSelectedUnit = leaseableUnits.length === 1 ? leaseableUnits[0] : null
+        const autoSelectedUnit =
+            property.listingType === 'single_home'
+                ? null
+                : leaseableUnits.length === 1
+                    ? leaseableUnits[0]
+                    : null
 
         setSelectedProperty(property)
         setSelectedUnit(autoSelectedUnit)

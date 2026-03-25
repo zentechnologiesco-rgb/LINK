@@ -143,6 +143,7 @@ interface PropertyFormProps {
   mode?: "create" | "edit";
   propertyId?: Id<"properties">;
   initialData?: PropertyFormInitialData;
+  pageBackgroundClassName?: string;
 }
 
 type InventoryGenerator = {
@@ -156,6 +157,15 @@ type InventoryGenerator = {
   bathrooms: string;
   sizeSqm: string;
   maxOccupants: string;
+};
+
+type SingleHomeUnitSyncOptions = {
+  listingTitle: string;
+  propertyType: string;
+  occupancyMode: string;
+  furnishingStatus: string;
+  genderPolicy: string;
+  availableFrom: string;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -307,6 +317,33 @@ function numberValue(value: string): number | undefined {
   if (!value) return undefined;
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function getPropertyTypeLabel(propertyType: string) {
+  return (
+    PROPERTY_TYPE_LABELS[propertyType as keyof typeof PROPERTY_TYPE_LABELS] ||
+    "Whole Home"
+  );
+}
+
+function buildSingleHomeUnit(
+  existingUnit: PropertyUnitForm | undefined,
+  options: SingleHomeUnitSyncOptions,
+): PropertyUnitForm {
+  const nextTitle =
+    options.listingTitle.trim() || getPropertyTypeLabel(options.propertyType);
+
+  return {
+    ...(existingUnit ??
+      createDefaultUnit("single_home", options.propertyType, nextTitle)),
+    title: nextTitle,
+    unitType: options.propertyType,
+    occupancyMode: options.occupancyMode,
+    roomType: "",
+    furnishingStatus: options.furnishingStatus,
+    genderPolicy: options.genderPolicy,
+    availableFrom: options.availableFrom,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -601,6 +638,7 @@ export function PropertyForm({
   mode = "create",
   propertyId,
   initialData,
+  pageBackgroundClassName = "bg-[#F2F2F7]",
 }: PropertyFormProps) {
   const router = useRouter();
   const currentUser = useQuery(api.users.currentUser);
@@ -703,8 +741,32 @@ export function PropertyForm({
   const [showBatchGen, setShowBatchGen] = useState(false);
 
   // ── Computed ─────────────────────────────────────────────────────────────
+  const isSingleHome = listingType === "single_home";
+  const normalizedUnits = useMemo(() => {
+    if (!isSingleHome) return units;
+    return [
+      buildSingleHomeUnit(units[0], {
+        listingTitle: title,
+        propertyType,
+        occupancyMode,
+        furnishingStatus,
+        genderPolicy,
+        availableFrom,
+      }),
+    ];
+  }, [
+    availableFrom,
+    furnishingStatus,
+    genderPolicy,
+    isSingleHome,
+    occupancyMode,
+    propertyType,
+    title,
+    units,
+  ]);
+  const singleHomeUnit = normalizedUnits[0];
   const summary = useMemo(() => {
-    const pricedUnits = units
+    const pricedUnits = normalizedUnits
       .map((u) => ({
         price: Number(u.priceNad || 0),
         bedrooms: Number(u.bedrooms || 0),
@@ -732,7 +794,7 @@ export function PropertyForm({
       sizeSqm: first.sizeSqm,
       maxOccupants: first.maxOccupants,
     };
-  }, [units]);
+  }, [normalizedUnits]);
 
   const filteredAmenities =
     amenityCategory === "all"
@@ -740,7 +802,16 @@ export function PropertyForm({
       : getAmenitiesByCategory(amenityCategory);
 
   const TOTAL_STEPS = STEPS.length;
-  const stepData = STEPS[step];
+  const stepData =
+    step === 5 && isSingleHome
+      ? {
+          ...STEPS[step],
+          label: "Pricing",
+          title: "Set rent & availability",
+          subtitle:
+            "Single-home listings use one whole-home price instead of separate unit pricing.",
+        }
+      : STEPS[step];
   const editingUnit =
     editingUnitIndex !== null ? units[editingUnitIndex] : null;
 
@@ -771,6 +842,25 @@ export function PropertyForm({
     setUnits((prev) =>
       prev.map((u, i) => (i === index ? { ...u, ...patch } : u)),
     );
+  };
+
+  const updateSingleHomeUnit = (
+    patch: Partial<PropertyUnitForm> = {},
+    overrides: Partial<SingleHomeUnitSyncOptions> = {},
+  ) => {
+    setUnits((prev) => [
+      {
+        ...buildSingleHomeUnit(prev[0], {
+          listingTitle: overrides.listingTitle ?? title,
+          propertyType: overrides.propertyType ?? propertyType,
+          occupancyMode: overrides.occupancyMode ?? occupancyMode,
+          furnishingStatus: overrides.furnishingStatus ?? furnishingStatus,
+          genderPolicy: overrides.genderPolicy ?? genderPolicy,
+          availableFrom: overrides.availableFrom ?? availableFrom,
+        }),
+        ...patch,
+      },
+    ]);
   };
 
   const addUnit = () => {
@@ -810,36 +900,53 @@ export function PropertyForm({
   };
 
   const setListingTypeAndSeed = (next: ListingType) => {
+    const nextOccupancyMode =
+      next === "student_accommodation" ? "private_room" : "whole_unit";
+    const nextFurnishingStatus =
+      next === "student_accommodation" ? "furnished" : "unfurnished";
+
     setListingType(next);
-    setOccupancyMode(
-      next === "student_accommodation" ? "private_room" : "whole_unit",
-    );
-    setFurnishingStatus(
-      next === "student_accommodation" ? "furnished" : "unfurnished",
-    );
+    setOccupancyMode(nextOccupancyMode);
+    setFurnishingStatus(nextFurnishingStatus);
+    setEditingUnitIndex(null);
+    setShowBatchGen(false);
     setGenerator((prev) => ({
       ...prev,
       prefix: next === "student_accommodation" ? "Room" : "Unit",
       unitType: next === "student_accommodation" ? "room" : propertyType,
-      occupancyMode:
-        next === "student_accommodation" ? "private_room" : "whole_unit",
+      occupancyMode: nextOccupancyMode,
       roomType: next === "student_accommodation" ? "private" : "",
       maxOccupants: next === "student_accommodation" ? "1" : prev.maxOccupants,
     }));
     setUnits((prev) => {
+      const seededPrev =
+        listingType === "single_home"
+          ? [
+              buildSingleHomeUnit(prev[0], {
+                listingTitle: title,
+                propertyType,
+                occupancyMode,
+                furnishingStatus,
+                genderPolicy,
+                availableFrom,
+              }),
+            ]
+          : prev;
+
       if (next === "single_home") {
-        const base = prev[0] || createDefaultUnit(next, propertyType);
         return [
-          {
-            ...base,
-            unitType: propertyType,
-            occupancyMode: "whole_unit",
-            roomType: "",
-          },
+          buildSingleHomeUnit(seededPrev[0], {
+            listingTitle: title,
+            propertyType,
+            occupancyMode: nextOccupancyMode,
+            furnishingStatus: nextFurnishingStatus,
+            genderPolicy,
+            availableFrom,
+          }),
         ];
       }
-      if (prev.length > 0) {
-        return prev.map((u) => ({
+      if (seededPrev.length > 0) {
+        return seededPrev.map((u) => ({
           ...u,
           unitType:
             next === "student_accommodation"
@@ -914,12 +1021,12 @@ export function PropertyForm({
       navigateTo(3);
       return;
     }
-    if (units.length === 0) {
+    if (normalizedUnits.length === 0) {
       toast.error("Add at least one rentable unit.");
       navigateTo(5);
       return;
     }
-    const invalidUnit = units.find(
+    const invalidUnit = normalizedUnits.find(
       (u) => !u.title.trim() || Number(u.priceNad || 0) <= 0,
     );
     if (invalidUnit) {
@@ -943,7 +1050,8 @@ export function PropertyForm({
         genderPolicy:
           listingType === "student_accommodation" ? genderPolicy : undefined,
         availableFrom: availableFrom || undefined,
-        priceNad: summary.minPrice || Number(units[0]?.priceNad || 0),
+        priceNad:
+          summary.minPrice || Number(normalizedUnits[0]?.priceNad || 0),
         bedrooms: summary.bedrooms || undefined,
         bathrooms: summary.bathrooms || undefined,
         sizeSqm: summary.sizeSqm || undefined,
@@ -952,7 +1060,7 @@ export function PropertyForm({
         utilitiesIncluded,
         petPolicy,
         images,
-        units: units.map((unit) => ({
+        units: normalizedUnits.map((unit) => ({
           _id: unit._id,
           title: unit.title.trim(),
           unitCode: unit.unitCode.trim() || undefined,
@@ -1003,7 +1111,12 @@ export function PropertyForm({
   // ── Loading ───────────────────────────────────────────────────────────────
   if (currentUser === undefined) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F2F2F7]">
+      <div
+        className={cn(
+          "flex min-h-screen items-center justify-center",
+          pageBackgroundClassName,
+        )}
+      >
         <Loader2 className="h-7 w-7 animate-spin text-neutral-400" />
       </div>
     );
@@ -1027,7 +1140,7 @@ export function PropertyForm({
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#F2F2F7] font-sans">
+    <div className={cn("min-h-screen font-sans", pageBackgroundClassName)}>
       {/* ══════════════════════════════════════════════════════════════
                 FIXED HEADER
             ══════════════════════════════════════════════════════════════ */}
@@ -1257,7 +1370,13 @@ export function PropertyForm({
                     <FieldLabel>Listing Title</FieldLabel>
                     <input
                       value={title}
-                      onChange={(e) => setTitle(e.target.value)}
+                      onChange={(e) => {
+                        const nextTitle = e.target.value;
+                        setTitle(nextTitle);
+                        if (isSingleHome) {
+                          updateSingleHomeUnit({}, { listingTitle: nextTitle });
+                        }
+                      }}
                       placeholder={
                         listingType === "student_accommodation"
                           ? "e.g. Campus Heights Residence"
@@ -1287,6 +1406,9 @@ export function PropertyForm({
                       onValueChange={(v) => {
                         setPropertyType(v);
                         setGenerator((prev) => ({ ...prev, unitType: v }));
+                        if (isSingleHome) {
+                          updateSingleHomeUnit({}, { propertyType: v });
+                        }
                       }}
                       options={PROPERTY_TYPES.map((t) => ({
                         value: t,
@@ -1297,7 +1419,12 @@ export function PropertyForm({
                   <InlineSelectRow
                     label="Occupancy Mode"
                     value={occupancyMode}
-                    onValueChange={setOccupancyMode}
+                    onValueChange={(v) => {
+                      setOccupancyMode(v);
+                      if (isSingleHome) {
+                        updateSingleHomeUnit({}, { occupancyMode: v });
+                      }
+                    }}
                     options={[
                       { value: "whole_unit", label: "Whole Unit" },
                       { value: "private_room", label: "Private Room" },
@@ -1308,7 +1435,12 @@ export function PropertyForm({
                   <InlineSelectRow
                     label="Furnishing"
                     value={furnishingStatus}
-                    onValueChange={setFurnishingStatus}
+                    onValueChange={(v) => {
+                      setFurnishingStatus(v);
+                      if (isSingleHome) {
+                        updateSingleHomeUnit({}, { furnishingStatus: v });
+                      }
+                    }}
                     options={[
                       { value: "unfurnished", label: "Unfurnished" },
                       { value: "semi_furnished", label: "Semi-Furnished" },
@@ -1337,7 +1469,15 @@ export function PropertyForm({
                     <input
                       type="date"
                       value={availableFrom}
-                      onChange={(e) => setAvailableFrom(e.target.value)}
+                      onChange={(e) => {
+                        const nextAvailableFrom = e.target.value;
+                        setAvailableFrom(nextAvailableFrom);
+                        if (isSingleHome) {
+                          updateSingleHomeUnit({}, {
+                            availableFrom: nextAvailableFrom,
+                          });
+                        }
+                      }}
                       className="text-[14px] font-medium text-neutral-600 bg-transparent outline-none text-right cursor-pointer"
                     />
                   </CardRow>
@@ -1516,197 +1656,344 @@ export function PropertyForm({
                         ───────────────────────────────────────────────── */}
             {step === 5 && (
               <div className="space-y-4">
-                {/* Stats bar */}
-                {units.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2.5">
-                    {[
-                      { label: "Units", value: String(units.length) },
-                      {
-                        label: "From",
-                        value:
-                          summary.minPrice > 0
-                            ? `N$${summary.minPrice.toLocaleString()}`
-                            : "—",
-                      },
-                      {
-                        label: "Up to",
-                        value:
-                          summary.maxPrice > summary.minPrice
-                            ? `N$${summary.maxPrice.toLocaleString()}`
-                            : summary.minPrice > 0
-                              ? `N$${summary.minPrice.toLocaleString()}`
-                              : "—",
-                      },
-                    ].map((stat) => (
-                      <div
-                        key={stat.label}
-                        className="rounded-2xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-3.5 text-center"
-                      >
-                        <p className="text-[19px] font-bold text-neutral-950 tracking-[-0.02em] leading-none truncate">
-                          {stat.value}
-                        </p>
-                        <p className="mt-1 text-[12px] text-neutral-400 font-medium">
-                          {stat.label}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Bulk generator (multi-unit only) */}
-                {listingType !== "single_home" && (
-                  <CardSection>
-                    <button
-                      type="button"
-                      onClick={() => setShowBatchGen(!showBatchGen)}
-                      className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-neutral-50 active:bg-neutral-100 transition-colors"
-                    >
-                      <div className="h-9 w-9 rounded-xl bg-violet-50 flex items-center justify-center flex-shrink-0">
-                        <Sparkles
-                          className="h-4 w-4 text-violet-600"
-                          strokeWidth={2}
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[15px] font-semibold text-neutral-950">
-                          Bulk Add Units
-                        </p>
-                        <p className="text-[12px] text-neutral-400">
-                          Generate identical units in one tap
-                        </p>
-                      </div>
-                      <ChevronRight
-                        className={cn(
-                          "h-4 w-4 text-neutral-400 flex-shrink-0 transition-transform duration-200",
-                          showBatchGen && "rotate-90",
-                        )}
-                        strokeWidth={2}
-                      />
-                    </button>
-
-                    {showBatchGen && (
-                      <div className="border-t border-neutral-100 p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                        <div className="grid grid-cols-2 gap-3">
-                          {[
-                            {
-                              label: "Count",
-                              key: "count" as const,
-                              type: "number",
-                              placeholder: "6",
-                            },
-                            {
-                              label: "Prefix",
-                              key: "prefix" as const,
-                              type: "text",
-                              placeholder: "Unit",
-                            },
-                            {
-                              label: "Price (N$)",
-                              key: "priceNad" as const,
-                              type: "number",
-                              placeholder: "0",
-                            },
-                            {
-                              label: "Bedrooms",
-                              key: "bedrooms" as const,
-                              type: "number",
-                              placeholder: "1",
-                            },
-                            {
-                              label: "Bathrooms",
-                              key: "bathrooms" as const,
-                              type: "number",
-                              placeholder: "1",
-                            },
-                            {
-                              label: "Size (m²)",
-                              key: "sizeSqm" as const,
-                              type: "number",
-                              placeholder: "—",
-                            },
-                          ].map((field) => (
-                            <div key={field.key}>
-                              <FieldLabel>{field.label}</FieldLabel>
-                              <input
-                                type={field.type}
-                                value={generator[field.key]}
-                                onChange={(e) =>
-                                  setGenerator((prev) => ({
-                                    ...prev,
-                                    [field.key]: e.target.value,
-                                  }))
-                                }
-                                placeholder={field.placeholder}
-                                className="w-full h-11 px-3 rounded-xl border border-neutral-200 bg-neutral-50 text-[15px] font-medium text-neutral-950 outline-none focus:border-neutral-400 focus:bg-white transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                              />
-                            </div>
-                          ))}
+                {isSingleHome ? (
+                  <>
+                    <CardSection>
+                      <CardRow>
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl bg-neutral-100 text-neutral-600">
+                            <Home className="h-4 w-4" strokeWidth={2} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[15px] font-semibold text-neutral-950">
+                              Whole-home setup
+                            </p>
+                            <p className="mt-1 text-[13px] leading-5 text-neutral-500">
+                              Single-home listings are treated as one rentable
+                              space. Set one rent and one availability state,
+                              and we&apos;ll use that across the listing and
+                              lease flow.
+                            </p>
+                          </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={handleGenerateBatch}
-                          className="w-full h-11 rounded-xl bg-violet-600 text-white text-[14px] font-semibold flex items-center justify-center gap-2 hover:bg-violet-700 active:scale-[0.98] transition-all"
-                        >
-                          <Zap className="h-4 w-4" strokeWidth={2.5} />
-                          Generate {generator.count || "0"} Units
-                        </button>
+                      </CardRow>
+                      <CardRow last>
+                        <div className="flex items-end justify-between gap-4">
+                          <div className="min-w-0 flex-1">
+                            <FieldLabel>Monthly Rent</FieldLabel>
+                            <div className="mt-1 flex items-baseline gap-1.5">
+                              <span className="text-[24px] font-bold text-neutral-400 leading-none">
+                                N$
+                              </span>
+                              <input
+                                type="number"
+                                value={singleHomeUnit?.priceNad ?? ""}
+                                onChange={(e) =>
+                                  updateSingleHomeUnit({
+                                    priceNad: e.target.value,
+                                  })
+                                }
+                                placeholder="0"
+                                className="min-w-0 flex-1 bg-transparent text-[38px] font-bold leading-none text-neutral-950 outline-none placeholder:text-neutral-200 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                              />
+                              <span className="self-end pb-0.5 text-[18px] font-medium text-neutral-400">
+                                /mo
+                              </span>
+                            </div>
+                          </div>
+                          <div className="rounded-2xl bg-neutral-100 px-3 py-2 text-right">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-neutral-400">
+                              Listing
+                            </p>
+                            <p className="mt-1 text-[14px] font-semibold text-neutral-950">
+                              {getPropertyTypeLabel(propertyType)}
+                            </p>
+                          </div>
+                        </div>
+                      </CardRow>
+                    </CardSection>
+
+                    <CardSection>
+                      <NumberStepperRow
+                        label="Bedrooms"
+                        value={singleHomeUnit?.bedrooms ?? ""}
+                        onChange={(v) => updateSingleHomeUnit({ bedrooms: v })}
+                        max={10}
+                      />
+                      <NumberStepperRow
+                        label="Bathrooms"
+                        value={singleHomeUnit?.bathrooms ?? ""}
+                        onChange={(v) => updateSingleHomeUnit({ bathrooms: v })}
+                        max={10}
+                      />
+                      <NumberStepperRow
+                        label="Max Occupants"
+                        sublabel="People allowed to live here"
+                        value={singleHomeUnit?.maxOccupants ?? ""}
+                        onChange={(v) =>
+                          updateSingleHomeUnit({ maxOccupants: v })
+                        }
+                        min={1}
+                        max={20}
+                        last
+                      />
+                    </CardSection>
+
+                    <CardSection>
+                      <CardRow className="flex items-center justify-between gap-4">
+                        <span className="text-[15px] text-neutral-950">
+                          Size (m²)
+                        </span>
+                        <input
+                          type="number"
+                          value={singleHomeUnit?.sizeSqm ?? ""}
+                          onChange={(e) =>
+                            updateSingleHomeUnit({ sizeSqm: e.target.value })
+                          }
+                          placeholder="—"
+                          className="w-24 bg-transparent text-right text-[15px] font-semibold text-neutral-950 outline-none placeholder:text-neutral-300 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        />
+                      </CardRow>
+                      <CardRow className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-[15px] text-neutral-950">
+                            Public visibility
+                          </p>
+                          <p className="mt-0.5 text-[12px] text-neutral-400">
+                            Show this home whenever the listing is live
+                          </p>
+                        </div>
+                        <Switch
+                          checked={
+                            singleHomeUnit?.publicationStatus === "published"
+                          }
+                          onCheckedChange={(checked) =>
+                            updateSingleHomeUnit({
+                              publicationStatus: checked
+                                ? "published"
+                                : "unpublished",
+                            })
+                          }
+                        />
+                      </CardRow>
+                      <InlineSelectRow
+                        label="Occupancy Status"
+                        value={singleHomeUnit?.occupancyStatus ?? "vacant"}
+                        onValueChange={(v) =>
+                          updateSingleHomeUnit({
+                            occupancyStatus: v as OccupancyStatus,
+                          })
+                        }
+                        options={[
+                          { value: "vacant", label: "Vacant" },
+                          { value: "reserved", label: "Reserved" },
+                          { value: "occupied", label: "Occupied" },
+                          { value: "unavailable", label: "Unavailable" },
+                        ]}
+                        last
+                      />
+                    </CardSection>
+
+                    {Number(singleHomeUnit?.priceNad || 0) <= 0 && (
+                      <div className="flex items-center gap-2.5 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
+                        <Info className="h-4 w-4 flex-shrink-0 text-amber-600" />
+                        <p className="text-[13px] text-amber-800">
+                          Add the rent for this home before submitting the
+                          listing.
+                        </p>
                       </div>
                     )}
-                  </CardSection>
-                )}
-
-                {/* Add unit CTA */}
-                <button
-                  type="button"
-                  onClick={addUnit}
-                  className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl border-2 border-dashed border-neutral-300 bg-white/60 text-neutral-500 font-semibold text-[15px] hover:border-neutral-400 hover:bg-white hover:text-neutral-700 active:scale-[0.98] transition-all"
-                >
-                  <Plus className="h-5 w-5" strokeWidth={2.5} />
-                  Add Unit
-                </button>
-
-                {/* Unit list */}
-                {units.length > 0 ? (
-                  <div className="space-y-3">
-                    {units.map((unit, index) => (
-                      <UnitCard
-                        key={`${unit._id ?? "new"}-${index}`}
-                        unit={unit}
-                        index={index}
-                        onEdit={() => setEditingUnitIndex(index)}
-                        onDuplicate={() => duplicateUnit(index)}
-                        onRemove={() => removeUnit(index)}
-                      />
-                    ))}
-                  </div>
+                  </>
                 ) : (
-                  <CardSection className="p-8 text-center">
-                    <div className="h-14 w-14 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-3">
-                      <Home
-                        className="h-6 w-6 text-neutral-400"
-                        strokeWidth={1.5}
-                      />
-                    </div>
-                    <p className="text-[15px] font-semibold text-neutral-950">
-                      No units yet
-                    </p>
-                    <p className="mt-1 text-[14px] text-neutral-400">
-                      Tap &ldquo;Add Unit&rdquo; to create your first rentable
-                      space.
-                    </p>
-                  </CardSection>
-                )}
+                  <>
+                    {units.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2.5">
+                        {[
+                          { label: "Units", value: String(units.length) },
+                          {
+                            label: "From",
+                            value:
+                              summary.minPrice > 0
+                                ? `N$${summary.minPrice.toLocaleString()}`
+                                : "—",
+                          },
+                          {
+                            label: "Up to",
+                            value:
+                              summary.maxPrice > summary.minPrice
+                                ? `N$${summary.maxPrice.toLocaleString()}`
+                                : summary.minPrice > 0
+                                  ? `N$${summary.minPrice.toLocaleString()}`
+                                  : "—",
+                          },
+                        ].map((stat) => (
+                          <div
+                            key={stat.label}
+                            className="rounded-2xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08)] p-3.5 text-center"
+                          >
+                            <p className="text-[19px] font-bold text-neutral-950 tracking-[-0.02em] leading-none truncate">
+                              {stat.value}
+                            </p>
+                            <p className="mt-1 text-[12px] text-neutral-400 font-medium">
+                              {stat.label}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
-                {/* Validation hint */}
-                {units.length > 0 &&
-                  units.some((u) => !u.priceNad || Number(u.priceNad) <= 0) && (
-                    <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-amber-50 border border-amber-100">
-                      <Info className="h-4 w-4 text-amber-600 flex-shrink-0" />
-                      <p className="text-[13px] text-amber-800">
-                        Some units are missing a price. Tap to edit.
-                      </p>
-                    </div>
-                  )}
+                    <CardSection>
+                      <button
+                        type="button"
+                        onClick={() => setShowBatchGen(!showBatchGen)}
+                        className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-neutral-50 active:bg-neutral-100 transition-colors"
+                      >
+                        <div className="h-9 w-9 rounded-xl bg-violet-50 flex items-center justify-center flex-shrink-0">
+                          <Sparkles
+                            className="h-4 w-4 text-violet-600"
+                            strokeWidth={2}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[15px] font-semibold text-neutral-950">
+                            Bulk Add Units
+                          </p>
+                          <p className="text-[12px] text-neutral-400">
+                            Generate identical units in one tap
+                          </p>
+                        </div>
+                        <ChevronRight
+                          className={cn(
+                            "h-4 w-4 text-neutral-400 flex-shrink-0 transition-transform duration-200",
+                            showBatchGen && "rotate-90",
+                          )}
+                          strokeWidth={2}
+                        />
+                      </button>
+
+                      {showBatchGen && (
+                        <div className="border-t border-neutral-100 p-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                          <div className="grid grid-cols-2 gap-3">
+                            {[
+                              {
+                                label: "Count",
+                                key: "count" as const,
+                                type: "number",
+                                placeholder: "6",
+                              },
+                              {
+                                label: "Prefix",
+                                key: "prefix" as const,
+                                type: "text",
+                                placeholder: "Unit",
+                              },
+                              {
+                                label: "Price (N$)",
+                                key: "priceNad" as const,
+                                type: "number",
+                                placeholder: "0",
+                              },
+                              {
+                                label: "Bedrooms",
+                                key: "bedrooms" as const,
+                                type: "number",
+                                placeholder: "1",
+                              },
+                              {
+                                label: "Bathrooms",
+                                key: "bathrooms" as const,
+                                type: "number",
+                                placeholder: "1",
+                              },
+                              {
+                                label: "Size (m²)",
+                                key: "sizeSqm" as const,
+                                type: "number",
+                                placeholder: "—",
+                              },
+                            ].map((field) => (
+                              <div key={field.key}>
+                                <FieldLabel>{field.label}</FieldLabel>
+                                <input
+                                  type={field.type}
+                                  value={generator[field.key]}
+                                  onChange={(e) =>
+                                    setGenerator((prev) => ({
+                                      ...prev,
+                                      [field.key]: e.target.value,
+                                    }))
+                                  }
+                                  placeholder={field.placeholder}
+                                  className="w-full h-11 px-3 rounded-xl border border-neutral-200 bg-neutral-50 text-[15px] font-medium text-neutral-950 outline-none focus:border-neutral-400 focus:bg-white transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleGenerateBatch}
+                            className="w-full h-11 rounded-xl bg-violet-600 text-white text-[14px] font-semibold flex items-center justify-center gap-2 hover:bg-violet-700 active:scale-[0.98] transition-all"
+                          >
+                            <Zap className="h-4 w-4" strokeWidth={2.5} />
+                            Generate {generator.count || "0"} Units
+                          </button>
+                        </div>
+                      )}
+                    </CardSection>
+
+                    <button
+                      type="button"
+                      onClick={addUnit}
+                      className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl border-2 border-dashed border-neutral-300 bg-white/60 text-neutral-500 font-semibold text-[15px] hover:border-neutral-400 hover:bg-white hover:text-neutral-700 active:scale-[0.98] transition-all"
+                    >
+                      <Plus className="h-5 w-5" strokeWidth={2.5} />
+                      Add Unit
+                    </button>
+
+                    {units.length > 0 ? (
+                      <div className="space-y-3">
+                        {units.map((unit, index) => (
+                          <UnitCard
+                            key={`${unit._id ?? "new"}-${index}`}
+                            unit={unit}
+                            index={index}
+                            onEdit={() => setEditingUnitIndex(index)}
+                            onDuplicate={() => duplicateUnit(index)}
+                            onRemove={() => removeUnit(index)}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <CardSection className="p-8 text-center">
+                        <div className="h-14 w-14 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-3">
+                          <Home
+                            className="h-6 w-6 text-neutral-400"
+                            strokeWidth={1.5}
+                          />
+                        </div>
+                        <p className="text-[15px] font-semibold text-neutral-950">
+                          No units yet
+                        </p>
+                        <p className="mt-1 text-[14px] text-neutral-400">
+                          Tap &ldquo;Add Unit&rdquo; to create your first
+                          rentable space.
+                        </p>
+                      </CardSection>
+                    )}
+
+                    {units.length > 0 &&
+                      units.some(
+                        (u) => !u.priceNad || Number(u.priceNad) <= 0,
+                      ) && (
+                        <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-amber-50 border border-amber-100">
+                          <Info className="h-4 w-4 text-amber-600 flex-shrink-0" />
+                          <p className="text-[13px] text-amber-800">
+                            Some units are missing a price. Tap to edit.
+                          </p>
+                        </div>
+                      )}
+                  </>
+                )}
               </div>
             )}
           </div>
