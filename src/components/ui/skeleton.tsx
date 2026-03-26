@@ -42,120 +42,50 @@ function Skeleton({
     )
 }
 
-// Immersive TrustCard-style Property Card Skeleton
+// Immersive TrustCard-style Property Card Skeleton (Updated to Apple native style)
 function PropertyCardSkeleton({ className }: { className?: string }) {
     return (
-        <div className={cn("block w-full h-full", className)}>
-            <div className="relative w-full rounded-[24px] overflow-hidden bg-neutral-100 aspect-square shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]">
+        <div className={cn("block w-full h-full flex flex-col gap-3.5", className)}>
+            <div className="relative w-full rounded-[24px] overflow-hidden bg-neutral-100 aspect-[4/3]">
                 {/* Image Area Skeleton */}
                 <Skeleton className="absolute inset-0 rounded-none bg-neutral-200/50" />
                 
-                {/* Bottom Overlay Skeleton (Mimics the gradient/text area) */}
-                <div className="absolute inset-x-0 bottom-0 p-3 pb-4 space-y-2">
-                    <div className="flex items-center gap-2">
-                        <Skeleton variant="circular" className="w-3.5 h-3.5 bg-neutral-300/40" />
-                        <Skeleton variant="text" className="h-3 w-8 bg-neutral-300/40" />
-                        <Skeleton variant="text" className="h-3 w-16 bg-neutral-300/40 ml-2" />
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <Skeleton variant="text" className="h-6 w-24 bg-neutral-300/60" />
-                    </div>
+                {/* Top Control Skeleton */}
+                <div className="absolute top-3 right-3 z-20">
+                    <Skeleton variant="circular" className="h-9 w-9 sm:h-10 sm:w-10 bg-white/40" />
+                </div>
+
+                {/* Bottom Overlay Skeleton (Price) */}
+                <div className="absolute bottom-3 left-3 z-20">
+                    <Skeleton className="h-8 w-24 rounded-full bg-white/40" />
                 </div>
             </div>
             {/* Desktop Title Skeleton */}
-            <div className="hidden md:block mt-2.5 px-0.5">
-                <Skeleton variant="text" className="h-4 w-3/4 bg-neutral-100" />
-            </div>
-        </div>
-    )
-}
-
-// Property Row Skeleton (Horizontal Scroll)
-function PropertyRowSkeleton() {
-    return (
-        <div className="w-full mb-8 sm:mb-10">
-            <div className="flex justify-between items-end mb-3 px-0">
-                <Skeleton variant="text" className="h-6 sm:h-7 w-32 sm:w-40" />
-                <Skeleton variant="text" className="h-4 w-16 sm:w-20" />
-            </div>
-            <div className="grid grid-flow-col auto-cols-[72vw] sm:auto-cols-[200px] md:auto-cols-[195px] lg:auto-cols-[185px] xl:auto-cols-[200px] gap-3 sm:gap-4 overflow-x-auto pb-2 [scrollbar-width:none]">
-                {Array.from({ length: 5 }).map((_, i) => (
-                    <PropertyCardSkeleton key={i} />
-                ))}
-            </div>
-        </div>
-    )
-}
-
-// Recently Viewed Section Skeleton
-function RecentlyViewedSkeleton() {
-    return (
-        <section className="mb-8 md:mb-12">
-            <div className="flex items-center justify-between mb-4 md:mb-6">
-                <div className="flex items-center gap-2 sm:gap-3">
-                    <Skeleton className="w-8 h-8 rounded-lg" />
-                    <div>
-                        <Skeleton variant="text" className="h-4 w-28 mb-1" />
-                        <Skeleton variant="text" className="h-3 w-16" />
-                    </div>
-                </div>
-            </div>
-            <div className="flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar pb-2">
-                {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="flex-shrink-0 w-[160px] sm:w-[200px] md:w-[220px] rounded-xl border border-neutral-100 bg-white overflow-hidden">
-                        <Skeleton className="aspect-[4/3] rounded-none" />
-                        <div className="p-2.5 sm:p-3 space-y-2">
-                            <Skeleton variant="text" className="h-3 w-3/4" />
-                            <Skeleton variant="text" className="h-2 w-full" />
-                            <div className="flex justify-between items-center pt-1">
-                                <Skeleton variant="text" className="h-3 w-16" />
-                                <Skeleton variant="text" className="h-2 w-6" />
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </section>
-    )
-}
-
-// Large Search Bar Skeleton
-function HeroSkeleton() {
-    return (
-        <div className="flex justify-center mb-10 w-full relative z-10 px-0 sm:px-4">
-            <div className="w-full max-w-[800px] flex items-center bg-white border border-neutral-200/50 rounded-full h-[68px] sm:h-20 px-4 sm:px-8">
-                <Skeleton variant="circular" className="w-5 h-5 sm:w-6 sm:h-6 mr-3 sm:mr-4" />
-                <div className="flex-1 space-y-2">
-                    <Skeleton variant="text" className="h-4 w-24 sm:w-32" />
-                    <Skeleton variant="text" className="h-3 w-32 sm:w-40" />
-                </div>
-                <div className="hidden sm:block w-[1px] h-10 bg-neutral-100 mx-4"></div>
-                <div className="flex items-center gap-4">
-                     <Skeleton className="h-10 w-24 rounded-full hidden sm:block" />
-                     <Skeleton className="w-10 h-10 sm:w-12 sm:h-12 rounded-full" />
+            <div className="px-1 flex flex-col gap-1.5 mt-0.5">
+                <Skeleton variant="text" className="h-5 w-3/4 bg-neutral-100" />
+                <Skeleton variant="text" className="h-4 w-1/2 bg-neutral-100 mt-1" />
+                <div className="flex gap-2 mt-1">
+                    <Skeleton variant="text" className="h-4 w-12 bg-neutral-100" />
+                    <Skeleton variant="text" className="h-4 w-12 bg-neutral-100" />
+                    <Skeleton variant="text" className="h-4 w-16 bg-neutral-100" />
                 </div>
             </div>
         </div>
     )
 }
 
-// Full Page Loading Skeleton — Matching the new wide feed design
+// Full Page Loading Skeleton — Matching the new Apple Native feed design
 function HomePageSkeleton() {
     return (
         <div className="min-h-screen bg-white font-sans text-neutral-900 overflow-x-hidden">
             <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-transparent">
                 <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 h-16 md:h-20 flex items-center justify-between">
-                    {/* Left: Hamburger/Nav skeleton */}
                     <div className="flex-1 flex justify-start">
                         <Skeleton variant="circular" className="h-10 w-10" />
                     </div>
-                    
-                    {/* Center: Centered Logo skeleton */}
                     <div className="flex-1 flex justify-center">
                         <Skeleton className="h-7 w-20 rounded-lg bg-neutral-200" />
                     </div>
-                    
-                    {/* Right: Avatar skeleton */}
                     <div className="flex-1 flex justify-end">
                         <Skeleton variant="circular" className="h-9 w-9" />
                     </div>
@@ -164,12 +94,33 @@ function HomePageSkeleton() {
 
             <div className="h-16 md:h-20" />
 
-            <main className="w-full max-w-[1440px] mx-auto pt-4 sm:pt-6 pb-40 px-4 sm:px-5 lg:px-8 xl:px-12">
-                <HeroSkeleton />
-                <RecentlyViewedSkeleton />
-                <div className="space-y-4">
-                    <PropertyRowSkeleton />
-                    <PropertyRowSkeleton />
+            {/* Fake Sticky Search & Categories Section */}
+            <div className="w-full bg-white/90 pb-2">
+                <div className="w-full max-w-[1440px] mx-auto pt-4 px-4 sm:px-6 lg:px-8">
+                    {/* Search Bar Skeleton */}
+                    <div className="flex items-center gap-3">
+                        <Skeleton className="flex-1 h-[52px] sm:h-14 rounded-[16px] bg-neutral-100" />
+                        <Skeleton className="h-[52px] w-[52px] sm:h-14 sm:w-14 shrink-0 rounded-[16px] bg-neutral-100" />
+                    </div>
+
+                    {/* Scrolling Categories Skeleton */}
+                    <div className="flex items-center gap-[22px] overflow-x-hidden pt-5 pb-3 px-1.5">
+                         {Array.from({ length: 7 }).map((_, i) => (
+                             <div key={i} className="flex flex-col items-center gap-2">
+                                 <Skeleton variant="circular" className="w-[26px] h-[26px] bg-neutral-100" />
+                                 <Skeleton className="h-3 w-12 bg-neutral-100" />
+                             </div>
+                         ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content Area Grid Skeleton */}
+            <main className="w-full max-w-[1440px] mx-auto pt-6 px-4 sm:px-6 lg:px-8 pb-40">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-10">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <PropertyCardSkeleton key={i} />
+                    ))}
                 </div>
             </main>
 
@@ -214,9 +165,6 @@ function DashboardCardSkeleton() {
 export {
     Skeleton,
     PropertyCardSkeleton,
-    PropertyRowSkeleton,
-    RecentlyViewedSkeleton,
-    HeroSkeleton,
     HomePageSkeleton,
     TableRowSkeleton,
     DashboardCardSkeleton

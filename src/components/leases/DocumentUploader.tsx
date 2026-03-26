@@ -97,9 +97,9 @@ export function DocumentUploader({
                 onClick={() => inputRef.current?.click()}
                 disabled={disabled || isUploading}
                 className={cn(
-                    'h-9 rounded-lg px-3',
+                    'h-10 rounded-full px-4 text-sm font-medium shadow-none',
                     currentStorageId
-                        ? 'border-neutral-200 text-neutral-700'
+                        ? 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'
                         : 'bg-neutral-900 text-white hover:bg-neutral-800'
                 )}
             >
@@ -115,14 +115,14 @@ export function DocumentUploader({
 
             {fileUrl && (
                 <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => window.open(fileUrl, '_blank', 'noopener,noreferrer')}
-                    className="h-9 w-9 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900"
-                >
-                    <Eye className="h-4 w-4" />
-                    <span className="sr-only">View uploaded document</span>
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => window.open(fileUrl, '_blank', 'noopener,noreferrer')}
+                className="h-10 w-10 rounded-full border border-neutral-200 text-neutral-500 shadow-none hover:bg-neutral-50 hover:text-neutral-900"
+            >
+                <Eye className="h-4 w-4" />
+                <span className="sr-only">View uploaded document</span>
                 </Button>
             )}
         </div>

@@ -3,6 +3,7 @@
 import React, { createContext, useContext, ReactNode } from "react"
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
+import type { UserPreferences } from "@/lib/user-preferences"
 
 // User type from the API
 type User = {
@@ -12,9 +13,10 @@ type User = {
     firstName?: string
     surname?: string
     phone?: string
-    avatarUrl?: string
+    avatarUrl?: string | null
     role: "tenant" | "landlord" | "admin"
     isVerified: boolean
+    preferences?: UserPreferences
 } | null | undefined
 
 interface UserContextValue {

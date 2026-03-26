@@ -16,6 +16,26 @@ export default defineSchema({
     role: v.union(v.literal("tenant"), v.literal("landlord"), v.literal("admin")),
     isVerified: v.boolean(),
     verificationDocs: v.optional(v.any()),
+    preferences: v.optional(v.object({
+      notifications: v.object({
+        email: v.boolean(),
+        push: v.boolean(),
+        messages: v.boolean(),
+        leases: v.boolean(),
+        payments: v.boolean(),
+        savedSearch: v.boolean(),
+        inquiries: v.boolean(),
+        approvals: v.boolean(),
+        reviews: v.boolean(),
+        security: v.boolean(),
+        digest: v.boolean(),
+      }),
+      experience: v.object({
+        compactMode: v.boolean(),
+        showQuickStats: v.boolean(),
+        startPage: v.string(),
+      }),
+    })),
   }).index("by_email", ["email"]),
 
   // Landlord Verification Requests
@@ -45,17 +65,33 @@ export default defineSchema({
     landlordId: v.id("users"),
     title: v.string(),
     description: v.optional(v.string()),
-    propertyType: v.string(), // apartment, house, room, commercial
+    listingType: v.optional(
+      v.union(
+        v.literal("single_home"),
+        v.literal("multi_unit_block"),
+        v.literal("student_accommodation")
+      )
+    ),
+    propertyType: v.string(), // apartment, house, room, studio, townhouse, duplex, penthouse
     address: v.string(),
     city: v.string(),
     coordinates: v.optional(v.object({
       lat: v.number(),
       lng: v.number(),
     })),
+    occupancyMode: v.optional(v.string()),
+    furnishingStatus: v.optional(v.string()),
+    genderPolicy: v.optional(v.string()),
+    availableFrom: v.optional(v.string()),
     priceNad: v.number(),
+    minPriceNad: v.optional(v.number()),
+    maxPriceNad: v.optional(v.number()),
     bedrooms: v.optional(v.number()),
     bathrooms: v.optional(v.number()),
     sizeSqm: v.optional(v.number()),
+    maxOccupants: v.optional(v.number()),
+    unitCount: v.optional(v.number()),
+    availableUnitCount: v.optional(v.number()),
     amenityNames: v.optional(v.array(v.string())), // Amenity names as strings
     petPolicy: v.optional(v.string()),
     utilitiesIncluded: v.optional(v.array(v.string())),
@@ -63,6 +99,7 @@ export default defineSchema({
     videos: v.optional(v.array(v.id("_storage"))),
     isAvailable: v.boolean(),
     featured: v.boolean(),
+    publicationStatus: v.optional(v.union(v.literal("unpublished"), v.literal("published"))),
     // Approval Workflow
     approvalStatus: v.optional(v.union(v.literal("pending"), v.literal("approved"), v.literal("rejected"))),
     approvalRequestedAt: v.optional(v.number()),
@@ -71,7 +108,46 @@ export default defineSchema({
     .index("by_landlordId", ["landlordId"])
     .index("by_city", ["city"])
     .index("by_available", ["isAvailable"])
-    .index("by_approvalStatus", ["approvalStatus"]),
+    .index("by_approvalStatus", ["approvalStatus"])
+    .index("by_publicationStatus", ["publicationStatus"]),
+
+  // Property Units / Rooms / Beds
+  propertyUnits: defineTable({
+    propertyId: v.id("properties"),
+    landlordId: v.id("users"),
+    title: v.string(),
+    description: v.optional(v.string()),
+    unitCode: v.optional(v.string()),
+    unitType: v.optional(v.string()),
+    occupancyMode: v.optional(v.string()),
+    roomType: v.optional(v.string()),
+    furnishingStatus: v.optional(v.string()),
+    genderPolicy: v.optional(v.string()),
+    availableFrom: v.optional(v.string()),
+    floorLabel: v.optional(v.string()),
+    blockLabel: v.optional(v.string()),
+    priceNad: v.number(),
+    bedrooms: v.optional(v.number()),
+    bathrooms: v.optional(v.number()),
+    sizeSqm: v.optional(v.number()),
+    maxOccupants: v.optional(v.number()),
+    amenityNames: v.optional(v.array(v.string())),
+    utilitiesIncluded: v.optional(v.array(v.string())),
+    petPolicy: v.optional(v.string()),
+    images: v.optional(v.array(v.id("_storage"))),
+    publicationStatus: v.union(v.literal("unpublished"), v.literal("published")),
+    occupancyStatus: v.union(
+      v.literal("vacant"),
+      v.literal("reserved"),
+      v.literal("occupied"),
+      v.literal("unavailable")
+    ),
+    isAvailable: v.boolean(),
+  })
+    .index("by_propertyId", ["propertyId"])
+    .index("by_landlordId", ["landlordId"])
+    .index("by_available", ["isAvailable"])
+    .index("by_publicationStatus", ["publicationStatus"]),
 
 
   // Saved Properties (Favorites)
@@ -86,6 +162,7 @@ export default defineSchema({
   // Inquiries/Booking Requests
   inquiries: defineTable({
     propertyId: v.id("properties"),
+    unitId: v.optional(v.id("propertyUnits")),
     tenantId: v.id("users"),
     landlordId: v.id("users"),
     message: v.optional(v.string()),
@@ -98,6 +175,7 @@ export default defineSchema({
     moveInDate: v.optional(v.string()),
   })
     .index("by_propertyId", ["propertyId"])
+    .index("by_unitId", ["unitId"])
     .index("by_tenantId", ["tenantId"])
     .index("by_landlordId", ["landlordId"])
     .index("by_status", ["status"]),
@@ -112,9 +190,67 @@ export default defineSchema({
     .index("by_inquiryId", ["inquiryId"])
     .index("by_senderId", ["senderId"]),
 
+  // Support Threads (user to admin conversations)
+  supportThreads: defineTable({
+    requesterId: v.id("users"),
+    assignedAdminId: v.optional(v.id("users")),
+    subject: v.string(),
+    category: v.optional(v.string()),
+    status: v.union(
+      v.literal("open"),
+      v.literal("pending"),
+      v.literal("resolved")
+    ),
+    priority: v.union(
+      v.literal("normal"),
+      v.literal("high"),
+      v.literal("urgent")
+    ),
+    lastMessageAt: v.optional(v.number()),
+    lastMessagePreview: v.optional(v.string()),
+  })
+    .index("by_requesterId", ["requesterId"])
+    .index("by_assignedAdminId", ["assignedAdminId"])
+    .index("by_status", ["status"]),
+
+  // Support Messages (admin help desk)
+  supportMessages: defineTable({
+    threadId: v.id("supportThreads"),
+    senderId: v.id("users"),
+    content: v.string(),
+    readAt: v.optional(v.number()),
+  })
+    .index("by_threadId", ["threadId"])
+    .index("by_senderId", ["senderId"]),
+
+  // Broadcast announcements
+  announcements: defineTable({
+    createdBy: v.id("users"),
+    title: v.string(),
+    body: v.string(),
+    audience: v.union(
+      v.literal("all"),
+      v.literal("tenant"),
+      v.literal("landlord"),
+      v.literal("admin")
+    ),
+    priority: v.union(
+      v.literal("normal"),
+      v.literal("important"),
+      v.literal("critical")
+    ),
+    isPinned: v.boolean(),
+    ctaLabel: v.optional(v.string()),
+    ctaHref: v.optional(v.string()),
+    expiresAt: v.optional(v.number()),
+  })
+    .index("by_audience", ["audience"])
+    .index("by_createdBy", ["createdBy"]),
+
   // Leases
   leases: defineTable({
     propertyId: v.id("properties"),
+    unitId: v.optional(v.id("propertyUnits")),
     tenantId: v.id("users"),
     landlordId: v.id("users"),
     startDate: v.string(),
@@ -177,6 +313,7 @@ export default defineSchema({
     terminationReason: v.optional(v.string()),
   })
     .index("by_propertyId", ["propertyId"])
+    .index("by_unitId", ["unitId"])
     .index("by_tenantId", ["tenantId"])
     .index("by_landlordId", ["landlordId"])
     .index("by_status", ["status"]),

@@ -118,6 +118,29 @@ export const getUnreadCount = query({
             unreadCount += unreadMessages.length;
         }
 
+        // Count unread support messages as well.
+        const supportThreads = user.role === "admin"
+            ? await ctx.db.query("supportThreads").collect()
+            : await ctx.db
+                .query("supportThreads")
+                .withIndex("by_requesterId", (q) => q.eq("requesterId", userId))
+                .collect();
+
+        for (const thread of supportThreads) {
+            const unreadSupportMessages = await ctx.db
+                .query("supportMessages")
+                .withIndex("by_threadId", (q) => q.eq("threadId", thread._id))
+                .filter((q) =>
+                    q.and(
+                        q.eq(q.field("readAt"), undefined),
+                        q.neq(q.field("senderId"), userId)
+                    )
+                )
+                .collect();
+
+            unreadCount += unreadSupportMessages.length;
+        }
+
         return unreadCount;
     },
 });

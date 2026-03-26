@@ -88,36 +88,42 @@ export function SavePropertyButton({
 
     const LoginDialog = (
         <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
-            <DialogContent className="sm:max-w-[400px]">
-                <DialogHeader>
-                    <DialogTitle>Save Property</DialogTitle>
-                    <DialogDescription>
-                        Sign in to save properties to your favorites list.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="py-6 space-y-4">
-                    <div className="flex flex-col items-center text-center space-y-3">
-                        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-                            <LogIn className="h-6 w-6 text-gray-500" />
+            <DialogContent 
+                showCloseButton={false}
+                className="top-auto bottom-8 left-1/2 right-auto -translate-x-1/2 translate-y-0 w-[calc(100%-32px)] max-w-[380px] gap-0 overflow-hidden rounded-[32px] border border-neutral-200/60 bg-white/95 backdrop-blur-2xl p-0 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.2)]"
+            >
+                <div className="p-7">
+                    {/* Centered Copy */}
+                    <div className="flex flex-col items-center text-center mb-6">
+                        <div className="h-14 w-14 mb-4 rounded-full bg-neutral-100 flex items-center justify-center border border-neutral-200/50">
+                            <Heart className="h-6 w-6 text-red-500 fill-red-500" />
                         </div>
-                        <div>
-                            <p className="font-medium text-gray-900">Sign in required</p>
-                            <p className="text-sm text-gray-500 mt-1">
-                                Create an account to save your favorite properties and access them anytime.
-                            </p>
-                        </div>
+                        <DialogTitle className="text-[22px] font-bold tracking-tight text-neutral-900 leading-tight">
+                            Save this home
+                        </DialogTitle>
+                        <DialogDescription className="text-[15px] font-medium text-neutral-500 mt-2 leading-snug px-2">
+                            Sign in to save properties to your favorites and pick up right where you left off.
+                        </DialogDescription>
                     </div>
-                    <div className="flex flex-col gap-2 pt-2">
-                        <Link href="/sign-in" className="w-full">
-                            <Button className="w-full bg-gray-900 hover:bg-gray-800 text-white">
-                                Sign in
-                            </Button>
-                        </Link>
-                        <Link href="/sign-up" className="w-full">
-                            <Button variant="outline" className="w-full">
+
+                    {/* Thick Apple Actions Stack */}
+                    <div className="flex flex-col gap-3">
+                        <Link href="/sign-up" className="outline-none" onClick={() => setShowLoginDialog(false)}>
+                            <button className="w-full h-[52px] rounded-[16px] bg-black text-[17px] font-bold tracking-tight text-white hover:bg-neutral-800 active:scale-[0.98] transition-all flex items-center justify-center outline-none select-none shadow-sm">
                                 Create an account
-                            </Button>
+                            </button>
                         </Link>
+                        <Link href="/sign-in" className="outline-none" onClick={() => setShowLoginDialog(false)}>
+                            <button className="w-full h-[52px] rounded-[16px] bg-neutral-100/80 text-[17px] font-bold tracking-tight text-neutral-900 hover:bg-neutral-200 active:scale-[0.98] transition-all flex items-center justify-center outline-none select-none">
+                                Log in
+                            </button>
+                        </Link>
+                        <button
+                            onClick={() => setShowLoginDialog(false)}
+                            className="text-[15px] font-semibold text-neutral-400 hover:text-neutral-600 mt-2 active:scale-95 transition-all outline-none"
+                        >
+                            Cancel
+                        </button>
                     </div>
                 </div>
             </DialogContent>
@@ -157,11 +163,11 @@ export function SavePropertyButton({
                 onClick={handleToggle}
                 disabled={isLoading}
             >
-                <Heart 
+                <Heart
                     className={cn(
-                        "h-5 w-5 transition-all duration-300", 
+                        "h-5 w-5 transition-all duration-300",
                         isSaved ? "fill-[#FF385C] text-[#FF385C] scale-110" : "text-black"
-                    )} 
+                    )}
                     strokeWidth={2.5}
                 />
                 <span className="sr-only">{isSaved ? 'Unsave property' : 'Save property'}</span>

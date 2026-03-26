@@ -6,9 +6,9 @@ import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Button } from '@/components/ui/button'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { PropertyApprovalActions } from './PropertyApprovalActions'
-import { ArrowLeft, User, Building2, MapPin, Bed, Bath, Square, Clock, CheckCircle2, XCircle, Calendar } from 'lucide-react'
+import { ArrowLeft, User, Building2, MapPin, Bed, Bath, Square, Clock, CheckCircle2, XCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import { useQuery } from "convex/react"
 import { api } from "../../../../../../convex/_generated/api"
@@ -23,7 +23,7 @@ interface Props {
 // Status configuration
 const statusConfig = {
     pending: {
-        label: 'Pending Review',
+        label: 'In Review',
         color: 'bg-yellow-50 text-yellow-700 border-yellow-200',
         icon: Clock,
     },
@@ -33,10 +33,16 @@ const statusConfig = {
         icon: CheckCircle2,
     },
     rejected: {
-        label: 'Rejected',
+        label: 'Needs Changes',
         color: 'bg-red-50 text-red-700 border-red-200',
         icon: XCircle,
     },
+}
+
+const statusHelperCopy = {
+    pending: 'Approve this if the listing can move forward. It will still stay off market until the landlord publishes it.',
+    approved: 'The review is complete. The landlord can now publish or keep the listing off market.',
+    rejected: 'The landlord must update the listing and resubmit it before it can be reviewed again.',
 }
 
 function PropertyReviewContent({ id }: { id: string }) {
@@ -100,6 +106,9 @@ function PropertyReviewContent({ id }: { id: string }) {
                             Submitted {property.approvalRequestedAt
                                 ? format(new Date(property.approvalRequestedAt), 'PPP p')
                                 : format(new Date(property._creationTime), 'PPP p')}
+                        </p>
+                        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                            {statusHelperCopy[status] || statusHelperCopy.pending}
                         </p>
                     </div>
                     {approvalStatus === 'pending' && (
@@ -179,15 +188,9 @@ function PropertyReviewContent({ id }: { id: string }) {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex items-center gap-4">
-                                <div className="h-12 w-12 rounded-full bg-gray-100 relative overflow-hidden shrink-0 flex items-center justify-center">
-                                    {property.landlord?.avatarUrl ? (
-                                        <Image src={property.landlord.avatarUrl} alt="Profile" fill className="object-cover" />
-                                    ) : (
-                                        <User className="h-6 w-6 text-gray-400" />
-                                    )}
-                                </div>
+                                <UserAvatar className="h-12 w-12 shrink-0" user={property.landlord} />
                                 <div className="min-w-0">
-                                    <p className="font-semibold truncate">{property.landlord?.fullName || 'No Name'}</p>
+                                    <p className="font-semibold truncate">{property.landlord?.fullName || property.landlord?.email || 'No Name'}</p>
                                     <p className="text-sm text-muted-foreground truncate">{property.landlord?.email}</p>
                                     <p className="text-sm text-muted-foreground">{property.landlord?.phone || 'No phone'}</p>
                                 </div>
@@ -200,7 +203,7 @@ function PropertyReviewContent({ id }: { id: string }) {
                         <Card className="border-red-200">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2 text-red-600">
-                                    <XCircle className="h-5 w-5" /> Rejection Reason
+                                    <XCircle className="h-5 w-5" /> Admin Feedback
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>

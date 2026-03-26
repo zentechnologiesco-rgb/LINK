@@ -20,7 +20,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
                             <Building2 className="h-5 w-5 text-blue-600" />
                         </div>
                         <div>
-                            <p className="text-sm text-muted-foreground">Total</p>
+                            <p className="text-sm text-muted-foreground">Submitted</p>
                             <p className="text-2xl font-bold">{stats.total}</p>
                         </div>
                     </div>
@@ -33,7 +33,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
                             <Clock className="h-5 w-5 text-yellow-600" />
                         </div>
                         <div>
-                            <p className="text-sm text-muted-foreground">Pending</p>
+                            <p className="text-sm text-muted-foreground">In Review</p>
                             <p className="text-2xl font-bold">{stats.pending}</p>
                         </div>
                     </div>
@@ -59,7 +59,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
                             <XCircle className="h-5 w-5 text-red-600" />
                         </div>
                         <div>
-                            <p className="text-sm text-muted-foreground">Rejected</p>
+                            <p className="text-sm text-muted-foreground">Needs Changes</p>
                             <p className="text-2xl font-bold">{stats.rejected}</p>
                         </div>
                     </div>

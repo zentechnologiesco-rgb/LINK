@@ -62,6 +62,8 @@ const nextConfig: NextConfig = {
     // Use modern formats for smaller file size with same quality
     // AVIF is ~50% smaller than WebP, which is ~30% smaller than JPEG
     formats: ['image/avif', 'image/webp'],
+    // Allow the quality values used by our image components and Next's default
+    qualities: [60, 70, 75, 80, 85, 90],
     // Disable static image imports optimization for faster builds (optional)
     // disableStaticImages: false,
   },

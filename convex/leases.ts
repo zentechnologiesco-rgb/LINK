@@ -1,10 +1,11 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { auth } from "./auth";
 import { api, internal } from "./_generated/api";
 import { TEMPLATES } from "./emailTemplates";
+import { getStoredUnitsForProperty, resolveStorageUrls, syncPropertyInventory } from "./lib/propertyInventory";
 
 const BASE_URL = process.env.SITE_URL || "http://localhost:3000";
 
@@ -62,6 +63,13 @@ const BLOCKING_LEASE_STATUSES = new Set([
     "approved",
 ]);
 
+const RESERVED_LEASE_STATUSES = new Set([
+    "draft",
+    "sent_to_tenant",
+    "tenant_signed",
+    "revision_requested",
+]);
+
 function formatDateOnly(date: Date) {
     return date.toISOString().split("T")[0];
 }
@@ -69,20 +77,114 @@ function formatDateOnly(date: Date) {
 async function ensurePropertyHasNoBlockingLease(
     ctx: MutationCtx,
     propertyId: Id<"properties">,
+    unitId?: Id<"propertyUnits">,
     currentLeaseId?: Id<"leases">,
 ) {
-    const propertyLeases = await ctx.db
-        .query("leases")
-        .withIndex("by_propertyId", (q) => q.eq("propertyId", propertyId))
-        .collect();
+    const propertyLeases = unitId
+        ? await ctx.db
+            .query("leases")
+            .withIndex("by_unitId", (q) => q.eq("unitId", unitId))
+            .collect()
+        : await ctx.db
+            .query("leases")
+            .withIndex("by_propertyId", (q) => q.eq("propertyId", propertyId))
+            .collect();
 
     const blockingLease = propertyLeases.find((lease) =>
-        lease._id !== currentLeaseId && BLOCKING_LEASE_STATUSES.has(lease.status),
+        lease._id !== currentLeaseId &&
+        BLOCKING_LEASE_STATUSES.has(lease.status) &&
+        (unitId ? lease.unitId === unitId : lease.unitId === undefined),
     );
 
     if (blockingLease) {
-        throw new Error("This property already has a lease in progress or an active tenant.");
+        throw new Error(unitId
+            ? "This unit already has a lease in progress or an active tenant."
+            : "This property already has a lease in progress or an active tenant.");
     }
+}
+
+async function resolveLeaseTarget(
+    ctx: MutationCtx,
+    propertyId: Id<"properties">,
+    requestedUnitId?: Id<"propertyUnits">,
+) {
+    const property = await ctx.db.get(propertyId);
+    if (!property) throw new Error("Property not found");
+
+    const units = await getStoredUnitsForProperty(ctx, propertyId);
+
+    if (requestedUnitId) {
+        const unit = await ctx.db.get(requestedUnitId);
+        if (!unit || unit.propertyId !== propertyId) {
+            throw new Error("Unit not found for this property.");
+        }
+        return { property, unit };
+    }
+
+    if (units.length === 1) {
+        return { property, unit: units[0] };
+    }
+
+    if (units.length > 1) {
+        throw new Error("Select a specific unit before creating a lease.");
+    }
+
+    return { property, unit: null };
+}
+
+function deriveLeaseTargetState(statuses: string[]) {
+    if (statuses.includes("approved")) {
+        return "occupied" as const;
+    }
+
+    if (statuses.some((status) => RESERVED_LEASE_STATUSES.has(status))) {
+        return "reserved" as const;
+    }
+
+    return "vacant" as const;
+}
+
+async function syncLeaseTargetState(
+    ctx: MutationCtx,
+    leaseTarget: { propertyId: Id<"properties">; unitId?: Id<"propertyUnits"> },
+) {
+    const targetLeases = leaseTarget.unitId
+        ? await ctx.db
+            .query("leases")
+            .withIndex("by_unitId", (q) => q.eq("unitId", leaseTarget.unitId))
+            .collect()
+        : await ctx.db
+            .query("leases")
+            .withIndex("by_propertyId", (q) => q.eq("propertyId", leaseTarget.propertyId))
+            .collect();
+
+    const relevantStatuses = targetLeases
+        .filter((lease) => leaseTarget.unitId ? lease.unitId === leaseTarget.unitId : lease.unitId === undefined)
+        .map((lease) => lease.status);
+    const nextState = deriveLeaseTargetState(relevantStatuses);
+
+    if (leaseTarget.unitId) {
+        const unit = await ctx.db.get(leaseTarget.unitId);
+        if (!unit) return;
+
+        await ctx.db.patch(leaseTarget.unitId, {
+            occupancyStatus: nextState,
+            isAvailable: unit.publicationStatus === "published" && nextState === "vacant",
+        });
+        await syncPropertyInventory(ctx, leaseTarget.propertyId);
+        return;
+    }
+
+    const property = await ctx.db.get(leaseTarget.propertyId);
+    if (!property) return;
+
+    await ctx.db.patch(leaseTarget.propertyId, {
+        isAvailable:
+            nextState === "vacant" &&
+            property.approvalStatus === "approved" &&
+            property.publicationStatus === "published",
+    });
+    await syncPropertyInventory(ctx, leaseTarget.propertyId);
 }
 
 async function ensureTenantHasNoActiveLease(
@@ -121,6 +223,7 @@ async function clearFuturePendingPayments(ctx: MutationCtx, leaseId: Id<"leases"
 export const create = mutation({
     args: {
         propertyId: v.id("properties"),
+        unitId: v.optional(v.id("propertyUnits")),
         tenantEmail: v.string(),
         startDate: v.string(),
         endDate: v.string(),
@@ -155,9 +258,7 @@ export const create = mutation({
         const userId = await auth.getUserId(ctx);
         if (!userId) throw new Error("Not authenticated");
 
-        // Validate property
-        const property = await ctx.db.get(args.propertyId);
-        if (!property) throw new Error("Property not found");
+        const { property, unit } = await resolveLeaseTarget(ctx, args.propertyId, args.unitId);
 
         const user = await ctx.db.get(userId);
         if (property.landlordId !== userId && user?.role !== "admin") {
@@ -168,7 +269,16 @@ export const create = mutation({
             throw new Error("The property must be approved before you can create a lease.");
         }
 
-        await ensurePropertyHasNoBlockingLease(ctx, args.propertyId);
+        if (unit) {
+            if (unit.publicationStatus !== "published") {
+                throw new Error("The selected unit is not published.");
+            }
+            if (unit.occupancyStatus !== "vacant") {
+                throw new Error("The selected unit is not currently available.");
+            }
+        }
+
+        await ensurePropertyHasNoBlockingLease(ctx, args.propertyId, unit?._id, undefined);
 
         // Find tenant by email
         const tenant = await ctx.db
@@ -253,6 +363,7 @@ export const create = mutation({
 
         const leaseId = await ctx.db.insert("leases", {
             propertyId: args.propertyId,
+            unitId: unit?._id,
             tenantId: tenant._id,
             landlordId: userId,
             startDate: args.startDate,
@@ -276,6 +387,11 @@ export const create = mutation({
             sublettingAllowed: args.sublettingAllowed ?? false,
             status,
             ...(args.sendImmediately ? { sentAt: Date.now() } : {}),
+        });
+
+        await syncLeaseTargetState(ctx, {
+            propertyId: args.propertyId,
+            unitId: unit?._id,
         });
 
         // If sending immediately, notify tenant
@@ -310,6 +426,11 @@ export const sendToTenant = mutation({
         await ctx.db.patch(args.leaseId, {
             status: "sent_to_tenant",
             sentAt: Date.now(),
+        });
+
+        await syncLeaseTargetState(ctx, {
+            propertyId: lease.propertyId,
+            unitId: lease.unitId,
         });
 
         const tenant = await ctx.db.get(lease.tenantId);
@@ -362,6 +483,11 @@ export const tenantSign = mutation({
             signedAt: Date.now(),
         });
 
+        await syncLeaseTargetState(ctx, {
+            propertyId: lease.propertyId,
+            unitId: lease.unitId,
+        });
+
         // Notify Landlord
         const landlord = await ctx.db.get(lease.landlordId);
         const tenant = await ctx.db.get(lease.tenantId);
@@ -412,7 +538,7 @@ export const landlordDecision = mutation({
                 throw new Error("The property is no longer approved for leasing.");
             }
 
-            await ensurePropertyHasNoBlockingLease(ctx, lease.propertyId, lease._id);
+            await ensurePropertyHasNoBlockingLease(ctx, lease.propertyId, lease.unitId, lease._id);
             await ensureTenantHasNoActiveLease(ctx, lease.tenantId, lease._id);
 
             // 1. Activate the lease
@@ -423,9 +549,6 @@ export const landlordDecision = mutation({
                 approvedAt: now,
                 activatedAt: now,
             });
-
-            // 2. Mark property as unavailable
-            await ctx.db.patch(lease.propertyId, { isAvailable: false });
 
             // 3. Auto-generate payment schedule
             await ctx.scheduler.runAfter(0, internal.payments.generateScheduleForLease, {
@@ -449,6 +572,11 @@ export const landlordDecision = mutation({
                 landlordNotes: args.notes,
             });
         }
+
+        await syncLeaseTargetState(ctx, {
+            propertyId: lease.propertyId,
+            unitId: lease.unitId,
+        });
 
         // Notify Tenant
         const tenant = await ctx.db.get(lease.tenantId);
@@ -503,6 +631,11 @@ export const requestRevision = mutation({
             signedAt: undefined,
         });
 
+        await syncLeaseTargetState(ctx, {
+            propertyId: lease.propertyId,
+            unitId: lease.unitId,
+        });
+
         const tenant = await ctx.db.get(lease.tenantId);
         const property = await ctx.db.get(lease.propertyId);
 
@@ -549,16 +682,17 @@ export const terminate = mutation({
         });
 
         await clearFuturePendingPayments(ctx, args.leaseId, formatDateOnly(new Date()));
-
-        // Mark property as available again
-        await ctx.db.patch(lease.propertyId, { isAvailable: true });
+        await syncLeaseTargetState(ctx, {
+            propertyId: lease.propertyId,
+            unitId: lease.unitId,
+        });
 
         return { success: true };
     },
 });
 
-// ─── Check for expired leases (cron job) ───
-export const checkExpired = mutation({
+// ─── Check for expired leases (cron-only internal job) ───
+export const checkExpired = internalMutation({
     args: {},
     handler: async (ctx) => {
         const today = new Date().toISOString().split("T")[0];
@@ -573,7 +707,10 @@ export const checkExpired = mutation({
             if (lease.endDate < today) {
                 await ctx.db.patch(lease._id, { status: "expired" });
                 await clearFuturePendingPayments(ctx, lease._id, today);
-                await ctx.db.patch(lease.propertyId, { isAvailable: true });
+                await syncLeaseTargetState(ctx, {
+                    propertyId: lease.propertyId,
+                    unitId: lease.unitId,
+                });
                 count++;
             }
         }
@@ -602,15 +739,15 @@ export const getById = query({
         }
 
         const property = await ctx.db.get(lease.propertyId);
+        const unit = lease.unitId ? await ctx.db.get(lease.unitId) : null;
         const tenant = await ctx.db.get(lease.tenantId);
         const landlord = await ctx.db.get(lease.landlordId);
 
         let propertyWithImage = null;
         if (property) {
-            let imageUrl = null;
-            if (property.images && property.images.length > 0) {
-                imageUrl = await ctx.storage.getUrl(property.images[0]);
-            }
+            const propertyImageUrls = await resolveStorageUrls(ctx, property.images);
+            const unitImageUrls = unit ? await resolveStorageUrls(ctx, unit.images) : [];
+            const imageUrl = unitImageUrls[0] ?? propertyImageUrls[0] ?? null;
             propertyWithImage = {
                 ...property,
                 imageUrl,
@@ -621,6 +758,10 @@ export const getById = query({
         return {
             ...lease,
             property: propertyWithImage,
+            unit: unit ? {
+                ...unit,
+                imageUrls: await resolveStorageUrls(ctx, unit.images),
+            } : null,
             tenant: tenant ? { fullName: tenant.fullName, email: tenant.email } : null,
             landlord: landlord ? { fullName: landlord.fullName, email: landlord.email } : null,
         };
@@ -646,16 +787,18 @@ export const getForLandlord = query({
         const enrichedLeases = await Promise.all(
             leases.map(async (lease) => {
                 const property = await ctx.db.get(lease.propertyId);
+                const unit = lease.unitId ? await ctx.db.get(lease.unitId) : null;
                 const tenant = await ctx.db.get(lease.tenantId);
 
                 let imageUrl = null;
-                if (property?.images && property.images.length > 0) {
-                    imageUrl = await ctx.storage.getUrl(property.images[0]);
-                }
+                const unitImageUrls = unit ? await resolveStorageUrls(ctx, unit.images) : [];
+                const propertyImageUrls = property ? await resolveStorageUrls(ctx, property.images?.slice(0, 1)) : [];
+                imageUrl = unitImageUrls[0] ?? propertyImageUrls[0] ?? null;
 
                 return {
                     ...lease,
                     property: property ? { title: property.title, address: property.address, imageUrl } : null,
+                    unit: unit ? { title: unit.title, unitCode: unit.unitCode, occupancyMode: unit.occupancyMode } : null,
                     tenant: tenant ? { fullName: tenant.fullName, email: tenant.email } : null,
                 };
             })
@@ -684,16 +827,18 @@ export const getForTenant = query({
         const enrichedLeases = await Promise.all(
             leases.map(async (lease) => {
                 const property = await ctx.db.get(lease.propertyId);
+                const unit = lease.unitId ? await ctx.db.get(lease.unitId) : null;
                 const landlord = await ctx.db.get(lease.landlordId);
 
                 let imageUrl = null;
-                if (property?.images && property.images.length > 0) {
-                    imageUrl = await ctx.storage.getUrl(property.images[0]);
-                }
+                const unitImageUrls = unit ? await resolveStorageUrls(ctx, unit.images) : [];
+                const propertyImageUrls = property ? await resolveStorageUrls(ctx, property.images?.slice(0, 1)) : [];
+                imageUrl = unitImageUrls[0] ?? propertyImageUrls[0] ?? null;
 
                 return {
                     ...lease,
                     property: property ? { title: property.title, address: property.address, imageUrl } : null,
+                    unit: unit ? { title: unit.title, unitCode: unit.unitCode, occupancyMode: unit.occupancyMode } : null,
                     landlord: landlord ? { fullName: landlord.fullName, email: landlord.email } : null,
                 };
             })
@@ -719,12 +864,12 @@ export const getActiveLease = query({
         if (!activeLease) return null;
 
         const property = await ctx.db.get(activeLease.propertyId);
+        const unit = activeLease.unitId ? await ctx.db.get(activeLease.unitId) : null;
         const landlord = await ctx.db.get(activeLease.landlordId);
 
-        let imageUrl = null;
-        if (property?.images && property.images.length > 0) {
-            imageUrl = await ctx.storage.getUrl(property.images[0]);
-        }
+        const unitImageUrls = unit ? await resolveStorageUrls(ctx, unit.images) : [];
+        const propertyImageUrls = property ? await resolveStorageUrls(ctx, property.images?.slice(0, 1)) : [];
+        const imageUrl = unitImageUrls[0] ?? propertyImageUrls[0] ?? null;
 
         // Get next payment due
         const payments = await ctx.db
@@ -741,6 +886,7 @@ export const getActiveLease = query({
         return {
             ...activeLease,
             property: property ? { ...property, imageUrl } : null,
+            unit: unit ? { title: unit.title, unitCode: unit.unitCode, occupancyMode: unit.occupancyMode } : null,
             landlord: landlord ? { fullName: landlord.fullName, email: landlord.email } : null,
             nextPayment,
         };

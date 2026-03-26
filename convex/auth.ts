@@ -1,6 +1,7 @@
 import { convexAuth } from "@convex-dev/auth/server";
 import { Password } from "@convex-dev/auth/providers/Password";
 import { DataModel } from "./_generated/dataModel";
+import { getDefaultUserPreferences } from "./lib/userPreferences";
 
 const CustomPassword = Password<DataModel>({
     profile(params) {
@@ -11,6 +12,9 @@ const CustomPassword = Password<DataModel>({
             surname: params.surname as string | undefined,
             role: (params.role as "tenant" | "landlord" | "admin") || "tenant",
             isVerified: false,
+            preferences: getDefaultUserPreferences(
+                ((params.role as "tenant" | "landlord" | "admin") || "tenant"),
+            ),
         };
     },
 });

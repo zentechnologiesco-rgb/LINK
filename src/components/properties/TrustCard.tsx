@@ -6,7 +6,7 @@ import Image from "next/image"
 import type { Id } from "../../../convex/_generated/dataModel"
 import { cn } from "@/lib/utils"
 import { SavePropertyButton } from "@/components/properties/SavePropertyButton"
-import { X } from "lucide-react"
+import { X, MapPin, Bed, Bath, Square, Home } from "lucide-react"
 
 
 export interface TrustCardProps {
@@ -14,6 +14,7 @@ export interface TrustCardProps {
         id: Id<"properties">
         title: string
         price: number
+        maxPrice?: number
         address: string
         city: string
         bedrooms: number
@@ -25,115 +26,136 @@ export interface TrustCardProps {
         description?: string
         coordinates?: { lat: number; lng: number } | null
         landlordId?: string
+        listingType?: 'single_home' | 'multi_unit_block' | 'student_accommodation'
+        unitCount?: number
+        availableUnitCount?: number
+        unitTypeLabels?: string[]
     }
-    /** Set to true for above-the-fold cards (first 4-8 visible) for faster initial load */
     priority?: boolean
     actionType?: 'save' | 'remove' | 'none'
     onRemove?: (propertyId: Id<"properties">, event: MouseEvent<HTMLButtonElement>) => void
 }
 
-// Immersive full-image property card — inspired by Stuttle.
 export const TrustCard = memo(function TrustCard({
     property,
     priority = false,
     actionType = 'save',
     onRemove,
 }: TrustCardProps) {
-    const imageSrc = property.images.length > 0 ? property.images[0] : '/window.svg'
+    const imageSrc = property.images?.length > 0 ? property.images[0] : '/window.svg'
+    const isMultiUnit = (property.unitCount ?? 1) > 1 || property.listingType === 'multi_unit_block' || property.listingType === 'student_accommodation'
+    const availableCount = property.availableUnitCount ?? 0
+    const priceLabel = isMultiUnit ? `From N$${property.price.toLocaleString()}` : `N$${property.price.toLocaleString()}`
+    const subtitle = isMultiUnit
+        ? `${property.unitCount ?? 1} units • ${availableCount} available`
+        : `${property.bedrooms || 0} bed • ${property.bathrooms || 0} bath`
 
     return (
         <Link
             href={`/properties/${property.id}`}
-            className="group block w-full outline-none"
+            className="group block w-full outline-none flex flex-col gap-3.5"
         >
             <div className={cn(
-                "relative w-full rounded-[24px] overflow-hidden bg-neutral-100",
-                "transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]",
-                "shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]",
-                "hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.2)] hover:-translate-y-1.5"
+                "relative w-full aspect-[4/3] rounded-[24px] overflow-hidden bg-neutral-100",
+                "shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)] isolate",
+                "transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]"
             )}>
-                {/* Image — Square aspect ratio like Airbnb */}
-                <div className="relative w-full aspect-square">
-                    <Image
-                        src={imageSrc}
-                        alt={property.title}
-                        fill
-                        priority={priority}
-                        quality={80}
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1400px) 33vw, 25vw"
-                        className="object-cover transition-transform duration-1000 ease-out group-hover:scale-[1.05]"
-                    />
+                {/* Image */}
+                <Image
+                    src={imageSrc}
+                    alt={property.title}
+                    fill
+                    priority={priority}
+                    quality={85}
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1400px) 33vw, 25vw"
+                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+                />
 
-                    {/* Gradient Overlay — subtle top for buttons, heavy bottom for text */}
-                    <div className="absolute inset-0 z-10 pointer-events-none">
-                         {/* Top gradient for readability of white icons */}
-                         <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/30 to-transparent" />
-                         {/* Bottom gradient for text focus */}
-                         <div className="absolute inset-x-0 bottom-0 h-full bg-gradient-to-t from-black/95 via-black/40 to-transparent pt-[50%] md:hidden" />
+                {/* Top Overlay Gradient for icons readability */}
+                <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/20 to-transparent pointer-events-none" />
+
+                {/* Top Controls */}
+                {actionType !== 'none' && (
+                    <div className="absolute top-3 right-3 z-20 pointer-events-none">
+                        <div className="pointer-events-auto">
+                            {actionType === 'save' ? (
+                                <SavePropertyButton
+                                    propertyId={property.id}
+                                    landlordId={property.landlordId}
+                                    className="h-9 w-9 sm:h-10 sm:w-10 bg-white/90 backdrop-blur-md hover:bg-white border-0 shadow-sm transition-all text-neutral-900 p-0 rounded-full"
+                                />
+                            ) : (
+                                <button
+                                    onClick={(event) => {
+                                        event.preventDefault()
+                                        onRemove?.(property.id, event)
+                                    }}
+                                    className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-white/90 backdrop-blur-md hover:bg-white border-0 shadow-sm transition-all flex items-center justify-center text-neutral-900"
+                                    title="Remove"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            )}
+                        </div>
                     </div>
+                )}
 
-                    {actionType !== 'none' && (
-                        <div className="absolute top-3 right-3 z-20 flex justify-end items-center pointer-events-none">
-                            <div className="pointer-events-auto">
-                                {actionType === 'save' ? (
-                                    <SavePropertyButton
-                                        propertyId={property.id}
-                                        landlordId={property.landlordId}
-                                        className="h-8 w-8 sm:h-10 sm:w-10 bg-white hover:bg-neutral-50 border-neutral-100 shadow-sm transition-all text-black p-0"
-                                    />
-                                ) : (
-                                    <button
-                                        onClick={(event) => onRemove?.(property.id, event)}
-                                        className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-white hover:bg-neutral-50 border border-neutral-100 shadow-sm transition-all flex items-center justify-center text-neutral-900"
-                                        title="Remove from history"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Bottom Content Area */}
-                    <div className="absolute inset-x-0 bottom-0 z-20 p-3 pt-24 pb-4 flex flex-col justify-end md:hidden">
-                        <h3 className="text-white text-[19px] sm:text-[21px] font-semibold leading-tight tracking-[-0.02em] mb-1.5 drop-shadow-md">
-                            {property.title}
-                        </h3>
-                        <div className="flex items-baseline gap-1 drop-shadow-sm">
-                            <span className="text-[13px] font-medium truncate text-white">
-                                {property.city}
-                            </span>
-                            <span className="text-[13px] font-medium text-white/60">
-                                ·
-                            </span>
-                            <span className="text-[14px] font-semibold leading-none text-white">
-                                N${property.price.toLocaleString()}
-                            </span>
-                            <span className="text-[11px] font-medium text-white/70">
-                                /month
-                            </span>
-                        </div>
+                {/* Price Badge - Apple Native Style */}
+                <div className="absolute bottom-3 left-3 z-20 pointer-events-none">
+                    <div className="bg-white/95 backdrop-blur-xl px-3.5 py-1.5 rounded-full shadow-sm border border-neutral-200/50 flex items-baseline select-none">
+                        <span className="text-[15px] font-bold text-neutral-900 tracking-tight">
+                            {priceLabel}
+                        </span>
+                        <span className="text-[13px] font-semibold text-neutral-500 ml-1">/mo</span>
                     </div>
                 </div>
             </div>
-            {/* Desktop content sits below the image for a cleaner card layout. */}
-            <div className="hidden md:block mt-2.5 px-0.5 space-y-1">
-                <h3 className="text-neutral-900 text-[15px] font-semibold leading-tight tracking-tight hover:text-black transition-colors">
-                    {property.title}
-                </h3>
-                <div className="flex items-baseline gap-1">
-                    <span className="text-[13px] font-medium truncate text-neutral-700">
-                        {property.city}
-                    </span>
-                    <span className="text-[13px] font-medium text-neutral-400">
-                        ·
-                    </span>
-                    <span className="text-[14px] font-semibold leading-none text-neutral-900">
-                        N${property.price.toLocaleString()}
-                    </span>
-                    <span className="text-[11px] font-medium text-neutral-500">
-                        /month
-                    </span>
+
+            {/* Content Area - Clean, high contrast typography */}
+            <div className="px-1 flex flex-col gap-1.5">
+                <div className="flex justify-between items-start gap-4">
+                    <h3 className="text-[17px] sm:text-[18px] font-semibold text-neutral-900 leading-snug tracking-[-0.015em] line-clamp-1 group-hover:text-black transition-colors">
+                        {property.title}
+                    </h3>
+                </div>
+
+                <div className="flex items-center gap-1.5 text-[14px] text-neutral-500 font-medium tracking-tight">
+                    <MapPin className="w-3.5 h-3.5 opacity-70" />
+                    <span className="truncate">{property.city} • {property.address}</span>
+                </div>
+
+                <div className="flex items-center gap-3.5 text-[13.5px] text-neutral-600 font-medium mt-0.5 flex-wrap">
+                    {!isMultiUnit && (
+                        <>
+                            <div className="flex items-center gap-1.5">
+                                <Bed className="w-4 h-4 text-neutral-400" />
+                                <span>{property.bedrooms || 0}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <Bath className="w-4 h-4 text-neutral-400" />
+                                <span>{property.bathrooms || 0}</span>
+                            </div>
+                            {property.size > 0 && (
+                                <div className="flex items-center gap-1.5">
+                                    <Square className="w-4 h-4 text-neutral-400" />
+                                    <span>{property.size} m²</span>
+                                </div>
+                            )}
+                        </>
+                    )}
+                    {isMultiUnit && (
+                        <>
+                            <div className="flex items-center gap-1.5">
+                                <Home className="w-4 h-4 text-neutral-400" />
+                                <span>{subtitle}</span>
+                            </div>
+                            {property.unitTypeLabels?.slice(0, 2).map((label) => (
+                                <span key={label} className="rounded-full border border-neutral-200 px-2 py-0.5 text-[11px] text-neutral-500">
+                                    {label}
+                                </span>
+                            ))}
+                        </>
+                    )}
                 </div>
             </div>
         </Link>
@@ -141,7 +163,10 @@ export const TrustCard = memo(function TrustCard({
 }, (prevProps, nextProps) => {
     return prevProps.property.id === nextProps.property.id &&
         prevProps.property.price === nextProps.property.price &&
+        prevProps.property.maxPrice === nextProps.property.maxPrice &&
         prevProps.property.images[0] === nextProps.property.images[0] &&
+        prevProps.property.availableUnitCount === nextProps.property.availableUnitCount &&
+        prevProps.property.unitCount === nextProps.property.unitCount &&
         prevProps.actionType === nextProps.actionType &&
         prevProps.onRemove === nextProps.onRemove
 })
