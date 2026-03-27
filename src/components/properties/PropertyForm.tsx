@@ -42,7 +42,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { Switch } from "@/components/ui/switch";
 import { ImageUpload } from "./ImageUpload";
 import { LocationPicker } from "@/components/maps/LocationPicker";
 import {
@@ -75,7 +74,6 @@ type PropertyUnitForm = {
   roomType: string;
   furnishingStatus: string;
   genderPolicy: string;
-  availableFrom: string;
   floorLabel: string;
   blockLabel: string;
   priceNad: string;
@@ -95,7 +93,6 @@ type PropertyFormInitialData = {
   occupancyMode?: string;
   furnishingStatus?: string;
   genderPolicy?: string;
-  availableFrom?: string;
   priceNad?: number;
   address?: string;
   city?: string;
@@ -121,7 +118,6 @@ type PropertyFormInitialData = {
     roomType?: string;
     furnishingStatus?: string;
     genderPolicy?: string;
-    availableFrom?: string;
     floorLabel?: string;
     blockLabel?: string;
     priceNad?: number;
@@ -162,10 +158,8 @@ type InventoryGenerator = {
 type SingleHomeUnitSyncOptions = {
   listingTitle: string;
   propertyType: string;
-  occupancyMode: string;
   furnishingStatus: string;
   genderPolicy: string;
-  availableFrom: string;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -266,7 +260,6 @@ function createDefaultUnit(
     furnishingStatus:
       listingType === "student_accommodation" ? "furnished" : "unfurnished",
     genderPolicy: "mixed",
-    availableFrom: "",
     floorLabel: "",
     blockLabel: "",
     priceNad: "",
@@ -300,7 +293,6 @@ function toUnitForm(
       (listingType === "student_accommodation" ? "private" : ""),
     furnishingStatus: unit?.furnishingStatus || "unfurnished",
     genderPolicy: unit?.genderPolicy || "mixed",
-    availableFrom: unit?.availableFrom || "",
     floorLabel: unit?.floorLabel || "",
     blockLabel: unit?.blockLabel || "",
     priceNad: unit?.priceNad?.toString() || "",
@@ -338,11 +330,10 @@ function buildSingleHomeUnit(
       createDefaultUnit("single_home", options.propertyType, nextTitle)),
     title: nextTitle,
     unitType: options.propertyType,
-    occupancyMode: options.occupancyMode,
+    occupancyMode: "whole_unit",
     roomType: "",
     furnishingStatus: options.furnishingStatus,
     genderPolicy: options.genderPolicy,
-    availableFrom: options.availableFrom,
   };
 }
 
@@ -553,21 +544,6 @@ function UnitCard({
             <p className="text-[15px] font-semibold text-neutral-950 truncate">
               {unit.title || `Unit ${index + 1}`}
             </p>
-            <span
-              className={cn(
-                "text-[11px] font-bold px-2 py-0.5 rounded-full flex-shrink-0",
-                unit.publicationStatus === "published"
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-neutral-100 text-neutral-500",
-              )}
-            >
-              {unit.publicationStatus === "published" ? "Visible" : "Hidden"}
-            </span>
-            {unit.occupancyStatus === "occupied" && (
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 flex-shrink-0">
-                Occupied
-              </span>
-            )}
           </div>
           <div className="flex items-center flex-wrap gap-x-3 gap-y-0.5 mt-1">
             {price > 0 && (
@@ -669,9 +645,6 @@ export function PropertyForm({
   const [genderPolicy, setGenderPolicy] = useState(
     initialData?.genderPolicy || "mixed",
   );
-  const [availableFrom, setAvailableFrom] = useState(
-    initialData?.availableFrom || "",
-  );
   const [city, setCity] = useState(initialData?.city || "");
   const [address, setAddress] = useState(initialData?.address || "");
   const [coordinates, setCoordinates] = useState<{
@@ -742,24 +715,21 @@ export function PropertyForm({
 
   // ── Computed ─────────────────────────────────────────────────────────────
   const isSingleHome = listingType === "single_home";
+  const effectiveOccupancyMode = isSingleHome ? "whole_unit" : occupancyMode;
   const normalizedUnits = useMemo(() => {
     if (!isSingleHome) return units;
     return [
       buildSingleHomeUnit(units[0], {
         listingTitle: title,
         propertyType,
-        occupancyMode,
         furnishingStatus,
         genderPolicy,
-        availableFrom,
       }),
     ];
   }, [
-    availableFrom,
     furnishingStatus,
     genderPolicy,
     isSingleHome,
-    occupancyMode,
     propertyType,
     title,
     units,
@@ -807,7 +777,7 @@ export function PropertyForm({
       ? {
           ...STEPS[step],
           label: "Pricing",
-          title: "Set rent & availability",
+          title: "Set rent",
           subtitle:
             "Single-home listings use one whole-home price instead of separate unit pricing.",
         }
@@ -853,10 +823,8 @@ export function PropertyForm({
         ...buildSingleHomeUnit(prev[0], {
           listingTitle: overrides.listingTitle ?? title,
           propertyType: overrides.propertyType ?? propertyType,
-          occupancyMode: overrides.occupancyMode ?? occupancyMode,
           furnishingStatus: overrides.furnishingStatus ?? furnishingStatus,
           genderPolicy: overrides.genderPolicy ?? genderPolicy,
-          availableFrom: overrides.availableFrom ?? availableFrom,
         }),
         ...patch,
       },
@@ -925,10 +893,8 @@ export function PropertyForm({
               buildSingleHomeUnit(prev[0], {
                 listingTitle: title,
                 propertyType,
-                occupancyMode,
                 furnishingStatus,
                 genderPolicy,
-                availableFrom,
               }),
             ]
           : prev;
@@ -938,10 +904,8 @@ export function PropertyForm({
           buildSingleHomeUnit(seededPrev[0], {
             listingTitle: title,
             propertyType,
-            occupancyMode: nextOccupancyMode,
             furnishingStatus: nextFurnishingStatus,
             genderPolicy,
-            availableFrom,
           }),
         ];
       }
@@ -1045,11 +1009,10 @@ export function PropertyForm({
         address: address.trim(),
         city: city.trim(),
         coordinates,
-        occupancyMode,
+        occupancyMode: effectiveOccupancyMode,
         furnishingStatus,
         genderPolicy:
           listingType === "student_accommodation" ? genderPolicy : undefined,
-        availableFrom: availableFrom || undefined,
         priceNad:
           summary.minPrice || Number(normalizedUnits[0]?.priceNad || 0),
         bedrooms: summary.bedrooms || undefined,
@@ -1073,7 +1036,6 @@ export function PropertyForm({
             listingType === "student_accommodation"
               ? unit.genderPolicy || undefined
               : undefined,
-          availableFrom: unit.availableFrom || undefined,
           floorLabel: unit.floorLabel.trim() || undefined,
           blockLabel: unit.blockLabel.trim() || undefined,
           priceNad: Number(unit.priceNad),
@@ -1081,8 +1043,6 @@ export function PropertyForm({
           bathrooms: numberValue(unit.bathrooms),
           sizeSqm: numberValue(unit.sizeSqm),
           maxOccupants: numberValue(unit.maxOccupants),
-          publicationStatus: unit.publicationStatus,
-          occupancyStatus: unit.occupancyStatus,
         })),
       };
 
@@ -1416,22 +1376,19 @@ export function PropertyForm({
                       }))}
                     />
                   )}
-                  <InlineSelectRow
-                    label="Occupancy Mode"
-                    value={occupancyMode}
-                    onValueChange={(v) => {
-                      setOccupancyMode(v);
-                      if (isSingleHome) {
-                        updateSingleHomeUnit({}, { occupancyMode: v });
-                      }
-                    }}
-                    options={[
-                      { value: "whole_unit", label: "Whole Unit" },
-                      { value: "private_room", label: "Private Room" },
-                      { value: "shared_room", label: "Shared Room" },
-                      { value: "bed_space", label: "Bed Space" },
-                    ]}
-                  />
+                  {listingType !== "single_home" && (
+                    <InlineSelectRow
+                      label="Occupancy Mode"
+                      value={occupancyMode}
+                      onValueChange={setOccupancyMode}
+                      options={[
+                        { value: "whole_unit", label: "Whole Unit" },
+                        { value: "private_room", label: "Private Room" },
+                        { value: "shared_room", label: "Shared Room" },
+                        { value: "bed_space", label: "Bed Space" },
+                      ]}
+                    />
+                  )}
                   <InlineSelectRow
                     label="Furnishing"
                     value={furnishingStatus}
@@ -1459,28 +1416,6 @@ export function PropertyForm({
                       ]}
                     />
                   )}
-                  <CardRow
-                    last
-                    className="flex items-center justify-between gap-4"
-                  >
-                    <span className="text-[15px] text-neutral-950">
-                      Available From
-                    </span>
-                    <input
-                      type="date"
-                      value={availableFrom}
-                      onChange={(e) => {
-                        const nextAvailableFrom = e.target.value;
-                        setAvailableFrom(nextAvailableFrom);
-                        if (isSingleHome) {
-                          updateSingleHomeUnit({}, {
-                            availableFrom: nextAvailableFrom,
-                          });
-                        }
-                      }}
-                      className="text-[14px] font-medium text-neutral-600 bg-transparent outline-none text-right cursor-pointer"
-                    />
-                  </CardRow>
                 </CardSection>
               </div>
             )}
@@ -1670,9 +1605,9 @@ export function PropertyForm({
                             </p>
                             <p className="mt-1 text-[13px] leading-5 text-neutral-500">
                               Single-home listings are treated as one rentable
-                              space. Set one rent and one availability state,
-                              and we&apos;ll use that across the listing and
-                              lease flow.
+                              space. Set one rent here, then publish the
+                              listing from your dashboard once it&apos;s
+                              approved.
                             </p>
                           </div>
                         </div>
@@ -1740,7 +1675,7 @@ export function PropertyForm({
                     </CardSection>
 
                     <CardSection>
-                      <CardRow className="flex items-center justify-between gap-4">
+                      <CardRow last className="flex items-center justify-between gap-4">
                         <span className="text-[15px] text-neutral-950">
                           Size (m²)
                         </span>
@@ -1754,44 +1689,6 @@ export function PropertyForm({
                           className="w-24 bg-transparent text-right text-[15px] font-semibold text-neutral-950 outline-none placeholder:text-neutral-300 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         />
                       </CardRow>
-                      <CardRow className="flex items-center justify-between gap-4">
-                        <div>
-                          <p className="text-[15px] text-neutral-950">
-                            Public visibility
-                          </p>
-                          <p className="mt-0.5 text-[12px] text-neutral-400">
-                            Show this home whenever the listing is live
-                          </p>
-                        </div>
-                        <Switch
-                          checked={
-                            singleHomeUnit?.publicationStatus === "published"
-                          }
-                          onCheckedChange={(checked) =>
-                            updateSingleHomeUnit({
-                              publicationStatus: checked
-                                ? "published"
-                                : "unpublished",
-                            })
-                          }
-                        />
-                      </CardRow>
-                      <InlineSelectRow
-                        label="Occupancy Status"
-                        value={singleHomeUnit?.occupancyStatus ?? "vacant"}
-                        onValueChange={(v) =>
-                          updateSingleHomeUnit({
-                            occupancyStatus: v as OccupancyStatus,
-                          })
-                        }
-                        options={[
-                          { value: "vacant", label: "Vacant" },
-                          { value: "reserved", label: "Reserved" },
-                          { value: "occupied", label: "Occupied" },
-                          { value: "unavailable", label: "Unavailable" },
-                        ]}
-                        last
-                      />
                     </CardSection>
 
                     {Number(singleHomeUnit?.priceNad || 0) <= 0 && (
@@ -2188,9 +2085,9 @@ export function PropertyForm({
                   />
                 </CardSection>
 
-                {/* Size + availability */}
+                {/* Size */}
                 <CardSection>
-                  <CardRow className="flex items-center justify-between gap-4">
+                  <CardRow last className="flex items-center justify-between gap-4">
                     <span className="text-[15px] text-neutral-950">
                       Size (m²)
                     </span>
@@ -2204,24 +2101,6 @@ export function PropertyForm({
                       }
                       placeholder="—"
                       className="w-24 text-right text-[15px] font-semibold text-neutral-950 bg-transparent outline-none placeholder:text-neutral-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    />
-                  </CardRow>
-                  <CardRow
-                    last
-                    className="flex items-center justify-between gap-4"
-                  >
-                    <span className="text-[15px] text-neutral-950">
-                      Available From
-                    </span>
-                    <input
-                      type="date"
-                      value={editingUnit.availableFrom}
-                      onChange={(e) =>
-                        updateUnit(editingUnitIndex, {
-                          availableFrom: e.target.value,
-                        })
-                      }
-                      className="text-[14px] font-medium text-neutral-600 bg-transparent outline-none text-right cursor-pointer"
                     />
                   </CardRow>
                 </CardSection>
@@ -2259,44 +2138,6 @@ export function PropertyForm({
                       className="w-36 text-right text-[14px] font-medium text-neutral-600 bg-transparent outline-none placeholder:text-neutral-300"
                     />
                   </CardRow>
-                </CardSection>
-
-                {/* Status controls */}
-                <CardSection>
-                  <CardRow className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-[15px] text-neutral-950">Public visibility</p>
-                      <p className="text-[12px] text-neutral-400 mt-0.5">
-                        Include this unit whenever the property listing is live
-                      </p>
-                    </div>
-                    <Switch
-                      checked={editingUnit.publicationStatus === "published"}
-                      onCheckedChange={(checked) =>
-                        updateUnit(editingUnitIndex, {
-                          publicationStatus: checked
-                            ? "published"
-                            : "unpublished",
-                        })
-                      }
-                    />
-                  </CardRow>
-                  <InlineSelectRow
-                    label="Occupancy Status"
-                    value={editingUnit.occupancyStatus}
-                    onValueChange={(v) =>
-                      updateUnit(editingUnitIndex, {
-                        occupancyStatus: v as OccupancyStatus,
-                      })
-                    }
-                    options={[
-                      { value: "vacant", label: "Vacant" },
-                      { value: "reserved", label: "Reserved" },
-                      { value: "occupied", label: "Occupied" },
-                      { value: "unavailable", label: "Unavailable" },
-                    ]}
-                    last
-                  />
                 </CardSection>
 
                 {/* Student accommodation extras */}

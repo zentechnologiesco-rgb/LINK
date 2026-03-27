@@ -57,7 +57,6 @@ function EditPropertyContent({ id }: { id: string }) {
         occupancyMode: property.occupancyMode,
         furnishingStatus: property.furnishingStatus,
         genderPolicy: property.genderPolicy,
-        availableFrom: property.availableFrom,
         priceNad: property.priceNad,
         address: property.address,
         city: property.city,
