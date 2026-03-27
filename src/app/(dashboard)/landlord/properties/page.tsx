@@ -26,6 +26,8 @@ import { Id } from "../../../../../convex/_generated/dataModel"
 import { cn } from '@/lib/utils'
 import { getPropertyWorkflow, type PropertyWorkflow } from '@/lib/property-workflow'
 import { PropertyActions } from './PropertyActions'
+import { useUser } from '@/components/providers/UserProvider'
+import { useCachedQuery } from '@/hooks/useOptimisticQuery'
 
 interface Property {
     _id: Id<"properties">
@@ -82,7 +84,16 @@ type FilterTab = 'all' | 'live' | 'review' | 'changes' | 'reserved' | 'leased' |
 
 export default function LandlordPropertiesPage() {
     const router = useRouter()
-    const properties = useQuery(api.properties.getByLandlord, {})
+    const { user: currentUser } = useUser()
+    const { data: properties } = useCachedQuery(
+        api.properties.getByLandlord,
+        {
+            queryName: 'landlord_properties_v1',
+            cacheKeySuffix: currentUser?._id,
+            storage: 'session',
+        },
+        {}
+    )
     const leases = useQuery(api.leases.getForLandlord, {}) as LandlordLease[] | undefined
     const [activeTab, setActiveTab] = useState<FilterTab>('all')
 

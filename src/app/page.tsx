@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useMemo, Suspense, lazy } from "react"
-import { useQuery } from "convex/react"
 import { useRouter } from "next/navigation"
 import { api } from "../../convex/_generated/api"
 import type { Id } from "../../convex/_generated/dataModel"
@@ -35,6 +34,7 @@ import { TrustCard } from "@/components/properties/TrustCard"
 import { HomePageSkeleton } from "@/components/ui/skeleton"
 import { useUser } from "@/components/providers/UserProvider"
 import { useDebounce } from "@/hooks/useDebounce"
+import { useCachedQuery } from "@/hooks/useOptimisticQuery"
 import { AMENITIES } from "@/constants/property"
 
 // Lazy load the map component for faster initial page load
@@ -98,9 +98,32 @@ export default function HomePage() {
 
     // Debounced search for performance
     const debouncedSearchQuery = useDebounce(searchQuery, 300)
+    const minPrice = priceRange.min ? Number.parseInt(priceRange.min, 10) : undefined
+    const maxPrice = priceRange.max ? Number.parseInt(priceRange.max, 10) : undefined
+
+    const propertyQueryArgs = useMemo(() => ({
+        onlyAvailable: true,
+        query: debouncedSearchQuery.trim() || undefined,
+        minPrice,
+        maxPrice,
+        bedrooms: minBedrooms ?? undefined,
+        propertyType: selectedPropertyType ?? undefined,
+        amenityNames: selectedAmenities.length > 0 ? selectedAmenities : undefined,
+    }), [debouncedSearchQuery, maxPrice, minBedrooms, minPrice, selectedAmenities, selectedPropertyType])
 
     // Data Fetching
-    const properties = useQuery(api.properties.list, { onlyAvailable: true })
+    const {
+        data: properties,
+        isLoading: isPropertiesLoading,
+        isRefetching: isPropertiesRefetching,
+    } = useCachedQuery(
+        api.properties.list,
+        {
+            queryName: "public_properties_list_v1",
+            storage: "local",
+        },
+        propertyQueryArgs
+    )
     const { user: currentUser } = useUser()
 
     // Pull-to-refresh handler
@@ -142,23 +165,7 @@ export default function HomePage() {
         return Array.from(types).sort()
     }, [normalizedProperties])
 
-    // Filter Logic
-    const filtered = useMemo(() => {
-        return normalizedProperties.filter((p) => {
-            const matchSearch = !debouncedSearchQuery ||
-                p.title.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-                p.city.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-                p.address.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
-            const minPrice = priceRange.min ? parseInt(priceRange.min) : 0
-            const maxPrice = priceRange.max ? parseInt(priceRange.max) : Infinity
-            const matchPrice = p.price >= minPrice && p.price <= maxPrice
-            const matchBedrooms = minBedrooms === null || p.bedrooms >= minBedrooms
-            const matchAmenities = selectedAmenities.length === 0 ||
-                selectedAmenities.every(amenity => p.amenities.includes(amenity))
-            const matchType = !selectedPropertyType || p.type.toLowerCase() === selectedPropertyType.toLowerCase()
-            return matchSearch && matchPrice && matchBedrooms && matchAmenities && matchType
-        })
-    }, [normalizedProperties, debouncedSearchQuery, priceRange, minBedrooms, selectedAmenities, selectedPropertyType])
+    const filtered = normalizedProperties
 
     const mapData = useMemo(() => filtered.map((p, i) => ({
         id: p.id,
@@ -172,12 +179,14 @@ export default function HomePage() {
     const activeFilterCount = (minBedrooms !== null ? 1 : 0) +
         (priceRange.min ? 1 : 0) +
         (priceRange.max ? 1 : 0) +
-        selectedAmenities.length
+        selectedAmenities.length +
+        (selectedPropertyType ? 1 : 0)
 
     const clearFilters = () => {
         setPriceRange({ min: "", max: "" })
         setMinBedrooms(null)
         setSelectedAmenities([])
+        setSelectedPropertyType(null)
     }
 
     const isMapView = viewMode === 'map'
@@ -189,7 +198,7 @@ export default function HomePage() {
     )
 
     // Loading skeleton
-    if (properties === undefined) {
+    if (isPropertiesLoading) {
         return <HomePageSkeleton />
     }
 
@@ -403,6 +412,11 @@ export default function HomePage() {
 
                 {/* Main Content Area */}
                 <main className="w-full max-w-[1440px] mx-auto pt-6 px-4 sm:px-6 lg:px-8">
+                    {isPropertiesRefetching && (
+                        <div className="mb-4 text-[13px] font-medium text-neutral-400">
+                            Updating results...
+                        </div>
+                    )}
                     {viewMode === 'map' ? (
                         <div className="h-[75vh] w-full rounded-[24px] overflow-hidden relative border border-neutral-200/50 shadow-sm isolate">
                             <Suspense fallback={
@@ -412,7 +426,7 @@ export default function HomePage() {
                                     </div>
                                 </div>
                             }>
-                                <PropertyMap properties={mapData} onPropertyClick={() => { }} />
+                                <PropertyMap properties={mapData} />
                             </Suspense>
                         </div>
                     ) : (

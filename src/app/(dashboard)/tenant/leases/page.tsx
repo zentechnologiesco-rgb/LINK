@@ -1,8 +1,6 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
-import { useQuery } from 'convex/react'
 import { differenceInDays, format } from 'date-fns'
 import {
     AlertCircle,
@@ -19,6 +17,8 @@ import { api } from '../../../../../convex/_generated/api'
 import { LEASE_STATUS_LABELS, type LeaseStatus } from '@/constants/lease'
 import { PullToRefresh } from '@/components/ui/pull-to-refresh'
 import { cn } from '@/lib/utils'
+import { useUser } from '@/components/providers/UserProvider'
+import { useCachedQuery } from '@/hooks/useOptimisticQuery'
 
 type TenantLease = {
     _id: string
@@ -40,15 +40,21 @@ const currency = new Intl.NumberFormat('en-NA', {
 })
 
 export default function TenantLeasesPage() {
-    const leases = useQuery(api.leases.getForTenant, {}) as TenantLease[] | undefined
-    const [isRefreshing, setIsRefreshing] = useState(false)
+    const { user: currentUser } = useUser()
+    const { data: leases } = useCachedQuery(
+        api.leases.getForTenant,
+        {
+            queryName: 'tenant_leases_v1',
+            cacheKeySuffix: currentUser?._id ?? 'anonymous',
+            storage: 'session',
+        },
+        {}
+    ) as { data: TenantLease[] | undefined }
 
     // Handle pull to refresh
     const handleRefresh = async () => {
-        setIsRefreshing(true)
         // Simulate a small delay for UX, Convex handles live updates automatically
         await new Promise(resolve => setTimeout(resolve, 800))
-        setIsRefreshing(false)
     }
 
     if (leases === undefined) {

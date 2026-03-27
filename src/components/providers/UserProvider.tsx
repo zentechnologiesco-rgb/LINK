@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, ReactNode } from "react"
+import React, { createContext, useContext, useMemo, ReactNode } from "react"
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import type { UserPreferences } from "@/lib/user-preferences"
@@ -43,12 +43,12 @@ const UserContext = createContext<UserContextValue | undefined>(undefined)
 export function UserProvider({ children }: { children: ReactNode }) {
     const user = useQuery(api.users.currentUser)
 
-    const value: UserContextValue = {
+    const value = useMemo<UserContextValue>(() => ({
         user,
         isLoading: user === undefined,
         isAuthenticated: user !== null && user !== undefined,
         role: user?.role ?? null,
-    }
+    }), [user])
 
     return (
         <UserContext.Provider value={value}>

@@ -3,7 +3,6 @@
 import { useState, type ElementType } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useQuery } from 'convex/react'
 import { differenceInDays, format } from 'date-fns'
 import {
     AlertCircle,
@@ -15,9 +14,7 @@ import {
     FileText,
     FolderArchive,
     Loader2,
-    PencilLine,
     Plus,
-    UserRound,
     Wallet2,
 } from 'lucide-react'
 
@@ -25,6 +22,8 @@ import { api } from '../../../../../convex/_generated/api'
 import { PullToRefresh } from '@/components/ui/pull-to-refresh'
 import { LEASE_STATUS_LABELS, type LeaseStatus } from '@/constants/lease'
 import { cn } from '@/lib/utils'
+import { useUser } from '@/components/providers/UserProvider'
+import { useCachedQuery } from '@/hooks/useOptimisticQuery'
 
 /* ── Types ──────────────────────────────────────────────── */
 
@@ -119,7 +118,16 @@ function getLeaseSubtitle(lease: LandlordLease) {
 
 export default function LandlordLeasesPage() {
     const router = useRouter()
-    const leases = useQuery(api.leases.getForLandlord, {}) as LandlordLease[] | undefined
+    const { user: currentUser } = useUser()
+    const { data: leases } = useCachedQuery(
+        api.leases.getForLandlord,
+        {
+            queryName: 'landlord_leases_v1',
+            cacheKeySuffix: currentUser?._id,
+            storage: 'session',
+        },
+        {}
+    ) as { data: LandlordLease[] | undefined }
     const [activeFilter, setActiveFilter] = useState<FilterTab>('all')
 
     const handleRefresh = async () => {

@@ -1,16 +1,12 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useQuery } from "convex/react"
-import { api } from "../../../../../convex/_generated/api"
-
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
+import { useUser } from "@/components/providers/UserProvider"
 
 function ReportsContent() {
-    const currentUser = useQuery(api.users.currentUser)
+    const { user: currentUser, isLoading } = useUser()
 
-    if (currentUser === undefined) {
+    if (isLoading) {
         return <div className="p-6">Loading...</div>
     }
 

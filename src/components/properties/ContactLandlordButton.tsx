@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { useMutation, useQuery } from 'convex/react'
+import { useMutation } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { Id } from '../../../convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/compone
 import { MessageCircle, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { useUser } from '@/components/providers/UserProvider'
 
 interface ContactLandlordButtonProps {
     propertyId: string
@@ -27,7 +28,7 @@ export function ContactLandlordButton({ propertyId, unitId, landlordId, variant 
     const [showLoginDialog, setShowLoginDialog] = useState(false)
 
     const getExistingInquiry = useMutation(api.inquiries.getExistingForProperty)
-    const currentUser = useQuery(api.users.currentUser)
+    const { user: currentUser } = useUser()
 
     // Don't show the button if the current user is the landlord
     if (landlordId && currentUser && currentUser._id === landlordId) {
@@ -35,6 +36,11 @@ export function ContactLandlordButton({ propertyId, unitId, landlordId, variant 
     }
 
     const handleContact = async () => {
+        if (!currentUser) {
+            setShowLoginDialog(true)
+            return
+        }
+
         setIsLoading(true)
         try {
             const inquiryId = await getExistingInquiry({

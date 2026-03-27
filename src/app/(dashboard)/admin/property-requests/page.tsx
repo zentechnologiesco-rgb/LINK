@@ -17,8 +17,9 @@ import {
 } from '@/components/ui/table'
 import { Eye, Building2, CheckCircle2, XCircle, Clock, AlertCircle, MapPin, Bed, Bath, Home } from 'lucide-react'
 import { format } from 'date-fns'
-import { useQuery } from "convex/react"
 import { api } from "../../../../../convex/_generated/api"
+import { useUser } from "@/components/providers/UserProvider"
+import { useCachedQuery } from "@/hooks/useOptimisticQuery"
 
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
@@ -64,11 +65,26 @@ function PropertyRequestsContent() {
     const statusFilter = (searchParams.get('status') as 'pending' | 'approved' | 'rejected') || undefined
     const searchQuery = searchParams.get('search') || ''
 
-    const currentUser = useQuery(api.users.currentUser)
-    const properties = useQuery(api.admin.getPropertyRequests, { status: statusFilter }) as PropertyRequest[] | undefined
-    const stats = useQuery(api.admin.getPropertyStats)
+    const { user: currentUser, isLoading } = useUser()
+    const { data: properties } = useCachedQuery(
+        api.admin.getPropertyRequests,
+        {
+            queryName: 'admin_property_requests_v1',
+            cacheKeySuffix: currentUser?._id ?? 'anonymous',
+            storage: 'session',
+        },
+        { status: statusFilter }
+    ) as { data: PropertyRequest[] | undefined }
+    const { data: stats } = useCachedQuery(
+        api.admin.getPropertyStats,
+        {
+            queryName: 'admin_property_stats_v1',
+            cacheKeySuffix: currentUser?._id ?? 'anonymous',
+            storage: 'session',
+        }
+    )
 
-    if (currentUser === undefined || properties === undefined || stats === undefined) {
+    if (isLoading || properties === undefined || stats === undefined) {
         return (
             <div className="p-6">
                 <div className="animate-pulse space-y-4">

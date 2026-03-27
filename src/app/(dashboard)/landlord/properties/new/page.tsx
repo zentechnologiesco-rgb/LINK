@@ -1,15 +1,14 @@
 "use client";
 
 import { redirect } from "next/navigation";
-import { useQuery } from "convex/react";
-import { api } from "../../../../../../convex/_generated/api";
 import { PropertyForm } from "@/components/properties/PropertyForm";
 import { Loader2 } from "lucide-react";
+import { useUser } from "@/components/providers/UserProvider";
 
 function CreatePropertyContent() {
-  const currentUser = useQuery(api.users.currentUser);
+  const { user: currentUser, isLoading } = useUser();
 
-  if (currentUser === undefined) {
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
         <Loader2 className="h-7 w-7 animate-spin text-neutral-400" />

@@ -84,3 +84,19 @@ export const list = query({
         return properties.filter((p) => p !== null);
     },
 });
+
+// List saved property IDs for lightweight client-side lookups
+export const listIds = query({
+    args: {},
+    handler: async (ctx) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) return [];
+
+        const saved = await ctx.db
+            .query("savedProperties")
+            .withIndex("by_userId", (q) => q.eq("userId", userId))
+            .collect();
+
+        return saved.map((entry) => entry.propertyId);
+    },
+});

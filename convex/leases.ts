@@ -5,6 +5,7 @@ import type { Id } from "./_generated/dataModel";
 import { auth } from "./auth";
 import { api, internal } from "./_generated/api";
 import { TEMPLATES } from "./emailTemplates";
+import { normalizeEmail } from "./lib/normalizeEmail";
 import { getStoredUnitsForProperty, resolveStorageUrls, syncPropertyInventory } from "./lib/propertyInventory";
 
 const BASE_URL = process.env.SITE_URL || "http://localhost:3000";
@@ -281,13 +282,14 @@ export const create = mutation({
         await ensurePropertyHasNoBlockingLease(ctx, args.propertyId, unit?._id, undefined);
 
         // Find tenant by email
+        const normalizedTenantEmail = normalizeEmail(args.tenantEmail);
         const tenant = await ctx.db
             .query("users")
-            .withIndex("by_email", (q) => q.eq("email", args.tenantEmail))
+            .withIndex("by_email", (q) => q.eq("email", normalizedTenantEmail))
             .first();
 
         if (!tenant) {
-            throw new Error(`No user found with email ${args.tenantEmail}. Please ask them to sign up first.`);
+            throw new Error(`No user found with email ${normalizedTenantEmail}. Please ask them to sign up first.`);
         }
 
         if (tenant._id === property.landlordId) {

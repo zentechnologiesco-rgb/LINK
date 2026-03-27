@@ -40,6 +40,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { getDisplayName } from '@/lib/user-name'
+import { useUser } from '@/components/providers/UserProvider'
 import { api } from '../../../../convex/_generated/api'
 import { type Id } from '../../../../convex/_generated/dataModel'
 
@@ -269,7 +270,7 @@ export function AuthedChatInterface() {
     const deferredSearchQuery = useDeferredValue(searchQuery)
 
     /* ── queries ── */
-    const currentUser = useQuery(api.users.currentUser)
+    const { user: currentUser } = useUser()
     const inquiries = useQuery(api.inquiries.getUserInquiries)
     const draftInquiryContext = useQuery(
         api.inquiries.getDraftContext,

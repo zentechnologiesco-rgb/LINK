@@ -140,53 +140,73 @@ async function getFilteredPublicProperties(
         bedrooms?: number;
         propertyType?: string;
         listingType?: string;
+        amenityNames?: string[];
     },
 ) {
     const allProperties = await ctx.db.query("properties").collect();
 
     const properties = allProperties.filter((property: Doc<"properties">) => {
         const publicationStatus = property.publicationStatus ?? (property.isAvailable ? "published" : "unpublished");
-        return property.approvalStatus === "approved" && publicationStatus === "published";
+        if (property.approvalStatus !== "approved" || publicationStatus !== "published") {
+            return false;
+        }
+
+        if (args.city) {
+            const city = args.city.toLowerCase();
+            if (!property.city.toLowerCase().includes(city)) {
+                return false;
+            }
+        }
+
+        if (args.query) {
+            const search = args.query.toLowerCase();
+            const matchesSearch =
+                property.title.toLowerCase().includes(search) ||
+                property.description?.toLowerCase().includes(search) ||
+                property.address.toLowerCase().includes(search) ||
+                property.city.toLowerCase().includes(search);
+
+            if (!matchesSearch) {
+                return false;
+            }
+        }
+
+        if (args.listingType && property.listingType !== args.listingType) {
+            return false;
+        }
+
+        if (args.propertyType && property.propertyType !== args.propertyType) {
+            return false;
+        }
+
+        const price = property.minPriceNad ?? property.priceNad;
+        if (args.minPrice !== undefined && price < args.minPrice) {
+            return false;
+        }
+
+        if (args.maxPrice !== undefined && price > args.maxPrice) {
+            return false;
+        }
+
+        if (args.bedrooms !== undefined && (property.bedrooms ?? 0) < args.bedrooms) {
+            return false;
+        }
+
+        if (args.amenityNames?.length) {
+            const propertyAmenities = property.amenityNames ?? [];
+            const matchesAmenities = args.amenityNames.every((amenity) => propertyAmenities.includes(amenity));
+
+            if (!matchesAmenities) {
+                return false;
+            }
+        }
+
+        return true;
     });
 
     const enriched = await Promise.all(properties.map((property: Doc<"properties">) => enrichProperty(ctx, property)));
 
     let filtered = enriched.filter((property) => !args.onlyAvailable || property.isPublicReady);
-
-    if (args.city) {
-        const city = args.city.toLowerCase();
-        filtered = filtered.filter((property) => property.city.toLowerCase().includes(city));
-    }
-
-    if (args.query) {
-        const search = args.query.toLowerCase();
-        filtered = filtered.filter((property) =>
-            property.title.toLowerCase().includes(search) ||
-            property.description?.toLowerCase().includes(search) ||
-            property.address.toLowerCase().includes(search) ||
-            property.city.toLowerCase().includes(search),
-        );
-    }
-
-    if (args.listingType) {
-        filtered = filtered.filter((property) => property.listingType === args.listingType);
-    }
-
-    if (args.propertyType) {
-        filtered = filtered.filter((property) => property.propertyType === args.propertyType);
-    }
-
-    if (args.minPrice !== undefined) {
-        filtered = filtered.filter((property) => property.minPriceNad >= args.minPrice!);
-    }
-
-    if (args.maxPrice !== undefined) {
-        filtered = filtered.filter((property) => property.minPriceNad <= args.maxPrice!);
-    }
-
-    if (args.bedrooms !== undefined) {
-        filtered = filtered.filter((property) => (property.bedrooms ?? 0) >= args.bedrooms!);
-    }
 
     filtered.sort((a, b) => {
         if (b.featured !== a.featured) return Number(b.featured) - Number(a.featured);
@@ -295,6 +315,7 @@ export const list = query({
         bedrooms: v.optional(v.number()),
         propertyType: v.optional(v.string()),
         listingType: v.optional(v.string()),
+        amenityNames: v.optional(v.array(v.string())),
     },
     handler: async (ctx, args) => {
         return await getFilteredPublicProperties(ctx, args);
@@ -576,6 +597,7 @@ export const search = query({
         bedrooms: v.optional(v.number()),
         propertyType: v.optional(v.string()),
         listingType: v.optional(v.string()),
+        amenityNames: v.optional(v.array(v.string())),
     },
     handler: async (ctx, args) => {
         return await getFilteredPublicProperties(ctx, {
