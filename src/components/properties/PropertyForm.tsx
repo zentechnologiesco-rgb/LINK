@@ -638,7 +638,7 @@ export function PropertyForm({
   mode = "create",
   propertyId,
   initialData,
-  pageBackgroundClassName = "bg-[#F2F2F7]",
+  pageBackgroundClassName = "bg-white",
 }: PropertyFormProps) {
   const router = useRouter();
   const currentUser = useQuery(api.users.currentUser);
@@ -1146,7 +1146,7 @@ export function PropertyForm({
             ══════════════════════════════════════════════════════════════ */}
       <header className="fixed top-0 left-0 right-0 z-50">
         <div className="bg-white/90 backdrop-blur-2xl border-b border-neutral-200/50">
-          <div className="mx-auto max-w-xl px-4">
+          <div className="w-full px-4 sm:px-5 lg:px-6">
             <div className="flex items-center h-14 gap-3">
               {/* Left: Cancel or Back */}
               {step === 0 ? (
@@ -2062,7 +2062,7 @@ export function PropertyForm({
       >
         <SheetContent
           side="bottom"
-          className="h-[93vh] rounded-t-[28px] border-0 p-0 flex flex-col bg-[#F2F2F7] overflow-hidden focus:outline-none"
+          className="h-[93vh] rounded-t-[28px] border-0 p-0 flex flex-col bg-white overflow-hidden focus:outline-none"
         >
           {editingUnit !== null && editingUnitIndex !== null && (
             <>
@@ -2076,7 +2076,7 @@ export function PropertyForm({
               </div>
 
               {/* Sheet header */}
-              <div className="flex-shrink-0 flex items-center justify-between px-5 py-3 bg-[#F2F2F7]">
+              <div className="flex-shrink-0 flex items-center justify-between px-5 py-3 bg-white">
                 <button
                   type="button"
                   onClick={() => setEditingUnitIndex(null)}
@@ -2350,7 +2350,7 @@ export function PropertyForm({
               </div>
 
               {/* Done button */}
-              <div className="flex-shrink-0 px-4 py-3 bg-[#F2F2F7] border-t border-neutral-200/50">
+              <div className="flex-shrink-0 px-4 py-3 bg-white border-t border-neutral-200/50">
                 <button
                   type="button"
                   onClick={() => setEditingUnitIndex(null)}

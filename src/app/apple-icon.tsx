@@ -1,8 +1,5 @@
 import { createPwaIcon } from '@/lib/pwa-icon'
 
-// Route segment config
-export const runtime = 'edge'
-
 // Image metadata
 export const size = {
     width: 180,

@@ -1,8 +1,12 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { ImageResponse } from 'next/og'
 
-export function createPwaIcon(size: number) {
-  const accentColor = '#a9ff3c'
+const logoDataUrl = `data:image/png;base64,${readFileSync(
+  join(process.cwd(), 'public', 'logo-trans.png')
+).toString('base64')}`
 
+export function createPwaIcon(size: number) {
   return new ImageResponse(
     (
       <div
@@ -12,44 +16,19 @@ export function createPwaIcon(size: number) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#050505',
+          background: 'transparent',
+          overflow: 'hidden',
         }}
       >
-        <div
+        <img
+          src={logoDataUrl}
+          alt="LINK logo"
           style={{
-            width: '78%',
-            height: '78%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            borderRadius: '26%',
-            background: 'linear-gradient(145deg, #111111 0%, #050505 100%)',
-            border: `3px solid ${accentColor}`,
-            boxShadow: '0 28px 50px rgba(0, 0, 0, 0.35)',
+            width: '470%',
+            height: '470%',
+            objectFit: 'contain',
           }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              inset: '11%',
-              borderRadius: '20%',
-              border: `2px solid ${accentColor}55`,
-            }}
-          />
-          <span
-            style={{
-              color: accentColor,
-              fontSize: Math.round(size * 0.44),
-              fontWeight: 900,
-              letterSpacing: '-0.08em',
-              lineHeight: 1,
-              transform: 'translateY(-2%)',
-            }}
-          >
-            L
-          </span>
-        </div>
+        />
       </div>
     ),
     {

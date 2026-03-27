@@ -8,8 +8,12 @@ import { useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { Suspense } from 'react'
 
+type MobileNavUser = {
+    role?: 'tenant' | 'landlord' | 'admin' | null
+} | null
+
 interface MobileNavProps {
-    user?: any
+    user?: MobileNavUser
     userRole?: 'tenant' | 'landlord' | 'admin' | null
 }
 
@@ -71,73 +75,105 @@ function MobileNavInner({ user, userRole }: MobileNavProps) {
     if (currentRole === 'landlord') items = landlordNavItems
     else if (currentRole === 'admin') items = adminNavItems
 
+    const navLabel = currentRole === 'admin'
+        ? 'Admin navigation'
+        : currentRole === 'landlord'
+            ? 'Landlord navigation'
+            : 'Primary navigation'
+
     const getBadgeCount = (badgeType?: 'messages' | 'leases') => {
         if (badgeType === 'messages') return unreadCount
         if (badgeType === 'leases') return leaseActionCount
         return 0
     }
 
+    const isActiveRoute = (href: string) => (
+        href === '/'
+            ? pathname === '/'
+            : pathname?.startsWith(href)
+    )
+
     return (
         <>
             {/* Spacer to prevent content from being hidden behind nav */}
-            <div className="h-24 md:hidden" />
+            <div
+                className="mobile-nav-spacer md:hidden"
+                style={{ height: 'calc(6.55rem + env(safe-area-inset-bottom, 0px))' }}
+            />
 
-            {/* Floating Bottom Navigation */}
-            <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 md:hidden">
-                <div
-                    className={cn(
-                        "flex items-center bg-neutral-100 rounded-full p-1.5 border border-neutral-200",
-                    )}
-                >
-                    {items.map((item) => {
-                        const isActive = item.href === '/'
-                            ? pathname === '/'
-                            : pathname?.startsWith(item.href)
-                        const Icon = item.icon
-                        const badgeCount = getBadgeCount(item.badgeType)
-                        const hasBadge = badgeCount > 0
+            {/* Floating glass bottom navigation */}
+            <nav
+                aria-label={navLabel}
+                className="mobile-nav-root fixed inset-x-0 bottom-0 z-50 px-3 md:hidden"
+                style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.9rem)' }}
+            >
+                <div className="mx-auto w-[min(27rem,calc(100vw-1.5rem))]">
+                    <div className="mobile-nav-shell px-2 py-1.5">
+                        <div className="pointer-events-none absolute inset-x-10 top-1 h-8 rounded-full bg-white/70 blur-2xl dark:bg-white/10" />
+                        <div
+                            className="relative grid items-start gap-0.5"
+                            style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+                        >
+                            {items.map((item) => {
+                                const isActive = isActiveRoute(item.href)
+                                const Icon = item.icon
+                                const badgeCount = getBadgeCount(item.badgeType)
+                                const hasBadge = badgeCount > 0
 
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={cn(
-                                    'relative flex items-center justify-center rounded-full transition-all duration-300 ease-out',
-                                    isActive
-                                        ? 'bg-white h-14 px-5 gap-2.5'
-                                        : 'h-14 w-14 text-neutral-400 hover:text-neutral-600 active:scale-90'
-                                )}
-                            >
-                                <div className="relative flex items-center justify-center">
-                                    <Icon
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        aria-current={isActive ? 'page' : undefined}
                                         className={cn(
-                                            'h-[22px] w-[22px] transition-all duration-300',
+                                            'focus-ring group relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-[1.1rem] px-1 py-1 text-center transition-all duration-300 ease-out active:scale-[0.98]',
                                             isActive
-                                                ? 'text-neutral-900'
-                                                : 'text-neutral-400'
+                                                ? 'mobile-nav-item-active text-[var(--mobile-nav-accent)]'
+                                                : 'text-[var(--mobile-nav-muted)]'
                                         )}
-                                        strokeWidth={isActive ? 2.5 : 2}
-                                        {...(isActive && item.icon === Home ? { fill: 'currentColor' } : {})}
-                                    />
-                                    {hasBadge && (
-                                        <span className={cn(
-                                            "absolute -top-1.5 -right-1.5 h-4 min-w-[16px] px-0.5 text-white text-[9px] font-bold rounded-full flex items-center justify-center ring-2 ring-neutral-100 animate-in zoom-in duration-200",
-                                            item.badgeType === 'leases' ? 'bg-amber-500' : 'bg-red-500'
-                                        )}>
-                                            {badgeCount > 9 ? '9+' : badgeCount}
-                                        </span>
-                                    )}
-                                </div>
+                                    >
+                                        <div
+                                            className={cn(
+                                                'relative flex h-8 w-8 items-center justify-center transition-all duration-300 ease-out',
+                                                isActive
+                                                    ? 'text-[var(--mobile-nav-accent)]'
+                                                    : 'text-[var(--mobile-nav-muted)] group-hover:text-[var(--mobile-nav-text)]'
+                                            )}
+                                        >
+                                            <Icon
+                                                className={cn(
+                                                    'h-5 w-5 transition-all duration-300',
+                                                    isActive
+                                                        ? 'scale-105'
+                                                        : 'group-hover:text-[var(--mobile-nav-text)]'
+                                                )}
+                                                strokeWidth={isActive ? 2.35 : 2}
+                                            />
+                                            {hasBadge && (
+                                                <span className={cn(
+                                                    'absolute -right-1 -top-1 z-20 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold text-white ring-2 ring-white/90 transition-transform duration-300 dark:ring-slate-950/80',
+                                                    item.badgeType === 'leases' ? 'bg-amber-500' : 'bg-neutral-900'
+                                                )}>
+                                                    {badgeCount > 9 ? '9+' : badgeCount}
+                                                </span>
+                                            )}
+                                        </div>
 
-                                {/* Label shown only when active */}
-                                {isActive && (
-                                    <span className="text-[13px] font-bold text-neutral-900 whitespace-nowrap animate-in fade-in slide-in-from-left-1 duration-200">
-                                        {item.label}
-                                    </span>
-                                )}
-                            </Link>
-                        )
-                    })}
+                                        <span
+                                            className={cn(
+                                                'mobile-nav-label max-w-full truncate px-0.5 transition-all duration-300',
+                                                isActive
+                                                    ? 'text-[var(--mobile-nav-accent)]'
+                                                    : 'text-[var(--mobile-nav-muted)] group-hover:text-[var(--mobile-nav-text)]'
+                                            )}
+                                        >
+                                            {item.label}
+                                        </span>
+                                    </Link>
+                                )
+                            })}
+                        </div>
+                    </div>
                 </div>
             </nav>
         </>
