@@ -43,10 +43,17 @@ export const send = mutation({
             throw new Error("You are not a participant in this chat");
         }
 
+        const trimmedContent = args.content.trim();
+        if (!trimmedContent) throw new Error("Message cannot be empty");
+
+        if (!inquiry.message) {
+            await ctx.db.patch(args.inquiryId, { message: trimmedContent });
+        }
+
         const messageId = await ctx.db.insert("messages", {
             inquiryId: args.inquiryId,
             senderId: userId,
-            content: args.content,
+            content: trimmedContent,
         });
 
         return messageId;

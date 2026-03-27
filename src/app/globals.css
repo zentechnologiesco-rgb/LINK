@@ -486,6 +486,13 @@ html {
   background-color: var(--background);
 }
 
+html.chat-mobile-open,
+body.chat-mobile-open {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 /* Focus states */
 .focus-ring:focus-visible {
   outline: 2px solid black;

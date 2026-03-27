@@ -14,8 +14,6 @@ import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import {
     ArrowLeft,
-    BellRing,
-    CheckCircle2,
     ChevronDown,
     LifeBuoy,
     Loader2,
@@ -41,7 +39,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
-import { getDisplayName, getFirstName } from '@/lib/user-name'
+import { getDisplayName } from '@/lib/user-name'
 import { api } from '../../../../convex/_generated/api'
 import { type Id } from '../../../../convex/_generated/dataModel'
 
@@ -125,12 +123,6 @@ function supportStatusLabel(status: SupportStatus) {
     if (status === 'resolved') return 'Resolved'
     if (status === 'pending') return 'Awaiting user'
     return 'Needs admin'
-}
-
-function priorityTone(priority: SupportPriority | AnnouncementPriority) {
-    if (priority === 'urgent' || priority === 'critical') return 'border-red-200 bg-red-50 text-red-700'
-    if (priority === 'high' || priority === 'important') return 'border-sky-200 bg-sky-50 text-sky-700'
-    return 'border-neutral-200 bg-neutral-100 text-neutral-500'
 }
 
 function relativeTime(ts: number) {
@@ -258,6 +250,8 @@ export function AuthedChatInterface() {
     const searchParams = useSearchParams()
     const requestedId = searchParams.get('id')
     const requestedKind = searchParams.get('kind')
+    const requestedPropertyId = searchParams.get('propertyId')
+    const requestedUnitId = searchParams.get('unitId')
 
     const [searchQuery, setSearchQuery] = useState('')
     const [isSearchOpen, setIsSearchOpen] = useState(false)
@@ -276,6 +270,15 @@ export function AuthedChatInterface() {
     /* ── queries ── */
     const currentUser = useQuery(api.users.currentUser)
     const inquiries = useQuery(api.inquiries.getUserInquiries)
+    const draftInquiryContext = useQuery(
+        api.inquiries.getDraftContext,
+        !requestedId && requestedPropertyId
+            ? {
+                propertyId: requestedPropertyId as Id<'properties'>,
+                unitId: requestedUnitId ? requestedUnitId as Id<'propertyUnits'> : undefined,
+            }
+            : 'skip'
+    )
     const supportThreads = useQuery(api.support.getThreads)
     const announcements = useQuery(
         api.announcements.getFeed,
@@ -283,6 +286,7 @@ export function AuthedChatInterface() {
     )
 
     /* ── mutations ── */
+    const createInquiry = useMutation(api.inquiries.create)
     const sendInquiryMessage = useMutation(api.messages.send)
     const markInquiryAsRead = useMutation(api.messages.markAsRead)
     const sendSupportMessage = useMutation(api.support.sendMessage)
@@ -321,6 +325,8 @@ export function AuthedChatInterface() {
                 : selectedSupportThread
                     ? 'support'
                     : null
+    const isDraftInquiry = !requestedId && requestedPropertyId !== null && draftInquiryContext != null
+    const hasSelection = Boolean(selectedKind || isDraftInquiry)
 
     const inquiryMessages = useQuery(
         api.messages.getByInquiry,
@@ -350,6 +356,35 @@ export function AuthedChatInterface() {
         selectedKind,
         selectedSupportThread,
     ])
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+
+        const mediaQuery = window.matchMedia('(max-width: 1023px)')
+
+        const syncMobileChatClass = () => {
+            const shouldLockPage = hasSelection && mediaQuery.matches
+            document.documentElement.classList.toggle('chat-mobile-open', shouldLockPage)
+            document.body.classList.toggle('chat-mobile-open', shouldLockPage)
+        }
+
+        syncMobileChatClass()
+        if (typeof mediaQuery.addEventListener === 'function') {
+            mediaQuery.addEventListener('change', syncMobileChatClass)
+        } else {
+            mediaQuery.addListener(syncMobileChatClass)
+        }
+
+        return () => {
+            if (typeof mediaQuery.removeEventListener === 'function') {
+                mediaQuery.removeEventListener('change', syncMobileChatClass)
+            } else {
+                mediaQuery.removeListener(syncMobileChatClass)
+            }
+            document.documentElement.classList.remove('chat-mobile-open')
+            document.body.classList.remove('chat-mobile-open')
+        }
+    }, [hasSelection])
 
     /* ── inbox items ── */
     const inboxItems = useMemo<InboxItem[]>(() => {
@@ -407,17 +442,25 @@ export function AuthedChatInterface() {
         isAdmin,
         supportList,
         viewFilter,
-    ])
+    ]) 
 
     /* ── derived active state ── */
-    const activeMessages = selectedKind === 'support' ? (supportMessages ?? []) : (inquiryMessages ?? [])
+    const activeMessages = selectedKind === 'support'
+        ? (supportMessages ?? [])
+        : selectedKind === 'inquiry'
+            ? (inquiryMessages ?? [])
+            : []
     const activeOtherParty = selectedKind === 'support'
         ? (isAdmin ? selectedSupportThread?.requester : selectedSupportThread?.assignedAdmin)
-        : selectedInquiry?.otherParty
+        : isDraftInquiry
+            ? draftInquiryContext?.otherParty
+            : selectedInquiry?.otherParty
 
     const activeTitle = selectedKind === 'support'
         ? (isAdmin ? getDisplayName(selectedSupportThread?.requester, 'Support request') : 'LINK Support')
-        : getDisplayName(selectedInquiry?.otherParty, 'Property chat')
+        : isDraftInquiry
+            ? getDisplayName(draftInquiryContext?.otherParty, 'Property chat')
+            : getDisplayName(selectedInquiry?.otherParty, 'Property chat')
 
     const activeSubtitle = selectedKind === 'support'
         ? (isAdmin
@@ -425,7 +468,9 @@ export function AuthedChatInterface() {
             : selectedSupportThread?.assignedAdmin
                 ? `Handled by ${getDisplayName(selectedSupportThread.assignedAdmin, 'Support')}`
                 : 'Admin support thread')
-        : selectedInquiry?.property?.title || 'Property inquiry'
+        : isDraftInquiry
+            ? draftInquiryContext?.unit?.title || draftInquiryContext?.unit?.unitCode || draftInquiryContext?.property.title || 'Property inquiry'
+            : selectedInquiry?.property?.title || 'Property inquiry'
 
     /* ── handlers ── */
 
@@ -447,6 +492,7 @@ export function AuthedChatInterface() {
                     threadId: selectedSupportThread._id as Id<'supportThreads'>,
                     content,
                 })
+                return
             }
 
             if (selectedKind === 'inquiry' && selectedInquiry) {
@@ -454,6 +500,22 @@ export function AuthedChatInterface() {
                     inquiryId: selectedInquiry._id as Id<'inquiries'>,
                     content,
                 })
+                return
+            }
+
+            if (isDraftInquiry && requestedPropertyId) {
+                const inquiryId = await createInquiry({
+                    propertyId: requestedPropertyId as Id<'properties'>,
+                    unitId: requestedUnitId ? requestedUnitId as Id<'propertyUnits'> : undefined,
+                    message: content,
+                })
+
+                const params = new URLSearchParams({
+                    kind: 'inquiry',
+                    id: inquiryId,
+                })
+
+                startTransition(() => router.replace(`/chat?${params.toString()}`, { scroll: false }))
             }
         } catch (error) {
             toast.error('Could not send message right now.')
@@ -536,7 +598,13 @@ export function AuthedChatInterface() {
         )
     }
 
-    if (currentUser === undefined || inquiries === undefined || supportThreads === undefined || announcements === undefined) {
+    if (
+        currentUser === undefined ||
+        inquiries === undefined ||
+        supportThreads === undefined ||
+        announcements === undefined ||
+        (!requestedId && requestedPropertyId !== null && draftInquiryContext === undefined)
+    ) {
         return (
             <div className="flex h-[calc(100dvh-4rem)] flex-col md:h-[calc(100dvh-5rem)]">
                 {/* skeleton header */}
@@ -553,8 +621,6 @@ export function AuthedChatInterface() {
             </div>
         )
     }
-
-    const hasSelection = Boolean(selectedKind)
 
     return (
         <>
@@ -796,7 +862,7 @@ export function AuthedChatInterface() {
                         hasSelection ? 'flex' : 'hidden lg:flex'
                     )}
                 >
-                    {selectedKind ? (
+                    {selectedKind || isDraftInquiry ? (
                         <>
                             {/* ── thread header ── */}
                             <div className="flex items-center gap-3 border-b border-neutral-100 px-3 py-2.5 sm:px-4">
