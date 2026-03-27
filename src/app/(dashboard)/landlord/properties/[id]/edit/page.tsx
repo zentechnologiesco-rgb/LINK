@@ -20,7 +20,7 @@ function EditPropertyContent({ id }: { id: string }) {
 
   if (currentUser === undefined || property === undefined) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F2F2F7]">
+      <div className="flex min-h-screen items-center justify-center bg-white">
         <Loader2 className="h-7 w-7 animate-spin text-neutral-400" />
       </div>
     );

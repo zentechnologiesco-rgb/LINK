@@ -180,6 +180,14 @@ export default function HomePage() {
         setSelectedAmenities([])
     }
 
+    const isMapView = viewMode === 'map'
+    const nextViewLabel = isMapView ? 'List' : 'Map'
+    const mapToggleDesktopClassName = cn(
+        "border border-[#0000ff]/35 bg-[#0A0B0D]/95 text-white backdrop-blur-xl",
+        "shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(0,0,255,0.12),0_8px_20px_rgba(2,6,23,0.26),0_0_12px_rgba(0,0,255,0.14)]",
+        "transition-all duration-300 hover:-translate-y-0.5 hover:border-[#0000ff]/50 hover:bg-[#0A0B0D] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_0_1px_rgba(0,0,255,0.16),0_10px_24px_rgba(2,6,23,0.32),0_0_16px_rgba(0,0,255,0.18)] active:scale-[0.98]"
+    )
+
     // Loading skeleton
     if (properties === undefined) {
         return <HomePageSkeleton />
@@ -214,6 +222,24 @@ export default function HomePage() {
                                     </button>
                                 )}
                             </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setViewMode(viewMode === 'grid' ? 'map' : 'grid')}
+                                aria-label={viewMode === 'grid' ? 'Show map view' : 'Show list view'}
+                                className={cn(
+                                    "h-[52px] w-[52px] shrink-0 rounded-[16px] flex items-center justify-center transition-all outline-none md:hidden",
+                                    isMapView
+                                        ? "bg-black text-white"
+                                        : "bg-neutral-100 text-black hover:bg-neutral-200"
+                                )}
+                            >
+                                {viewMode === 'grid' ? (
+                                    <MapIcon className="h-5 w-5" strokeWidth={2.5} />
+                                ) : (
+                                    <List className="h-5 w-5" strokeWidth={2.5} />
+                                )}
+                            </button>
 
                             {/* Filters Button */}
                             <Sheet>
@@ -418,24 +444,25 @@ export default function HomePage() {
                 </main>
             </PullToRefresh>
 
-            {/* Floating Map/List Toggle (Apple Native Style) */}
-            <div className="fixed bottom-24 md:bottom-10 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-                <button
-                    onClick={() => setViewMode(viewMode === 'grid' ? 'map' : 'grid')}
-                    className="pointer-events-auto h-14 px-6 bg-neutral-900/95 backdrop-blur-md text-white rounded-full flex items-center gap-2.5 shadow-[0_8px_20px_-6px_rgba(0,0,0,0.3)] hover:scale-105 active:scale-95 transition-all duration-300 pointer-events-auto font-bold text-[15px] tracking-wide"
-                >
-                    {viewMode === 'grid' ? (
-                        <>
-                            <span>Map</span>
-                            <MapIcon className="w-5 h-5" strokeWidth={2.5} />
-                        </>
-                    ) : (
-                        <>
-                            <span>List</span>
-                            <List className="w-5 h-5" strokeWidth={2.5} />
-                        </>
-                    )}
-                </button>
+            <div className="fixed bottom-10 right-4 z-50 hidden pointer-events-none md:right-6 md:block lg:right-8">
+                <div className="pointer-events-auto">
+                    <button
+                        onClick={() => setViewMode(viewMode === 'grid' ? 'map' : 'grid')}
+                        className={cn(
+                            "pointer-events-auto flex h-14 items-center gap-3 rounded-full px-4 pr-5 font-semibold tracking-tight",
+                            mapToggleDesktopClassName
+                        )}
+                    >
+                        <span className="flex items-center justify-center text-[#8ea2ff]">
+                            {viewMode === 'grid' ? (
+                                <MapIcon className="h-[18px] w-[18px]" strokeWidth={2.4} />
+                            ) : (
+                                <List className="h-[18px] w-[18px]" strokeWidth={2.4} />
+                            )}
+                        </span>
+                        <span className="text-[15px]">{nextViewLabel}</span>
+                    </button>
+                </div>
             </div>
 
             <MobileNav user={currentUser} userRole={currentUser?.role} />

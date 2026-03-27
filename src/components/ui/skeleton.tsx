@@ -79,14 +79,19 @@ function HomePageSkeleton() {
     return (
         <div className="min-h-screen bg-white font-sans text-neutral-900 overflow-x-hidden">
             <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-transparent">
-                <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 h-16 md:h-20 flex items-center justify-between">
-                    <div className="flex-1 flex justify-start">
-                        <Skeleton variant="circular" className="h-10 w-10" />
+                <div className="w-full px-4 sm:px-5 lg:px-6 h-16 md:h-20 flex items-center">
+                    <div className="flex items-center gap-1.5 md:flex-1 md:justify-start md:gap-3">
+                        <div className="flex items-center gap-1.5 md:hidden">
+                            <Skeleton variant="circular" className="h-[42px] w-[42px] bg-neutral-200" />
+                            <Skeleton className="h-7 w-20 rounded-lg bg-neutral-200" />
+                        </div>
+                        <Skeleton variant="circular" className="hidden h-10 w-10 md:block" />
                     </div>
-                    <div className="flex-1 flex justify-center">
+                    <div className="hidden items-center justify-center gap-1.5 md:flex">
+                        <Skeleton variant="circular" className="h-[42px] w-[42px] bg-neutral-200 md:h-[52px] md:w-[52px]" />
                         <Skeleton className="h-7 w-20 rounded-lg bg-neutral-200" />
                     </div>
-                    <div className="flex-1 flex justify-end">
+                    <div className="ml-auto flex justify-end md:flex-1">
                         <Skeleton variant="circular" className="h-9 w-9" />
                     </div>
                 </div>

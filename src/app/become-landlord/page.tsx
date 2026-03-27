@@ -19,7 +19,7 @@ function BecomeLandlordContent() {
 
     if (user === undefined) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">
+            <div className="min-h-screen flex items-center justify-center bg-white">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-6 h-6 border-2 border-neutral-900 border-t-transparent rounded-full animate-spin" />
                     <p className="text-sm text-neutral-500 font-medium">Loading...</p>
@@ -34,7 +34,7 @@ function BecomeLandlordContent() {
     }
 
     return (
-        <div className="min-h-screen bg-[#fafafa] font-sans text-neutral-900 overflow-x-hidden">
+        <div className="min-h-screen bg-white font-sans text-neutral-900 overflow-x-hidden">
             <Header user={user} userRole={user?.role} isLoading={user === undefined} />
 
             <main className="max-w-[1400px] mx-auto pt-8 sm:pt-12 pb-24 px-4 sm:px-6 md:px-12 flex flex-col items-center">

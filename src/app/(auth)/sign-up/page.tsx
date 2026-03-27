@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { Eye, EyeOff, ArrowLeft, Loader2, AlertCircle } from 'lucide-react'
 import { useAuthActions } from "@convex-dev/auth/react"
 import { useUser } from '@/components/providers/UserProvider'
+import { AuthBrandLink } from '@/components/auth/AuthBrandLink'
 import { getFriendlyAuthError, getSignUpFieldErrors, type AuthField, type AuthFieldErrors } from '@/lib/auth-feedback'
 
 function SignUpContent() {
@@ -88,7 +89,7 @@ function SignUpContent() {
     return (
         <div className="min-h-[100dvh] bg-white relative flex flex-col font-sans selection:bg-neutral-200">
             {/* iOS Top Nav Area */}
-            <header className="safe-top flex items-center justify-between px-4 h-[60px] sm:h-[72px] shrink-0">
+            <header className="safe-top flex h-[60px] shrink-0 items-center px-4 sm:h-[72px]">
                 <button
                     onClick={() => router.back()}
                     className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors -ml-2 text-neutral-900 outline-none"
@@ -100,9 +101,10 @@ function SignUpContent() {
 
             {/* Main Content Area */}
             <main className="flex-1 flex flex-col px-6 sm:px-12 w-full max-w-[480px] mx-auto pb-8">
+                <AuthBrandLink className="mx-auto mt-2 mb-7" />
                 
                 {/* Large Native Title */}
-                <div className="mt-2 mb-8">
+                <div className="mb-8">
                     <h1 className="text-[34px] sm:text-[40px] font-bold text-neutral-900 tracking-tight leading-tight">
                         Create account
                     </h1>

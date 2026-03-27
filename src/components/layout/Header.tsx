@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -181,6 +182,25 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
         </>
     )
 
+    const renderBrandLink = (className?: string) => (
+        <Link
+            href="/"
+            className={cn("flex items-center gap-1.5", className)}
+        >
+            <Image
+                src="/logo-trans-cropped.png"
+                alt="LINK logo"
+                width={140}
+                height={140}
+                priority
+                className="h-[42px] w-[42px] shrink-0 object-contain md:h-[52px] md:w-[52px]"
+            />
+            <span className="font-bold text-[28px] leading-none md:text-[34px] tracking-tight text-neutral-900">
+                LINK
+            </span>
+        </Link>
+    )
+
     return (
         <>
             <header
@@ -191,10 +211,10 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                         : 'bg-white border-b border-transparent'
                 )}
             >
-                <div className="max-w-[1200px] mx-auto px-4 sm:px-5">
-                    <div className="flex items-center h-16 md:h-20">
-                        {/* Left Side: Hamburger Menu */}
-                        <div className="hidden md:flex md:flex-1 md:justify-start">
+                <div className="w-full px-4 sm:px-5 lg:px-6">
+                    <div className="flex h-16 items-center md:h-20">
+                        {/* Left Side: Mobile Logo / Desktop Menu */}
+                        <div className="flex items-center gap-2 md:flex-1 md:justify-start md:gap-3">
                             {user && (
                                 <div className="hidden md:block">
                                     <DropdownMenu>
@@ -220,18 +240,12 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                     </DropdownMenu>
                                 </div>
                             )}
+                            {renderBrandLink('md:hidden')}
                         </div>
 
-                        {/* Center: Logo */}
-                        <div className="flex items-center justify-start md:flex-1 md:justify-center">
-                            <Link
-                                href="/"
-                                className="flex items-center"
-                            >
-                                <span className="font-bold text-2xl md:text-[28px] tracking-tight text-neutral-900">
-                                    LINK
-                                </span>
-                            </Link>
+                        {/* Center: Desktop Logo */}
+                        <div className="hidden items-center justify-center md:flex">
+                            {renderBrandLink()}
                         </div>
 
                         {/* Right Side: Avatar */}
