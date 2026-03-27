@@ -264,6 +264,7 @@ export function AuthedChatInterface() {
     const [isCreatingSupportThread, setIsCreatingSupportThread] = useState(false)
     const [isPublishingAnnouncement, setIsPublishingAnnouncement] = useState(false)
     const [isUpdatingSupportStatus, setIsUpdatingSupportStatus] = useState<SupportStatus | null>(null)
+    const [mobileThreadViewportHeight, setMobileThreadViewportHeight] = useState<number | null>(null)
 
     const deferredSearchQuery = useDeferredValue(searchQuery)
 
@@ -383,6 +384,54 @@ export function AuthedChatInterface() {
             }
             document.documentElement.classList.remove('chat-mobile-open')
             document.body.classList.remove('chat-mobile-open')
+        }
+    }, [hasSelection])
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+
+        const mediaQuery = window.matchMedia('(max-width: 1023px)')
+        const headerHeight = 64
+
+        const syncViewportHeight = () => {
+            if (!hasSelection || !mediaQuery.matches) {
+                setMobileThreadViewportHeight(null)
+                return
+            }
+
+            const viewportHeight = window.visualViewport?.height ?? window.innerHeight
+            setMobileThreadViewportHeight(Math.max(0, Math.round(viewportHeight - headerHeight)))
+        }
+
+        syncViewportHeight()
+
+        const visualViewport = window.visualViewport
+        window.addEventListener('resize', syncViewportHeight)
+
+        if (typeof mediaQuery.addEventListener === 'function') {
+            mediaQuery.addEventListener('change', syncViewportHeight)
+        } else {
+            mediaQuery.addListener(syncViewportHeight)
+        }
+
+        if (visualViewport) {
+            visualViewport.addEventListener('resize', syncViewportHeight)
+            visualViewport.addEventListener('scroll', syncViewportHeight)
+        }
+
+        return () => {
+            window.removeEventListener('resize', syncViewportHeight)
+
+            if (typeof mediaQuery.removeEventListener === 'function') {
+                mediaQuery.removeEventListener('change', syncViewportHeight)
+            } else {
+                mediaQuery.removeListener(syncViewportHeight)
+            }
+
+            if (visualViewport) {
+                visualViewport.removeEventListener('resize', syncViewportHeight)
+                visualViewport.removeEventListener('scroll', syncViewportHeight)
+            }
         }
     }, [hasSelection])
 
@@ -622,9 +671,21 @@ export function AuthedChatInterface() {
         )
     }
 
+    const mobileThreadShellStyle = hasSelection
+        ? { height: mobileThreadViewportHeight !== null ? `${mobileThreadViewportHeight}px` : 'calc(100dvh - 4rem)' }
+        : undefined
+
     return (
         <>
-            <div className="flex h-[calc(100dvh-4rem)] flex-col overflow-hidden bg-white md:h-[calc(100dvh-5rem)] lg:flex-row">
+            <div
+                className={cn(
+                    'flex flex-col overflow-hidden bg-white lg:flex-row',
+                    hasSelection
+                        ? 'fixed inset-x-0 top-16 z-40 lg:static lg:h-[calc(100dvh-5rem)]'
+                        : 'h-[calc(100dvh-4rem)] md:h-[calc(100dvh-5rem)]'
+                )}
+                style={mobileThreadShellStyle}
+            >
 
                 {/* ━━━━━━━━━━━━━━━━ CONVERSATION LIST ━━━━━━━━━━━━━━━━ */}
                 <section
