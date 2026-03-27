@@ -19,7 +19,6 @@ export type PropertyUnitDraft = {
     roomType?: string;
     furnishingStatus?: string;
     genderPolicy?: string;
-    availableFrom?: string;
     floorLabel?: string;
     blockLabel?: string;
     priceNad: number;
@@ -31,8 +30,6 @@ export type PropertyUnitDraft = {
     utilitiesIncluded?: string[];
     petPolicy?: string;
     images?: Id<"_storage">[];
-    publicationStatus?: UnitPublicationStatus;
-    occupancyStatus?: UnitOccupancyStatus;
 };
 
 type Ctx = QueryCtx | MutationCtx;
@@ -47,7 +44,6 @@ type InventoryUnitLike = {
     roomType?: string;
     furnishingStatus?: string;
     genderPolicy?: string;
-    availableFrom?: string;
     floorLabel?: string;
     blockLabel?: string;
     priceNad: number;
@@ -106,7 +102,6 @@ export function buildSyntheticUnitFromProperty(property: Doc<"properties">): Inv
         roomType: property.listingType === "student_accommodation" ? "private" : undefined,
         furnishingStatus: property.furnishingStatus,
         genderPolicy: property.genderPolicy,
-        availableFrom: property.availableFrom,
         priceNad: property.priceNad,
         bedrooms: property.bedrooms,
         bathrooms: property.bathrooms,
@@ -139,7 +134,6 @@ export function normalizeUnit(property: Doc<"properties">, unit: Doc<"propertyUn
         roomType: unit.roomType,
         furnishingStatus: unit.furnishingStatus,
         genderPolicy: unit.genderPolicy,
-        availableFrom: unit.availableFrom,
         floorLabel: unit.floorLabel,
         blockLabel: unit.blockLabel,
         priceNad: unit.priceNad,
@@ -248,11 +242,8 @@ export async function upsertPropertyUnits(
         utilitiesIncluded: property.utilitiesIncluded ?? [],
         petPolicy: property.petPolicy,
         images: property.images ?? [],
-        publicationStatus: "published" as const,
-        occupancyStatus: "vacant" as const,
         furnishingStatus: property.furnishingStatus,
         genderPolicy: property.genderPolicy,
-        availableFrom: property.availableFrom,
         maxOccupants: property.maxOccupants,
     }];
 
@@ -261,8 +252,16 @@ export async function upsertPropertyUnits(
     const seenIds = new Set<Id<"propertyUnits">>();
 
     for (const unit of incomingUnits) {
-        const publicationStatus = unit.publicationStatus ?? "published";
-        const occupancyStatus = unit.occupancyStatus ?? "vacant";
+        const existingUnit = unit._id ? existingById.get(unit._id) : undefined;
+        const publicationStatus: UnitPublicationStatus =
+            existingUnit?.publicationStatus === "unpublished"
+                && (existingUnit.occupancyStatus === "reserved" || existingUnit.occupancyStatus === "occupied")
+                ? "unpublished"
+                : "published";
+        const occupancyStatus: UnitOccupancyStatus =
+            existingUnit?.occupancyStatus === "reserved" || existingUnit?.occupancyStatus === "occupied"
+                ? existingUnit.occupancyStatus
+                : "vacant";
         const patch = {
             propertyId: property._id,
             landlordId: property.landlordId,
@@ -277,7 +276,6 @@ export async function upsertPropertyUnits(
             roomType: unit.roomType,
             furnishingStatus: unit.furnishingStatus,
             genderPolicy: unit.genderPolicy,
-            availableFrom: unit.availableFrom,
             floorLabel: unit.floorLabel,
             blockLabel: unit.blockLabel,
             priceNad: unit.priceNad,

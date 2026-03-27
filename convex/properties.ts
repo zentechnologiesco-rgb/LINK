@@ -24,7 +24,6 @@ const propertyUnitInputValidator = v.object({
     roomType: v.optional(v.string()),
     furnishingStatus: v.optional(v.string()),
     genderPolicy: v.optional(v.string()),
-    availableFrom: v.optional(v.string()),
     floorLabel: v.optional(v.string()),
     blockLabel: v.optional(v.string()),
     priceNad: v.number(),
@@ -36,15 +35,6 @@ const propertyUnitInputValidator = v.object({
     utilitiesIncluded: v.optional(v.array(v.string())),
     petPolicy: v.optional(v.string()),
     images: v.optional(v.array(v.id("_storage"))),
-    publicationStatus: v.optional(v.union(v.literal("unpublished"), v.literal("published"))),
-    occupancyStatus: v.optional(
-        v.union(
-            v.literal("vacant"),
-            v.literal("reserved"),
-            v.literal("occupied"),
-            v.literal("unavailable"),
-        ),
-    ),
 });
 
 async function resolveLandlordInfo(ctx: QueryCtx | MutationCtx, landlordId: Id<"users">) {
@@ -154,7 +144,7 @@ async function getFilteredPublicProperties(
 ) {
     const allProperties = await ctx.db.query("properties").collect();
 
-    let properties = allProperties.filter((property: Doc<"properties">) => {
+    const properties = allProperties.filter((property: Doc<"properties">) => {
         const publicationStatus = property.publicationStatus ?? (property.isAvailable ? "published" : "unpublished");
         return property.approvalStatus === "approved" && publicationStatus === "published";
     });
@@ -230,7 +220,6 @@ export const create = mutation({
         occupancyMode: v.optional(v.string()),
         furnishingStatus: v.optional(v.string()),
         genderPolicy: v.optional(v.string()),
-        availableFrom: v.optional(v.string()),
         priceNad: v.number(),
         bedrooms: v.optional(v.number()),
         bathrooms: v.optional(v.number()),
@@ -267,7 +256,6 @@ export const create = mutation({
             occupancyMode: args.occupancyMode,
             furnishingStatus: args.furnishingStatus,
             genderPolicy: args.genderPolicy,
-            availableFrom: args.availableFrom,
             priceNad: args.priceNad,
             bedrooms: args.bedrooms,
             bathrooms: args.bathrooms,
@@ -412,7 +400,6 @@ export const update = mutation({
         occupancyMode: v.optional(v.string()),
         furnishingStatus: v.optional(v.string()),
         genderPolicy: v.optional(v.string()),
-        availableFrom: v.optional(v.string()),
         priceNad: v.optional(v.number()),
         bedrooms: v.optional(v.number()),
         bathrooms: v.optional(v.number()),
@@ -467,7 +454,6 @@ export const update = mutation({
             "occupancyMode",
             "furnishingStatus",
             "genderPolicy",
-            "availableFrom",
             "priceNad",
             "bedrooms",
             "bathrooms",
