@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { isPropertyPubliclyVisible } from "./lib/security";
 
 const MAX_RECENT_ITEMS = 20; // Maximum items to keep per user
 
@@ -22,7 +23,7 @@ export const trackView = mutation({
 
         // Check if property exists
         const property = await ctx.db.get(args.propertyId);
-        if (!property || !property.isAvailable) {
+        if (!property || !isPropertyPubliclyVisible(property)) {
             return null;
         }
 
@@ -100,7 +101,7 @@ export const list = query({
         const propertiesWithViews = await Promise.all(
             sortedViews.map(async (view) => {
                 const property = await ctx.db.get(view.propertyId);
-                if (!property || !property.isAvailable) {
+                if (!property || !isPropertyPubliclyVisible(property)) {
                     return null;
                 }
 

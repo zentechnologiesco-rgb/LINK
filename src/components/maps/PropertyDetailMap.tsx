@@ -55,6 +55,53 @@ interface POI {
     distance?: string
 }
 
+function createPoiPopupContent(name: string, categoryLabel: string, categoryColor: string, distance?: string) {
+    const wrapper = document.createElement('div')
+    wrapper.style.padding = '8px 12px'
+    wrapper.style.minWidth = '120px'
+
+    const title = document.createElement('p')
+    title.style.fontWeight = '600'
+    title.style.fontSize = '13px'
+    title.style.margin = '0 0 4px 0'
+    title.style.color = '#111827'
+    title.textContent = name
+    wrapper.appendChild(title)
+
+    const metaRow = document.createElement('div')
+    metaRow.style.display = 'flex'
+    metaRow.style.alignItems = 'center'
+    metaRow.style.gap = '6px'
+
+    const category = document.createElement('span')
+    category.style.fontSize = '11px'
+    category.style.color = categoryColor
+    category.style.fontWeight = '600'
+    category.textContent = categoryLabel
+    metaRow.appendChild(category)
+
+    if (distance) {
+        const distanceNode = document.createElement('span')
+        distanceNode.style.fontSize = '11px'
+        distanceNode.style.color = '#6b7280'
+        distanceNode.textContent = `• ${distance}`
+        metaRow.appendChild(distanceNode)
+    }
+
+    wrapper.appendChild(metaRow)
+    return wrapper
+}
+
+function createAddressPopupContent(address: string) {
+    const wrapper = document.createElement('div')
+    wrapper.style.padding = '8px 12px'
+    wrapper.style.fontSize = '14px'
+    wrapper.style.fontWeight = '600'
+    wrapper.style.color = '#1a1a1a'
+    wrapper.textContent = `📍 ${address}`
+    return wrapper
+}
+
 export function PropertyDetailMap({ coordinates, address }: PropertyDetailMapProps) {
     const mapContainer = useRef<HTMLDivElement>(null)
     const map = useRef<mapboxgl.Map | null>(null)
@@ -179,15 +226,9 @@ export function PropertyDetailMap({ coordinates, address }: PropertyDetailMapPro
                 offset: 20,
                 closeButton: false,
                 closeOnClick: false,
-            }).setHTML(`
-                <div style="padding: 8px 12px; min-width: 120px;">
-                    <p style="font-weight: 600; font-size: 13px; margin: 0 0 4px 0; color: #111827;">${poi.name}</p>
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <span style="font-size: 11px; color: ${category.color}; font-weight: 600;">${category.label}</span>
-                        <span style="font-size: 11px; color: #6b7280;">• ${poi.distance}</span>
-                    </div>
-                </div>
-            `)
+            }).setDOMContent(
+                createPoiPopupContent(poi.name, category.label, category.color, poi.distance),
+            )
 
             const poiMarker = new mapboxgl.Marker({ element: el, anchor: 'center' })
                 .setLngLat(poi.coordinates)
@@ -288,11 +329,7 @@ export function PropertyDetailMap({ coordinates, address }: PropertyDetailMapPro
                         offset: 30,
                         closeButton: false,
                         closeOnClick: false,
-                    }).setHTML(`
-                        <div style="padding: 8px 12px; font-size: 14px; font-weight: 600; color: #1a1a1a;">
-                            📍 ${address}
-                        </div>
-                    `)
+                    }).setDOMContent(createAddressPopupContent(address))
                     marker.current.setPopup(popup)
                 }
 

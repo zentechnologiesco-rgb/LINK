@@ -168,7 +168,8 @@ async function getLeaseForAuthorizedUser(ctx: QueryCtx, leaseId: Id<"leases">, u
         throw new Error("Lease not found");
     }
 
-    if (lease.landlordId !== userId && lease.tenantId !== userId) {
+    const viewer = await ctx.db.get(userId);
+    if (lease.landlordId !== userId && lease.tenantId !== userId && viewer?.role !== "admin") {
         throw new Error("Not authorized to view these payments");
     }
 
@@ -330,6 +331,11 @@ export const markOverdue = internalMutation({
 export const getSummary = query({
     args: { leaseId: v.id("leases") },
     handler: async (ctx, args) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) return { paid: 0, pending: 0, overdue: 0 };
+
+        await getLeaseForAuthorizedUser(ctx, args.leaseId, userId);
+
         const payments = await ctx.db
             .query("payments")
             .withIndex("by_leaseId", (q) => q.eq("leaseId", args.leaseId))

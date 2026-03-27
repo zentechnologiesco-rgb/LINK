@@ -5,8 +5,10 @@ import type { Id } from "./_generated/dataModel";
 import { auth } from "./auth";
 import { api, internal } from "./_generated/api";
 import { TEMPLATES } from "./emailTemplates";
+import { ALLOWED_DOCUMENT_TYPES, validateOwnedFile } from "./files";
 import { normalizeEmail } from "./lib/normalizeEmail";
 import { getStoredUnitsForProperty, resolveStorageUrls, syncPropertyInventory } from "./lib/propertyInventory";
+import { normalizeOptionalText, normalizeRequiredText } from "./lib/security";
 
 const BASE_URL = process.env.SITE_URL || "http://localhost:3000";
 
@@ -476,7 +478,9 @@ export const tenantSign = mutation({
             throw new Error("Lease not ready for signing");
         }
 
-        // Documents are validated on upload in the frontend (DocumentUploader component)
+        for (const document of args.tenantDocuments) {
+            await validateOwnedFile(ctx, userId, document.storageId, ALLOWED_DOCUMENT_TYPES);
+        }
 
         await ctx.db.patch(args.leaseId, {
             status: "tenant_signed",
@@ -618,7 +622,7 @@ export const requestRevision = mutation({
     handler: async (ctx, args) => {
         const userId = await auth.getUserId(ctx);
         if (!userId) throw new Error("Not authenticated");
-        const trimmedNotes = args.notes.trim();
+        const trimmedNotes = normalizeRequiredText(args.notes, { maxLength: 1000, multiline: true }, "Revision notes");
         if (!trimmedNotes) throw new Error("Please provide revision notes");
 
         const lease = await ctx.db.get(args.leaseId);
@@ -679,8 +683,8 @@ export const terminate = mutation({
         await ctx.db.patch(args.leaseId, {
             status: "terminated",
             terminatedAt: Date.now(),
-            terminationReason: args.reason,
-            landlordNotes: args.reason,
+            terminationReason: normalizeOptionalText(args.reason, { maxLength: 1000, multiline: true }),
+            landlordNotes: normalizeOptionalText(args.reason, { maxLength: 1000, multiline: true }),
         });
 
         await clearFuturePendingPayments(ctx, args.leaseId, formatDateOnly(new Date()));

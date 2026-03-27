@@ -14,6 +14,7 @@ import { Id } from "../../../convex/_generated/dataModel"
 export function VerificationForm() {
     const [isLoading, setIsLoading] = useState(false)
     const generateUploadUrl = useMutation(api.files.generateUploadUrl)
+    const registerUpload = useMutation(api.files.registerUpload)
     const submitVerification = useMutation(api.verification.submit)
 
     // File validation constants
@@ -54,6 +55,7 @@ export function VerificationForm() {
             })
             if (!result1.ok) throw new Error("Failed to upload ID front")
             const { storageId: idFrontStorageId } = await result1.json()
+            await registerUpload({ storageId: idFrontStorageId as Id<"_storage"> })
 
             // 2. Upload ID Back (with server-side validation)
             const postUrl2 = await generateUploadUrl({
@@ -67,6 +69,7 @@ export function VerificationForm() {
             })
             if (!result2.ok) throw new Error("Failed to upload ID back")
             const { storageId: idBackStorageId } = await result2.json()
+            await registerUpload({ storageId: idBackStorageId as Id<"_storage"> })
 
             // 3. Submit Verification
             await submitVerification({

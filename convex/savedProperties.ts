@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
+import { isPropertyPubliclyVisible } from "./lib/security";
 
 // Toggle saved property
 export const toggle = mutation({
@@ -10,6 +11,9 @@ export const toggle = mutation({
         if (!userId) throw new Error("Authentication required");
 
         const property = await ctx.db.get(args.propertyId);
+        if (!property || !isPropertyPubliclyVisible(property)) {
+            throw new Error("This property is not available to save");
+        }
         if (property && property.landlordId === userId) {
             throw new Error("OwnerCannotSave");
         }
@@ -67,7 +71,7 @@ export const list = query({
         const properties = await Promise.all(
             saved.map(async (s) => {
                 const property = await ctx.db.get(s.propertyId);
-                if (!property) return null;
+                if (!property || !isPropertyPubliclyVisible(property)) return null;
 
                 let imageUrl = null;
                 if (property.images && property.images.length > 0) {

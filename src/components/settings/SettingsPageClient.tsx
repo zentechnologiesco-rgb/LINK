@@ -103,6 +103,7 @@ export function SettingsPageClient() {
     const { user, isLoading } = useUser()
     const updateProfile = useMutation(api.users.updateProfile)
     const generateUploadUrl = useMutation(api.files.generateUploadUrl)
+    const registerUpload = useMutation(api.files.registerUpload)
     const verificationStatus = useQuery(api.verification.getStatus, user ? {} : 'skip')
     const { signOut } = useAuthActions()
     const router = useRouter()
@@ -210,6 +211,7 @@ export function SettingsPageClient() {
             if (!response.ok) throw new Error('Avatar upload failed')
 
             const { storageId } = await response.json()
+            await registerUpload({ storageId })
             await updateProfile({ avatarUrl: storageId })
             toast.success('Profile photo updated')
         } catch (error: unknown) {

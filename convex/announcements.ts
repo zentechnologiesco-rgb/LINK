@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { auth } from "./auth";
 import { resolveAvatarUrl } from "./lib/avatar";
+import { normalizeRequiredText, normalizeSafeLink } from "./lib/security";
 
 function sanitizeOptionalString(value?: string) {
     const trimmedValue = value?.trim();
@@ -110,8 +111,8 @@ export const create = mutation({
     handler: async (ctx, args) => {
         const currentUser = await requireAdmin(ctx);
 
-        const title = args.title.trim();
-        const body = args.body.trim();
+        const title = normalizeRequiredText(args.title, { maxLength: 160 }, "Announcement title");
+        const body = normalizeRequiredText(args.body, { maxLength: 4000, multiline: true }, "Announcement details");
         if (!title) throw new Error("Please add a title");
         if (!body) throw new Error("Please add announcement details");
 
@@ -123,7 +124,7 @@ export const create = mutation({
             priority: args.priority,
             isPinned: args.isPinned,
             ctaLabel: sanitizeOptionalString(args.ctaLabel),
-            ctaHref: sanitizeOptionalString(args.ctaHref),
+            ctaHref: normalizeSafeLink(args.ctaHref),
             expiresAt: args.expiresAt,
         });
     },

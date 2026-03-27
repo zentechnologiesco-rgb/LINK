@@ -25,6 +25,95 @@ interface PropertyMapProps {
 const CLUSTER_MAX_ZOOM = 14
 const CLUSTER_RADIUS = 50
 
+function isSafeMapImageSrc(value: unknown): value is string {
+    return typeof value === 'string' && (
+        value.startsWith('/') ||
+        value.startsWith('data:') ||
+        value.startsWith('blob:') ||
+        /^https?:\/\//i.test(value)
+    )
+}
+
+function createPropertyPopupContent(
+    title: string,
+    address: string,
+    imageSrc: unknown,
+    priceNad: number,
+) {
+    const wrapper = document.createElement('div')
+    wrapper.style.width = '220px'
+    wrapper.style.background = 'white'
+    wrapper.style.borderRadius = '12px'
+    wrapper.style.overflow = 'hidden'
+    wrapper.style.border = '1px solid #e5e7eb'
+
+    const media = document.createElement('div')
+    media.style.height = '120px'
+    media.style.width = '100%'
+    media.style.backgroundColor = '#f3f4f6'
+    media.style.position = 'relative'
+
+    const img = document.createElement('img')
+    img.src = isSafeMapImageSrc(imageSrc) ? imageSrc : '/placeholder.jpg'
+    img.alt = title
+    img.style.width = '100%'
+    img.style.height = '100%'
+    img.style.objectFit = 'cover'
+    img.onerror = () => {
+        img.onerror = null
+        img.src = '/placeholder.jpg'
+    }
+    media.appendChild(img)
+    wrapper.appendChild(media)
+
+    const content = document.createElement('div')
+    content.style.padding = '12px'
+
+    const titleNode = document.createElement('p')
+    titleNode.style.fontWeight = '600'
+    titleNode.style.fontSize = '14px'
+    titleNode.style.margin = '0 0 4px 0'
+    titleNode.style.color = '#111827'
+    titleNode.style.whiteSpace = 'nowrap'
+    titleNode.style.overflow = 'hidden'
+    titleNode.style.textOverflow = 'ellipsis'
+    titleNode.textContent = title
+    content.appendChild(titleNode)
+
+    const addressNode = document.createElement('p')
+    addressNode.style.fontSize = '12px'
+    addressNode.style.color = '#6b7280'
+    addressNode.style.margin = '0 0 8px 0'
+    addressNode.style.whiteSpace = 'nowrap'
+    addressNode.style.overflow = 'hidden'
+    addressNode.style.textOverflow = 'ellipsis'
+    addressNode.textContent = address
+    content.appendChild(addressNode)
+
+    const footer = document.createElement('div')
+    footer.style.display = 'flex'
+    footer.style.alignItems = 'center'
+    footer.style.justifyContent = 'space-between'
+
+    const priceNode = document.createElement('span')
+    priceNode.style.fontWeight = '700'
+    priceNode.style.fontSize = '15px'
+    priceNode.style.color = '#111827'
+    priceNode.textContent = `N$ ${priceNad.toLocaleString()}`
+    footer.appendChild(priceNode)
+
+    const suffix = document.createElement('span')
+    suffix.style.fontSize = '12px'
+    suffix.style.color = '#6b7280'
+    suffix.textContent = '/month'
+    footer.appendChild(suffix)
+
+    content.appendChild(footer)
+    wrapper.appendChild(content)
+
+    return wrapper
+}
+
 export function PropertyMap({
     properties,
     onPropertyClick,
@@ -339,21 +428,14 @@ export function PropertyMap({
                 className: 'property-map-popup'
             })
                 .setLngLat((features[0].geometry as GeoJSON.Point).coordinates as [number, number])
-                .setHTML(`
-                    <div style="width: 220px; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
-                        <div style="height: 120px; width: 100%; background-color: #f3f4f6; position: relative;">
-                            <img src="${props.image}" style="width: 100%; height: 100%; object-fit: cover;" alt="${props.title}" onerror="this.src='/placeholder.jpg'" />
-                        </div>
-                        <div style="padding: 12px;">
-                            <p style="font-weight: 600; font-size: 14px; margin: 0 0 4px 0; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${props.title}</p>
-                            <p style="font-size: 12px; color: #6b7280; margin: 0 0 8px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${props.address}</p>
-                            <div style="display: flex; align-items: center; justify-content: space-between;">
-                                <span style="font-weight: 700; font-size: 15px; color: #111827;">N$ ${Number(props.price_nad).toLocaleString()}</span>
-                                <span style="font-size: 12px; color: #6b7280;">/month</span>
-                            </div>
-                        </div>
-                    </div>
-                `)
+                .setDOMContent(
+                    createPropertyPopupContent(
+                        String(props.title ?? ''),
+                        String(props.address ?? ''),
+                        props.image,
+                        Number(props.price_nad ?? 0),
+                    ),
+                )
                 .addTo(mapInstance)
         })
 

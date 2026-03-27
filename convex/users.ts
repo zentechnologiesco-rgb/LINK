@@ -1,9 +1,11 @@
 import { v } from "convex/values";
 import { type QueryCtx, mutation, query } from "./_generated/server";
-import { type Doc } from "./_generated/dataModel";
+import { type Doc, type Id } from "./_generated/dataModel";
 import { auth } from "./auth";
+import { ALLOWED_IMAGE_TYPES, validateOwnedFile } from "./files";
 import { resolveAvatarUrl } from "./lib/avatar";
 import { normalizeEmail } from "./lib/normalizeEmail";
+import { normalizeOptionalText } from "./lib/security";
 import { normalizeUserPreferences } from "./lib/userPreferences";
 
 // Helper to resolve avatar URL
@@ -32,6 +34,14 @@ export const currentUser = query({
 export const getById = query({
     args: { userId: v.id("users") },
     handler: async (ctx, args) => {
+        const currentUserId = await auth.getUserId(ctx);
+        if (!currentUserId) return null;
+
+        const currentUser = await ctx.db.get(currentUserId);
+        if (currentUserId !== args.userId && currentUser?.role !== "admin") {
+            return null;
+        }
+
         const user = await ctx.db.get(args.userId);
         return await getUserWithAvatarUrl(ctx, user);
     },
@@ -41,11 +51,27 @@ export const getById = query({
 export const getByEmail = query({
     args: { email: v.string() },
     handler: async (ctx, args) => {
+        const currentUserId = await auth.getUserId(ctx);
+        if (!currentUserId) return null;
+
+        const currentUser = await ctx.db.get(currentUserId);
+        if (currentUser?.role !== "landlord" && currentUser?.role !== "admin") {
+            return null;
+        }
+
         const user = await ctx.db
             .query("users")
             .withIndex("by_email", (q) => q.eq("email", normalizeEmail(args.email)))
             .first();
-        return await getUserWithAvatarUrl(ctx, user);
+
+        if (!user) return null;
+
+        return {
+            _id: user._id,
+            fullName: user.fullName,
+            email: user.email,
+            avatarUrl: await resolveAvatarUrl(ctx, user.avatarUrl),
+        };
     },
 });
 
@@ -85,21 +111,45 @@ export const updateProfile = mutation({
         const currentUser = await ctx.db.get(userId);
         if (!currentUser) throw new Error("User not found");
 
+        const nextAvatarUrl = normalizeOptionalText(args.avatarUrl, {
+            maxLength: 2048,
+        });
+        if (nextAvatarUrl && /^https?:\/\//i.test(nextAvatarUrl)) {
+            throw new Error("External avatar URLs are not allowed");
+        }
+        if (nextAvatarUrl && !nextAvatarUrl.startsWith("/") && !nextAvatarUrl.startsWith("data:") && !nextAvatarUrl.startsWith("blob:")) {
+            await validateOwnedFile(
+                ctx,
+                userId as Id<"users">,
+                nextAvatarUrl as Id<"_storage">,
+                ALLOWED_IMAGE_TYPES,
+            );
+        }
+
         const nextFirstName = args.firstName ?? currentUser.firstName ?? "";
         const nextSurname = args.surname ?? currentUser.surname ?? "";
         const derivedFullName =
             args.fullName !== undefined
-                ? args.fullName
+                ? normalizeOptionalText(args.fullName, { maxLength: 160 })
                 : args.firstName !== undefined || args.surname !== undefined
-                    ? `${nextFirstName} ${nextSurname}`.trim()
+                    ? normalizeOptionalText(
+                        `${normalizeOptionalText(nextFirstName, { maxLength: 80 }) ?? ""} ${normalizeOptionalText(nextSurname, { maxLength: 80 }) ?? ""}`,
+                        { maxLength: 160 },
+                    )
                     : undefined;
 
         await ctx.db.patch(userId, {
             ...(derivedFullName !== undefined && { fullName: derivedFullName }),
-            ...(args.firstName !== undefined && { firstName: args.firstName }),
-            ...(args.surname !== undefined && { surname: args.surname }),
-            ...(args.phone !== undefined && { phone: args.phone }),
-            ...(args.avatarUrl !== undefined && { avatarUrl: args.avatarUrl }),
+            ...(args.firstName !== undefined && {
+                firstName: normalizeOptionalText(args.firstName, { maxLength: 80 }),
+            }),
+            ...(args.surname !== undefined && {
+                surname: normalizeOptionalText(args.surname, { maxLength: 80 }),
+            }),
+            ...(args.phone !== undefined && {
+                phone: normalizeOptionalText(args.phone, { maxLength: 40 }),
+            }),
+            ...(args.avatarUrl !== undefined && { avatarUrl: nextAvatarUrl }),
             ...(args.preferences !== undefined && {
                 preferences: normalizeUserPreferences(currentUser.role, args.preferences),
             }),

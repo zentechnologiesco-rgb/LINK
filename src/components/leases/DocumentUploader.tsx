@@ -29,6 +29,7 @@ export function DocumentUploader({
     const [isUploading, setIsUploading] = useState(false)
 
     const generateUploadUrl = useMutation(api.files.generateUploadUrl)
+    const registerUpload = useMutation(api.files.registerUpload)
     const fileUrls = useQuery(
         api.files.getUrls,
         currentStorageId ? { storageIds: [currentStorageId] } : "skip",
@@ -67,6 +68,7 @@ export function DocumentUploader({
             }
 
             const { storageId } = await response.json()
+            await registerUpload({ storageId: storageId as Id<"_storage"> })
             onUploadComplete(storageId as Id<"_storage">)
             toast.success('Document uploaded.')
         } catch (error) {

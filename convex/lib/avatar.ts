@@ -7,10 +7,9 @@ type AvatarContext = {
 function isResolvedAvatarUrl(value: string) {
     return (
         value.startsWith('/') ||
-        value.startsWith('//') ||
         value.startsWith('data:') ||
         value.startsWith('blob:') ||
-        /^https?:\/\//i.test(value)
+        /^https:\/\/.+\.convex\.(cloud|site)(\/|$)/i.test(value)
     )
 }
 

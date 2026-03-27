@@ -15,6 +15,14 @@ const inter = Inter({
   preload: true,
 })
 
+const convexOrigin = process.env.NEXT_PUBLIC_CONVEX_URL
+  ? new URL(process.env.NEXT_PUBLIC_CONVEX_URL).origin
+  : null
+
+const convexSiteOrigin = convexOrigin?.includes('.convex.cloud')
+  ? convexOrigin.replace('.convex.cloud', '.convex.site')
+  : null
+
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   applicationName: 'LINK',
@@ -68,12 +76,14 @@ export default function RootLayout({
     <html lang="en">
       <head>
         {/* DNS Prefetch for external resources */}
-        <link rel="dns-prefetch" href="https://admired-falcon-221.convex.cloud" />
+        {convexOrigin ? <link rel="dns-prefetch" href={convexOrigin} /> : null}
+        {convexSiteOrigin ? <link rel="dns-prefetch" href={convexSiteOrigin} /> : null}
         <link rel="dns-prefetch" href="https://api.mapbox.com" />
         <link rel="dns-prefetch" href="https://tiles.mapbox.com" />
 
         {/* Preconnect to critical origins */}
-        <link rel="preconnect" href="https://admired-falcon-221.convex.cloud" crossOrigin="anonymous" />
+        {convexOrigin ? <link rel="preconnect" href={convexOrigin} crossOrigin="anonymous" /> : null}
+        {convexSiteOrigin ? <link rel="preconnect" href={convexSiteOrigin} crossOrigin="anonymous" /> : null}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>

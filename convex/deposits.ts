@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
+import { normalizeOptionalText, normalizeRequiredText } from "./lib/security";
 
 // Create deposit for a lease
 export const create = mutation({
@@ -13,6 +14,16 @@ export const create = mutation({
     handler: async (ctx, args) => {
         const userId = await auth.getUserId(ctx);
         if (!userId) throw new Error("Not authenticated");
+
+        const viewer = await ctx.db.get(userId);
+        const lease = await ctx.db.get(args.leaseId);
+        if (!lease) throw new Error("Lease not found");
+        if (lease.landlordId !== userId && viewer?.role !== "admin") {
+            throw new Error("Only the landlord can create deposits");
+        }
+        if (lease.tenantId !== args.tenantId || lease.landlordId !== args.landlordId) {
+            throw new Error("Deposit participants must match the lease");
+        }
 
         // Check if deposit already exists
         const existing = await ctx.db
@@ -82,10 +93,19 @@ export const requestRelease = mutation({
         if (!deposit) throw new Error("Deposit not found");
         if (deposit.status !== "held") throw new Error("Deposit is not currently held");
 
+        const viewer = await ctx.db.get(userId);
+        if (
+            deposit.tenantId !== userId &&
+            deposit.landlordId !== userId &&
+            viewer?.role !== "admin"
+        ) {
+            throw new Error("Not authorized to request deposit release");
+        }
+
         await ctx.db.patch(args.depositId, {
             releaseRequestedAt: Date.now(),
             releaseRequestedBy: userId,
-            releaseReason: args.reason,
+            releaseReason: normalizeRequiredText(args.reason, { maxLength: 1000, multiline: true }, "Release reason"),
         });
 
         return { success: true };
@@ -117,7 +137,7 @@ export const release = mutation({
         await ctx.db.patch(args.depositId, {
             status,
             deductionAmount: deduction,
-            deductionReason: args.deductionReason,
+            deductionReason: normalizeOptionalText(args.deductionReason, { maxLength: 1000, multiline: true }),
             releasedAt: Date.now(),
         });
 
@@ -149,7 +169,7 @@ export const forfeit = mutation({
 
         await ctx.db.patch(args.depositId, {
             status: "forfeited",
-            deductionReason: args.reason,
+            deductionReason: normalizeRequiredText(args.reason, { maxLength: 1000, multiline: true }, "Forfeiture reason"),
             releasedAt: Date.now(),
         });
 
@@ -161,12 +181,24 @@ export const forfeit = mutation({
 export const getForLease = query({
     args: { leaseId: v.id("leases") },
     handler: async (ctx, args) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) return null;
+
         const deposit = await ctx.db
             .query("deposits")
             .withIndex("by_leaseId", (q) => q.eq("leaseId", args.leaseId))
             .first();
 
         if (!deposit) return null;
+
+        const viewer = await ctx.db.get(userId);
+        if (
+            deposit.tenantId !== userId &&
+            deposit.landlordId !== userId &&
+            viewer?.role !== "admin"
+        ) {
+            return null;
+        }
 
         const tenant = await ctx.db.get(deposit.tenantId);
         const landlord = await ctx.db.get(deposit.landlordId);

@@ -10,6 +10,7 @@ import {
     summarizeInventory,
     syncPropertyInventory,
 } from "./lib/propertyInventory";
+import { normalizeRequiredText } from "./lib/security";
 
 const RESERVED_LEASE_STATUSES = new Set([
     "draft",
@@ -889,16 +890,17 @@ export const rejectProperty = mutation({
     },
     handler: async (ctx, args) => {
         const userId = await requireAdmin(ctx);
+        const rejectionReason = normalizeRequiredText(args.reason, { maxLength: 1000, multiline: true }, "Rejection reason");
         await ctx.db.patch(args.propertyId, {
             approvalStatus: "rejected",
             publicationStatus: "unpublished",
             isAvailable: false,
-            adminNotes: args.reason
+            adminNotes: rejectionReason
         });
         await syncPropertyInventory(ctx, args.propertyId);
 
         // Log action
-        await logAdminAction(ctx, userId, "reject_property", args.propertyId, "property", { reason: args.reason });
+        await logAdminAction(ctx, userId, "reject_property", args.propertyId, "property", { reason: rejectionReason });
 
         return { success: true };
     },

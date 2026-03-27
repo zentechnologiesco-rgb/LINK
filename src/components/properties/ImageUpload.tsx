@@ -36,6 +36,7 @@ export function ImageUpload({
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const generateUploadUrl = useMutation(api.files.generateUploadUrl)
+    const registerUpload = useMutation(api.files.registerUpload)
     const removeFile = useMutation(api.files.remove)
 
     // Query to get URLs for display
@@ -112,6 +113,7 @@ export function ImageUpload({
                 }
 
                 const { storageId } = await response.json()
+                await registerUpload({ storageId: storageId as Id<"_storage"> })
                 newIds.push(storageId as Id<"_storage">)
 
                 setProgress(Math.round(50 + ((i + 1) / totalFiles) * 50))
