@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
+import { normalizeRequiredText } from "./lib/security";
 
 // Get messages for an inquiry (chat thread)
 export const getByInquiry = query({
@@ -43,7 +44,7 @@ export const send = mutation({
             throw new Error("You are not a participant in this chat");
         }
 
-        const trimmedContent = args.content.trim();
+        const trimmedContent = normalizeRequiredText(args.content, { maxLength: 4000, multiline: true }, "Message");
         if (!trimmedContent) throw new Error("Message cannot be empty");
 
         if (!inquiry.message) {
@@ -69,6 +70,9 @@ export const markAsRead = mutation({
 
         const inquiry = await ctx.db.get(args.inquiryId);
         if (!inquiry) return;
+        if (inquiry.tenantId !== userId && inquiry.landlordId !== userId) {
+            return;
+        }
 
         const messages = await ctx.db
             .query("messages")

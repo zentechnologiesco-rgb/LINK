@@ -1,6 +1,9 @@
 import { v } from "convex/values";
+import type { Doc, Id } from "./_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
+import { isPropertyPubliclyVisible } from "./lib/security";
 
 // Allowed MIME types for uploads
 export const ALLOWED_IMAGE_TYPES = [
@@ -28,8 +31,40 @@ export const ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_DOCUMENT_TYPES,
 // Maximum file size: 10MB
 export const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
+type DbCtx = QueryCtx | MutationCtx;
+
+type CtxWithStorage = {
+    storage: {
+        getMetadata: (storageId: string) => Promise<{
+            size: number;
+            contentType?: string | null;
+        } | null>;
+    };
+};
+
+async function getViewer(ctx: DbCtx) {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const user = await ctx.db.get(userId);
+    if (!user) throw new Error("User not found");
+
+    return { userId, user };
+}
+
+async function getTrackedUpload(ctx: DbCtx, storageId: Id<"_storage">) {
+    return await ctx.db
+        .query("fileUploads")
+        .withIndex("by_storageId", (q) => q.eq("storageId", storageId))
+        .first();
+}
+
 // Helper for server-side validation
-export const validateFile = async (ctx: any, storageId: string, allowedTypes: string[] = ALLOWED_TYPES) => {
+export const validateFile = async (
+    ctx: CtxWithStorage,
+    storageId: string,
+    allowedTypes: string[] = ALLOWED_TYPES,
+) => {
     const metadata = await ctx.storage.getMetadata(storageId);
     if (!metadata) {
         throw new Error(`File not found in storage: ${storageId}`);
@@ -40,11 +75,159 @@ export const validateFile = async (ctx: any, storageId: string, allowedTypes: st
     }
 
     if (!metadata.contentType || !allowedTypes.includes(metadata.contentType)) {
-        throw new Error(`File type ${metadata.contentType} is not allowed. Allowed: ${allowedTypes.join(', ')}`);
+        throw new Error(`File type ${metadata.contentType} is not allowed. Allowed: ${allowedTypes.join(", ")}`);
     }
 
     return metadata;
 };
+
+export const validateOwnedFile = async (
+    ctx: DbCtx & CtxWithStorage,
+    userId: Id<"users">,
+    storageId: Id<"_storage">,
+    allowedTypes: string[] = ALLOWED_TYPES,
+) => {
+    const metadata = await validateFile(ctx, storageId, allowedTypes);
+    const trackedUpload = await getTrackedUpload(ctx, storageId);
+
+    if (trackedUpload && trackedUpload.ownerId !== userId) {
+        const user = await ctx.db.get(userId);
+        if (user?.role !== "admin") {
+            throw new Error("You can only use files uploaded by your account");
+        }
+    }
+
+    if (!trackedUpload) {
+        const user = await ctx.db.get(userId);
+        if (!user) {
+            throw new Error("User not found");
+        }
+
+        const access = await resolveStorageAccess(ctx, storageId);
+        if (access.kind !== "unknown" && !canDeleteStorage({ userId, user }, access)) {
+            throw new Error("You can only use files that belong to your account");
+        }
+    }
+
+    return metadata;
+};
+
+async function resolveStorageAccess(
+    ctx: DbCtx,
+    storageId: Id<"_storage">,
+) {
+    const landlordRequests = await ctx.db.query("landlordRequests").collect();
+    const landlordRequest = landlordRequests.find((request) =>
+        request.documents.idFrontStorageId === storageId ||
+        request.documents.idBackStorageId === storageId,
+    );
+    if (landlordRequest) {
+        return {
+            kind: "landlord_request" as const,
+            landlordRequest,
+        };
+    }
+
+    const leases = await ctx.db.query("leases").collect();
+    const lease = leases.find((currentLease) =>
+        currentLease.tenantDocuments?.some((document) => document.storageId === storageId),
+    );
+    if (lease) {
+        return {
+            kind: "lease_document" as const,
+            lease,
+        };
+    }
+
+    const properties = await ctx.db.query("properties").collect();
+    const property = properties.find((currentProperty) =>
+        currentProperty.images?.includes(storageId) ||
+        currentProperty.videos?.includes(storageId),
+    );
+    if (property) {
+        return {
+            kind: "property_media" as const,
+            property,
+        };
+    }
+
+    const units = await ctx.db.query("propertyUnits").collect();
+    const unit = units.find((currentUnit) => currentUnit.images?.includes(storageId));
+    if (unit) {
+        return {
+            kind: "property_unit_media" as const,
+            unit,
+            property: await ctx.db.get(unit.propertyId),
+        };
+    }
+
+    const trackedUpload = await getTrackedUpload(ctx, storageId);
+    if (trackedUpload) {
+        return {
+            kind: "tracked_upload" as const,
+            trackedUpload,
+        };
+    }
+
+    return {
+        kind: "unknown" as const,
+    };
+}
+
+function canReadStorage(
+    viewer: { userId: Id<"users">; user: Doc<"users"> },
+    access: Awaited<ReturnType<typeof resolveStorageAccess>>,
+) {
+    switch (access.kind) {
+        case "landlord_request":
+            return access.landlordRequest.userId === viewer.userId || viewer.user.role === "admin";
+        case "lease_document":
+            return (
+                viewer.user.role === "admin" ||
+                access.lease.tenantId === viewer.userId ||
+                access.lease.landlordId === viewer.userId
+            );
+        case "property_media":
+            return (
+                viewer.user.role === "admin" ||
+                access.property.landlordId === viewer.userId ||
+                isPropertyPubliclyVisible(access.property)
+            );
+        case "property_unit_media":
+            return (
+                viewer.user.role === "admin" ||
+                access.unit.landlordId === viewer.userId ||
+                (
+                    access.property !== null &&
+                    isPropertyPubliclyVisible(access.property) &&
+                    access.unit.publicationStatus === "published"
+                )
+            );
+        case "tracked_upload":
+            return access.trackedUpload.ownerId === viewer.userId || viewer.user.role === "admin";
+        case "unknown":
+            return false;
+    }
+}
+
+function canDeleteStorage(
+    viewer: { userId: Id<"users">; user: Doc<"users"> },
+    access: Awaited<ReturnType<typeof resolveStorageAccess>>,
+) {
+    switch (access.kind) {
+        case "landlord_request":
+        case "lease_document":
+            return false;
+        case "property_media":
+            return access.property.landlordId === viewer.userId || viewer.user.role === "admin";
+        case "property_unit_media":
+            return access.unit.landlordId === viewer.userId || viewer.user.role === "admin";
+        case "tracked_upload":
+            return access.trackedUpload.ownerId === viewer.userId || viewer.user.role === "admin";
+        case "unknown":
+            return false;
+    }
+}
 
 // Generate upload URL with file type validation
 export const generateUploadUrl = mutation({
@@ -70,44 +253,54 @@ export const generateUploadUrl = mutation({
     },
 });
 
+export const registerUpload = mutation({
+    args: {
+        storageId: v.id("_storage"),
+    },
+    handler: async (ctx, args) => {
+        const { userId } = await getViewer(ctx);
+
+        await validateFile(ctx, args.storageId);
+
+        const existingUpload = await getTrackedUpload(ctx, args.storageId);
+        if (existingUpload && existingUpload.ownerId !== userId) {
+            throw new Error("This file is already linked to another account");
+        }
+
+        if (existingUpload) {
+            await ctx.db.patch(existingUpload._id, {
+                createdAt: Date.now(),
+            });
+            return { success: true };
+        }
+
+        await ctx.db.insert("fileUploads", {
+            storageId: args.storageId,
+            ownerId: userId,
+            createdAt: Date.now(),
+        });
+
+        return { success: true };
+    },
+});
+
 // Get multiple file URLs with access control
 export const getUrls = query({
     args: { storageIds: v.array(v.id("_storage")) },
     handler: async (ctx, args) => {
-        const userId = await auth.getUserId(ctx);
-        if (!userId) throw new Error("Not authenticated");
-
-        const user = await ctx.db.get(userId);
+        const viewer = await getViewer(ctx);
 
         const urls = await Promise.all(
             args.storageIds.map(async (storageId) => {
-                // 1. Check if file is in landlordRequests (Sensitive)
-                const landlordRequest = await ctx.db
-                    .query("landlordRequests")
-                    .filter((q) =>
-                        q.or(
-                            q.eq(q.field("documents.idFrontStorageId"), storageId),
-                            q.eq(q.field("documents.idBackStorageId"), storageId)
-                        )
-                    )
-                    .first() as any;
-
-                if (landlordRequest) {
-                    // Only allow owner or admin
-                    if (landlordRequest.userId !== userId && user?.role !== "admin") {
-                        return { id: storageId, url: null }; // Deny access
-                    }
-                    return { id: storageId, url: await ctx.storage.getUrl(storageId) };
+                const access = await resolveStorageAccess(ctx, storageId);
+                if (!canReadStorage(viewer, access)) {
+                    return { id: storageId, url: null };
                 }
 
-                // 2. Check if file is in leases (Sensitive)
-                // For proper security we should check leases, but efficiently scanning is hard.
-                // We default to allowing access to avoid breaking property images and orphan files (just uploaded).
-                // However, protecting landlordRequests is the critical part of this audit.
-
                 return { id: storageId, url: await ctx.storage.getUrl(storageId) };
-            })
+            }),
         );
+
         return urls;
     },
 });
@@ -116,62 +309,20 @@ export const getUrls = query({
 export const remove = mutation({
     args: { storageId: v.id("_storage") },
     handler: async (ctx, args) => {
-        const userId = await auth.getUserId(ctx);
-        if (!userId) throw new Error("Not authenticated");
+        const viewer = await getViewer(ctx);
+        const access = await resolveStorageAccess(ctx, args.storageId);
 
-        const user = await ctx.db.get(userId);
-
-        // Check if the file is part of a landlord verification request
-        const landlordRequest = await ctx.db
-            .query("landlordRequests")
-            .filter((q) =>
-                q.or(
-                    q.eq(q.field("documents.idFrontStorageId"), args.storageId),
-                    q.eq(q.field("documents.idBackStorageId"), args.storageId)
-                )
-            )
-            .first();
-
-        if (landlordRequest) {
-            // Only allow the owner or an admin to delete
-            if (landlordRequest.userId !== userId && user?.role !== "admin") {
-                throw new Error("Not authorized to delete this file");
-            }
+        if (!canDeleteStorage(viewer, access)) {
+            throw new Error("Not authorized to delete this file");
         }
-
-        // Check if the file is part of a property
-        const property = await ctx.db
-            .query("properties")
-            .filter((q) =>
-                q.or(
-                    // Check if storageId is in images array - this requires a different approach
-                    // For now, we'll just check ownership through landlordId
-                    q.eq(q.field("landlordId"), userId)
-                )
-            )
-            .first();
-
-        // If file is attached to a property, check landlord ownership
-        if (property) {
-            if (property.landlordId !== userId && user?.role !== "admin") {
-                throw new Error("Not authorized to delete this file");
-            }
-        }
-
-        // Check if file is part of a lease document
-        const lease = await ctx.db
-            .query("leases")
-            .filter((q) =>
-                q.or(
-                    q.eq(q.field("landlordId"), userId),
-                    q.eq(q.field("tenantId"), userId)
-                )
-            )
-            .first();
-
-        // For other files, we'll allow deletion by the authenticated user
 
         await ctx.storage.delete(args.storageId);
+
+        const trackedUpload = await getTrackedUpload(ctx, args.storageId);
+        if (trackedUpload) {
+            await ctx.db.delete(trackedUpload._id);
+        }
+
         return { success: true };
     },
 });
@@ -182,7 +333,7 @@ export const validateFileType = query({
         contentType: v.string(),
         fileSize: v.number(),
     },
-    handler: async (ctx, args) => {
+    handler: async (_ctx, args) => {
         const isValidType = ALLOWED_TYPES.includes(args.contentType);
         const isValidSize = args.fileSize <= MAX_FILE_SIZE;
 

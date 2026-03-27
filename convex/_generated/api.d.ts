@@ -24,6 +24,7 @@ import type * as leases from "../leases.js";
 import type * as lib_avatar from "../lib/avatar.js";
 import type * as lib_normalizeEmail from "../lib/normalizeEmail.js";
 import type * as lib_propertyInventory from "../lib/propertyInventory.js";
+import type * as lib_security from "../lib/security.js";
 import type * as lib_userPreferences from "../lib/userPreferences.js";
 import type * as messages from "../messages.js";
 import type * as payments from "../payments.js";
@@ -57,6 +58,7 @@ declare const fullApi: ApiFromModules<{
   "lib/avatar": typeof lib_avatar;
   "lib/normalizeEmail": typeof lib_normalizeEmail;
   "lib/propertyInventory": typeof lib_propertyInventory;
+  "lib/security": typeof lib_security;
   "lib/userPreferences": typeof lib_userPreferences;
   messages: typeof messages;
   payments: typeof payments;

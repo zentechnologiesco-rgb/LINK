@@ -7,7 +7,13 @@ import { NotificationCountsProvider } from "./NotificationCountsProvider";
 import { SavedPropertiesProvider } from "./SavedPropertiesProvider";
 import { UserProvider } from "./UserProvider";
 
-const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL || "https://optimistic-starling-894.convex.cloud");
+const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+
+if (!convexUrl) {
+    throw new Error("Missing NEXT_PUBLIC_CONVEX_URL");
+}
+
+const convex = new ConvexReactClient(convexUrl);
 
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
     return (

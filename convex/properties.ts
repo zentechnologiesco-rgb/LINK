@@ -4,7 +4,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
-import { validateFile, ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES } from "./files";
+import { validateOwnedFile, ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES } from "./files";
 import {
     getStoredUnitsForProperty,
     resolveStorageUrls,
@@ -13,6 +13,12 @@ import {
     upsertPropertyUnits,
     type PropertyUnitDraft,
 } from "./lib/propertyInventory";
+import {
+    isPropertyPubliclyVisible,
+    normalizeOptionalText,
+    normalizeRequiredText,
+    normalizeStringList,
+} from "./lib/security";
 
 const propertyUnitInputValidator = v.object({
     _id: v.optional(v.id("propertyUnits")),
@@ -37,7 +43,16 @@ const propertyUnitInputValidator = v.object({
     images: v.optional(v.array(v.id("_storage"))),
 });
 
-async function resolveLandlordInfo(ctx: QueryCtx | MutationCtx, landlordId: Id<"users">) {
+type ViewerPermissions = {
+    publicOnly?: boolean;
+    includePrivateLandlordContact?: boolean;
+};
+
+async function resolveLandlordInfo(
+    ctx: QueryCtx | MutationCtx,
+    landlordId: Id<"users">,
+    options?: { includeEmail?: boolean },
+) {
     const landlord = await ctx.db.get(landlordId);
     if (!landlord) return null;
 
@@ -57,52 +72,77 @@ async function resolveLandlordInfo(ctx: QueryCtx | MutationCtx, landlordId: Id<"
     return {
         name: landlord.fullName || null,
         fullName: landlord.fullName || null,
-        email: landlord.email,
+        ...(options?.includeEmail ? { email: landlord.email } : {}),
         phone: landlord.phone || null,
         avatarUrl,
     };
 }
 
-async function validateImages(ctx: MutationCtx, imageIds?: Id<"_storage">[]) {
+function sanitizeUnitDraft(unit: PropertyUnitDraft): PropertyUnitDraft {
+    return {
+        ...unit,
+        title: normalizeRequiredText(unit.title, { maxLength: 120 }, "Unit title"),
+        description: normalizeOptionalText(unit.description, { maxLength: 4000, multiline: true }),
+        unitCode: normalizeOptionalText(unit.unitCode, { maxLength: 40 }),
+        unitType: normalizeOptionalText(unit.unitType, { maxLength: 60 }),
+        occupancyMode: normalizeOptionalText(unit.occupancyMode, { maxLength: 60 }),
+        roomType: normalizeOptionalText(unit.roomType, { maxLength: 60 }),
+        furnishingStatus: normalizeOptionalText(unit.furnishingStatus, { maxLength: 60 }),
+        genderPolicy: normalizeOptionalText(unit.genderPolicy, { maxLength: 60 }),
+        floorLabel: normalizeOptionalText(unit.floorLabel, { maxLength: 40 }),
+        blockLabel: normalizeOptionalText(unit.blockLabel, { maxLength: 40 }),
+        amenityNames: normalizeStringList(unit.amenityNames, { maxLength: 80 }),
+        utilitiesIncluded: normalizeStringList(unit.utilitiesIncluded, { maxLength: 80 }),
+        petPolicy: normalizeOptionalText(unit.petPolicy, { maxLength: 60 }),
+    };
+}
+
+async function validateImages(ctx: MutationCtx, userId: Id<"users">, imageIds?: Id<"_storage">[]) {
     if (!imageIds) return;
     for (const imageId of imageIds) {
-        await validateFile(ctx, imageId, ALLOWED_IMAGE_TYPES);
+        await validateOwnedFile(ctx, userId, imageId, ALLOWED_IMAGE_TYPES);
     }
 }
 
-async function validateVideos(ctx: MutationCtx, videoIds?: Id<"_storage">[]) {
+async function validateVideos(ctx: MutationCtx, userId: Id<"users">, videoIds?: Id<"_storage">[]) {
     if (!videoIds) return;
     for (const videoId of videoIds) {
-        await validateFile(ctx, videoId, ALLOWED_VIDEO_TYPES);
+        await validateOwnedFile(ctx, userId, videoId, ALLOWED_VIDEO_TYPES);
     }
 }
 
 async function validateUnitImages(
     ctx: MutationCtx,
+    userId: Id<"users">,
     units?: PropertyUnitDraft[],
 ) {
     if (!units) return;
     for (const unit of units) {
-        await validateImages(ctx, unit.images);
+        await validateImages(ctx, userId, unit.images);
     }
 }
 
 async function enrichProperty(
     ctx: QueryCtx,
     property: Doc<"properties">,
-    options?: { includeUnits?: boolean },
+    options?: { includeUnits?: boolean } & ViewerPermissions,
 ) {
     const [imageUrls, landlordInfo, storedUnits] = await Promise.all([
         resolveStorageUrls(ctx, property.images),
-        resolveLandlordInfo(ctx, property.landlordId),
+        resolveLandlordInfo(ctx, property.landlordId, {
+            includeEmail: options?.includePrivateLandlordContact,
+        }),
         getStoredUnitsForProperty(ctx, property._id),
     ]);
 
     const inventory = summarizeInventory(property, storedUnits);
+    const visibleUnits = options?.publicOnly
+        ? inventory.units.filter((unit) => unit.publicationStatus === "published")
+        : inventory.units;
 
     const units = options?.includeUnits
         ? await Promise.all(
-            inventory.units.map(async (unit) => ({
+            visibleUnits.map(async (unit) => ({
                 ...unit,
                 imageUrls: unit._id
                     ? await resolveStorageUrls(ctx, unit.images)
@@ -125,6 +165,7 @@ async function enrichProperty(
         unitTypeLabels: inventory.unitTypeLabels,
         isPublicReady: inventory.isPublicReady,
         units,
+        ...(options?.publicOnly ? { adminNotes: undefined } : {}),
     };
 }
 
@@ -204,7 +245,11 @@ async function getFilteredPublicProperties(
         return true;
     });
 
-    const enriched = await Promise.all(properties.map((property: Doc<"properties">) => enrichProperty(ctx, property)));
+    const enriched = await Promise.all(
+        properties.map((property: Doc<"properties">) => enrichProperty(ctx, property, {
+            publicOnly: true,
+        })),
+    );
 
     let filtered = enriched.filter((property) => !args.onlyAvailable || property.isPublicReady);
 
@@ -261,29 +306,31 @@ export const create = mutation({
             throw new Error("Only landlords can create properties");
         }
 
-        await validateImages(ctx, args.images);
-        await validateVideos(ctx, args.videos);
-        await validateUnitImages(ctx, args.units as PropertyUnitDraft[] | undefined);
+        await validateImages(ctx, userId, args.images);
+        await validateVideos(ctx, userId, args.videos);
+        await validateUnitImages(ctx, userId, args.units as PropertyUnitDraft[] | undefined);
+
+        const sanitizedUnits = ((args.units as PropertyUnitDraft[] | undefined) ?? []).map(sanitizeUnitDraft);
 
         const propertyId = await ctx.db.insert("properties", {
-            title: args.title,
-            description: args.description,
+            title: normalizeRequiredText(args.title, { maxLength: 120 }, "Property title"),
+            description: normalizeOptionalText(args.description, { maxLength: 4000, multiline: true }),
             listingType: args.listingType ?? "single_home",
-            propertyType: args.propertyType,
-            address: args.address,
-            city: args.city,
+            propertyType: normalizeRequiredText(args.propertyType, { maxLength: 60 }, "Property type"),
+            address: normalizeRequiredText(args.address, { maxLength: 200 }, "Property address"),
+            city: normalizeRequiredText(args.city, { maxLength: 80 }, "City"),
             coordinates: args.coordinates,
-            occupancyMode: args.occupancyMode,
-            furnishingStatus: args.furnishingStatus,
-            genderPolicy: args.genderPolicy,
+            occupancyMode: normalizeOptionalText(args.occupancyMode, { maxLength: 60 }),
+            furnishingStatus: normalizeOptionalText(args.furnishingStatus, { maxLength: 60 }),
+            genderPolicy: normalizeOptionalText(args.genderPolicy, { maxLength: 60 }),
             priceNad: args.priceNad,
             bedrooms: args.bedrooms,
             bathrooms: args.bathrooms,
             sizeSqm: args.sizeSqm,
             maxOccupants: args.maxOccupants,
-            amenityNames: args.amenityNames ?? [],
-            petPolicy: args.petPolicy,
-            utilitiesIncluded: args.utilitiesIncluded ?? [],
+            amenityNames: normalizeStringList(args.amenityNames, { maxLength: 80 }),
+            petPolicy: normalizeOptionalText(args.petPolicy, { maxLength: 60 }),
+            utilitiesIncluded: normalizeStringList(args.utilitiesIncluded, { maxLength: 80 }),
             images: args.images ?? [],
             videos: args.videos ?? [],
             landlordId: userId,
@@ -297,7 +344,7 @@ export const create = mutation({
         const property = await ctx.db.get(propertyId);
         if (!property) throw new Error("Property could not be created");
 
-        await upsertPropertyUnits(ctx, property, (args.units as PropertyUnitDraft[] | undefined) ?? []);
+        await upsertPropertyUnits(ctx, property, sanitizedUnits);
 
         return propertyId;
     },
@@ -329,7 +376,19 @@ export const getById = query({
         const property = await ctx.db.get(args.propertyId);
         if (!property) return null;
 
-        return await enrichProperty(ctx, property, { includeUnits: true });
+        const viewerId = await auth.getUserId(ctx);
+        const viewer = viewerId ? await ctx.db.get(viewerId) : null;
+        const canViewPrivate = viewer?.role === "admin" || viewerId === property.landlordId;
+
+        if (!canViewPrivate && !isPropertyPubliclyVisible(property)) {
+            return null;
+        }
+
+        return await enrichProperty(ctx, property, {
+            includeUnits: true,
+            publicOnly: !canViewPrivate,
+            includePrivateLandlordContact: canViewPrivate,
+        });
     },
 });
 
@@ -337,16 +396,28 @@ export const getById = query({
 export const getByLandlord = query({
     args: { landlordId: v.optional(v.id("users")) },
     handler: async (ctx, args) => {
-        const userId = args.landlordId || (await auth.getUserId(ctx));
-        if (!userId) return [];
+        const viewerId = await auth.getUserId(ctx);
+        if (!viewerId) return [];
+
+        const viewer = await ctx.db.get(viewerId);
+        const requestedLandlordId = args.landlordId ?? viewerId;
+        const canViewRequestedLandlord =
+            requestedLandlordId === viewerId || viewer?.role === "admin";
+
+        if (!canViewRequestedLandlord) {
+            return [];
+        }
 
         const properties = await ctx.db
             .query("properties")
-            .withIndex("by_landlordId", (q) => q.eq("landlordId", userId))
+            .withIndex("by_landlordId", (q) => q.eq("landlordId", requestedLandlordId))
             .collect();
 
         const enriched = await Promise.all(
-            properties.map((property: Doc<"properties">) => enrichProperty(ctx, property, { includeUnits: true })),
+            properties.map((property: Doc<"properties">) => enrichProperty(ctx, property, {
+                includeUnits: true,
+                includePrivateLandlordContact: true,
+            })),
         );
 
         return enriched.sort((a, b) => b._creationTime - a._creationTime);
@@ -448,9 +519,9 @@ export const update = mutation({
             throw new Error("You can only update your own properties");
         }
 
-        await validateImages(ctx, args.images);
-        await validateVideos(ctx, args.videos);
-        await validateUnitImages(ctx, args.units as PropertyUnitDraft[] | undefined);
+        await validateImages(ctx, userId, args.images);
+        await validateVideos(ctx, userId, args.videos);
+        await validateUnitImages(ctx, userId, args.units as PropertyUnitDraft[] | undefined);
 
         const {
             propertyId,
@@ -463,6 +534,50 @@ export const update = mutation({
         const cleanedData = Object.fromEntries(
             Object.entries(updateData).filter(([, value]) => value !== undefined),
         );
+
+        if ("title" in cleanedData) {
+            cleanedData.title = normalizeRequiredText(cleanedData.title as string, { maxLength: 120 }, "Property title");
+        }
+        if ("description" in cleanedData) {
+            const normalizedDescription = normalizeOptionalText(cleanedData.description as string | undefined, { maxLength: 4000, multiline: true });
+            if (normalizedDescription) cleanedData.description = normalizedDescription;
+            else delete cleanedData.description;
+        }
+        if ("propertyType" in cleanedData) {
+            cleanedData.propertyType = normalizeRequiredText(cleanedData.propertyType as string, { maxLength: 60 }, "Property type");
+        }
+        if ("address" in cleanedData) {
+            cleanedData.address = normalizeRequiredText(cleanedData.address as string, { maxLength: 200 }, "Property address");
+        }
+        if ("city" in cleanedData) {
+            cleanedData.city = normalizeRequiredText(cleanedData.city as string, { maxLength: 80 }, "City");
+        }
+        if ("occupancyMode" in cleanedData) {
+            const normalizedOccupancyMode = normalizeOptionalText(cleanedData.occupancyMode as string | undefined, { maxLength: 60 });
+            if (normalizedOccupancyMode) cleanedData.occupancyMode = normalizedOccupancyMode;
+            else delete cleanedData.occupancyMode;
+        }
+        if ("furnishingStatus" in cleanedData) {
+            const normalizedFurnishingStatus = normalizeOptionalText(cleanedData.furnishingStatus as string | undefined, { maxLength: 60 });
+            if (normalizedFurnishingStatus) cleanedData.furnishingStatus = normalizedFurnishingStatus;
+            else delete cleanedData.furnishingStatus;
+        }
+        if ("genderPolicy" in cleanedData) {
+            const normalizedGenderPolicy = normalizeOptionalText(cleanedData.genderPolicy as string | undefined, { maxLength: 60 });
+            if (normalizedGenderPolicy) cleanedData.genderPolicy = normalizedGenderPolicy;
+            else delete cleanedData.genderPolicy;
+        }
+        if ("amenityNames" in cleanedData) {
+            cleanedData.amenityNames = normalizeStringList(cleanedData.amenityNames as string[] | undefined, { maxLength: 80 });
+        }
+        if ("petPolicy" in cleanedData) {
+            const normalizedPetPolicy = normalizeOptionalText(cleanedData.petPolicy as string | undefined, { maxLength: 60 });
+            if (normalizedPetPolicy) cleanedData.petPolicy = normalizedPetPolicy;
+            else delete cleanedData.petPolicy;
+        }
+        if ("utilitiesIncluded" in cleanedData) {
+            cleanedData.utilitiesIncluded = normalizeStringList(cleanedData.utilitiesIncluded as string[] | undefined, { maxLength: 80 });
+        }
 
         const approvalSensitiveFields = [
             "title",
@@ -521,7 +636,7 @@ export const update = mutation({
         if (!updatedProperty) throw new Error("Property not found after update");
 
         if (units !== undefined) {
-            await upsertPropertyUnits(ctx, updatedProperty, units as PropertyUnitDraft[]);
+            await upsertPropertyUnits(ctx, updatedProperty, (units as PropertyUnitDraft[]).map(sanitizeUnitDraft));
         } else {
             await syncPropertyInventory(ctx, propertyId);
         }

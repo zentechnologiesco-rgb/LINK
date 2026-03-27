@@ -1,5 +1,70 @@
 import type { NextConfig } from "next";
 
+const isProduction = process.env.NODE_ENV === "production";
+
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "object-src 'none'",
+  "img-src 'self' data: blob: https:",
+  "media-src 'self' blob: https:",
+  "font-src 'self' data: https:",
+  "style-src 'self' 'unsafe-inline' https:",
+  isProduction
+    ? "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com"
+    : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com",
+  "connect-src 'self' https: wss: https://api.mapbox.com https://events.mapbox.com https://*.mapbox.com https://*.convex.cloud https://*.convex.site https://vitals.vercel-insights.com https://*.vercel-insights.com",
+  "worker-src 'self' blob:",
+  !isProduction ? "" : "upgrade-insecure-requests",
+].filter(Boolean).join("; ");
+
+const securityHeaders = [
+  {
+    key: "Content-Security-Policy",
+    value: contentSecurityPolicy,
+  },
+  ...(isProduction
+    ? [{
+      key: "Strict-Transport-Security",
+      value: "max-age=31536000; includeSubDomains; preload",
+    }]
+    : []),
+  {
+    key: "Referrer-Policy",
+    value: "strict-origin-when-cross-origin",
+  },
+  {
+    key: "X-DNS-Prefetch-Control",
+    value: "on",
+  },
+  {
+    key: "X-Content-Type-Options",
+    value: "nosniff",
+  },
+  {
+    key: "X-Frame-Options",
+    value: "DENY",
+  },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=(), payment=()",
+  },
+  {
+    key: "Cross-Origin-Opener-Policy",
+    value: "same-origin",
+  },
+  {
+    key: "Cross-Origin-Resource-Policy",
+    value: "same-site",
+  },
+  {
+    key: "Origin-Agent-Cluster",
+    value: "?1",
+  },
+];
+
 const nextConfig: NextConfig = {
   // Enable React strict mode for better development experience
   reactStrictMode: true,
@@ -115,6 +180,10 @@ const nextConfig: NextConfig = {
             value: 'application/javascript; charset=utf-8',
           },
         ],
+      },
+      {
+        source: '/:path*',
+        headers: securityHeaders,
       },
     ];
   },

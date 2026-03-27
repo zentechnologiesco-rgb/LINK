@@ -3,7 +3,8 @@ import { mutation, query } from "./_generated/server";
 
 import { auth } from "./auth";
 import { logAdminAction } from "./audit";
-import { validateFile, ALLOWED_IMAGE_TYPES, ALLOWED_DOCUMENT_TYPES } from "./files";
+import { validateOwnedFile, ALLOWED_IMAGE_TYPES, ALLOWED_DOCUMENT_TYPES } from "./files";
+import { normalizeOptionalText, normalizeRequiredText } from "./lib/security";
 
 const ALLOWED_ID_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_DOCUMENT_TYPES];
 
@@ -33,17 +34,17 @@ export const submit = mutation({
         }
 
         // Validate documents
-        await validateFile(ctx, args.idFrontStorageId, ALLOWED_ID_TYPES);
-        await validateFile(ctx, args.idBackStorageId, ALLOWED_ID_TYPES);
+        await validateOwnedFile(ctx, userId, args.idFrontStorageId, ALLOWED_ID_TYPES);
+        await validateOwnedFile(ctx, userId, args.idBackStorageId, ALLOWED_ID_TYPES);
 
         const requestId = await ctx.db.insert("landlordRequests", {
             userId,
             status: "pending",
             documents: {
                 idType: args.idType,
-                idNumber: args.idNumber,
-                businessName: args.businessName,
-                businessRegistration: args.businessRegistration,
+                idNumber: normalizeRequiredText(args.idNumber, { maxLength: 80 }, "ID number"),
+                businessName: normalizeOptionalText(args.businessName, { maxLength: 160 }),
+                businessRegistration: normalizeOptionalText(args.businessRegistration, { maxLength: 80 }),
                 idFrontStorageId: args.idFrontStorageId,
                 idBackStorageId: args.idBackStorageId,
                 submittedAt: new Date().toISOString(),
@@ -88,17 +89,17 @@ export const resubmit = mutation({
         }
 
         // Validate documents
-        await validateFile(ctx, args.idFrontStorageId, ALLOWED_ID_TYPES);
-        await validateFile(ctx, args.idBackStorageId, ALLOWED_ID_TYPES);
+        await validateOwnedFile(ctx, userId, args.idFrontStorageId, ALLOWED_ID_TYPES);
+        await validateOwnedFile(ctx, userId, args.idBackStorageId, ALLOWED_ID_TYPES);
 
         const requestId = await ctx.db.insert("landlordRequests", {
             userId,
             status: "pending",
             documents: {
                 idType: args.idType,
-                idNumber: args.idNumber,
-                businessName: args.businessName,
-                businessRegistration: args.businessRegistration,
+                idNumber: normalizeRequiredText(args.idNumber, { maxLength: 80 }, "ID number"),
+                businessName: normalizeOptionalText(args.businessName, { maxLength: 160 }),
+                businessRegistration: normalizeOptionalText(args.businessRegistration, { maxLength: 80 }),
                 idFrontStorageId: args.idFrontStorageId,
                 idBackStorageId: args.idBackStorageId,
                 submittedAt: new Date().toISOString(),
@@ -175,13 +176,15 @@ export const reject = mutation({
 
         await ctx.db.patch(args.requestId, {
             status: "rejected",
-            adminNotes: args.reason,
+            adminNotes: normalizeRequiredText(args.reason, { maxLength: 1000, multiline: true }, "Rejection reason"),
             reviewedAt: Date.now(),
             reviewedBy: userId,
         });
 
         // Log action
-        await logAdminAction(ctx, userId, "reject_landlord", args.requestId, "landlord_request", { reason: args.reason });
+        await logAdminAction(ctx, userId, "reject_landlord", args.requestId, "landlord_request", {
+            reason: normalizeRequiredText(args.reason, { maxLength: 1000, multiline: true }, "Rejection reason"),
+        });
 
         return { success: true };
     },

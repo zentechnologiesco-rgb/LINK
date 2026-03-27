@@ -25,6 +25,7 @@ interface ResubmissionFormProps {
 export function ResubmissionForm({ previousRequestId, previousData, rejectionReason }: ResubmissionFormProps) {
     const [isLoading, setIsLoading] = useState(false)
     const generateUploadUrl = useMutation(api.files.generateUploadUrl)
+    const registerUpload = useMutation(api.files.registerUpload)
     const resubmitVerification = useMutation(api.verification.resubmit)
 
     // File validation constants
@@ -65,6 +66,7 @@ export function ResubmissionForm({ previousRequestId, previousData, rejectionRea
             })
             if (!result1.ok) throw new Error("Failed to upload ID front")
             const { storageId: idFrontStorageId } = await result1.json()
+            await registerUpload({ storageId: idFrontStorageId as Id<"_storage"> })
 
             // 2. Upload ID Back
             const postUrl2 = await generateUploadUrl({
@@ -78,6 +80,7 @@ export function ResubmissionForm({ previousRequestId, previousData, rejectionRea
             })
             if (!result2.ok) throw new Error("Failed to upload ID back")
             const { storageId: idBackStorageId } = await result2.json()
+            await registerUpload({ storageId: idBackStorageId as Id<"_storage"> })
 
             // 3. Resubmit Verification
             await resubmitVerification({

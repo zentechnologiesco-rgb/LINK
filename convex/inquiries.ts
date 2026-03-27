@@ -3,6 +3,7 @@ import { type Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { auth } from "./auth";
 import { resolveAvatarUrl } from "./lib/avatar";
+import { isPropertyPubliclyVisible, normalizeRequiredText } from "./lib/security";
 
 async function findExistingInquiry(
     ctx: QueryCtx | MutationCtx,
@@ -109,8 +110,18 @@ export const getForLandlord = query({
 export const getById = query({
     args: { inquiryId: v.id("inquiries") },
     handler: async (ctx, args) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) return null;
+
         const inquiry = await ctx.db.get(args.inquiryId);
         if (!inquiry) return null;
+
+        const viewer = await ctx.db.get(userId);
+        const isParticipant = inquiry.tenantId === userId || inquiry.landlordId === userId;
+        const isAdmin = viewer?.role === "admin";
+        if (!isParticipant && !isAdmin) {
+            return null;
+        }
 
         const property = await ctx.db.get(inquiry.propertyId);
         const unit = inquiry.unitId ? await ctx.db.get(inquiry.unitId) : null;
@@ -140,17 +151,23 @@ export const create = mutation({
         const userId = await auth.getUserId(ctx);
         if (!userId) throw new Error("Not authenticated");
 
-        const trimmedMessage = args.message.trim();
+        const trimmedMessage = normalizeRequiredText(args.message, { maxLength: 4000, multiline: true }, "Message");
         if (!trimmedMessage) throw new Error("Message cannot be empty");
 
         const property = await ctx.db.get(args.propertyId);
         if (!property) throw new Error("Property not found");
+        if (!isPropertyPubliclyVisible(property)) {
+            throw new Error("This listing is not currently accepting inquiries");
+        }
         if (property.landlordId === userId) {
             throw new Error("You cannot contact yourself on your own property");
         }
         const unit = args.unitId ? await ctx.db.get(args.unitId) : null;
         if (args.unitId && (!unit || unit.propertyId !== args.propertyId)) {
             throw new Error("Unit not found for this property");
+        }
+        if (unit && unit.publicationStatus !== "published") {
+            throw new Error("This unit is not available for inquiries");
         }
 
         let inquiryId;
@@ -295,11 +312,19 @@ export const getDraftContext = query({
         unitId: v.optional(v.id("propertyUnits")),
     },
     handler: async (ctx, args) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) return null;
+
         const property = await ctx.db.get(args.propertyId);
         if (!property) return null;
+        if (!isPropertyPubliclyVisible(property)) return null;
+        if (property.landlordId === userId) return null;
 
         const unit = args.unitId ? await ctx.db.get(args.unitId) : null;
         if (args.unitId && (!unit || unit.propertyId !== args.propertyId)) {
+            return null;
+        }
+        if (unit && unit.publicationStatus !== "published") {
             return null;
         }
 
@@ -335,9 +360,15 @@ export const getExistingForProperty = mutation({
 
         const property = await ctx.db.get(args.propertyId);
         if (!property) throw new Error("Property not found");
+        if (!isPropertyPubliclyVisible(property)) {
+            throw new Error("This listing is not currently accepting inquiries");
+        }
         const unit = args.unitId ? await ctx.db.get(args.unitId) : null;
         if (args.unitId && (!unit || unit.propertyId !== args.propertyId)) {
             throw new Error("Unit not found for this property");
+        }
+        if (unit && unit.publicationStatus !== "published") {
+            throw new Error("This unit is not available for inquiries");
         }
 
         // Prevent landlords from creating inquiries with themselves

@@ -39,7 +39,7 @@ export interface PropertyDetailData {
     units: PropertyDetailUnit[]
     landlord?: {
         name: string | null
-        email: string
+        email?: string | null
         phone: string | null
         avatarUrl?: string | null
     } | null

@@ -3,6 +3,7 @@ import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/s
 import { type Doc, type Id } from "./_generated/dataModel";
 import { auth } from "./auth";
 import { resolveAvatarUrl } from "./lib/avatar";
+import { normalizeOptionalText, normalizeRequiredText } from "./lib/security";
 
 type Viewer = {
     userId: Id<"users">;
@@ -10,12 +11,11 @@ type Viewer = {
 };
 
 function sanitizeOptionalString(value?: string) {
-    const trimmedValue = value?.trim();
-    return trimmedValue ? trimmedValue : undefined;
+    return normalizeOptionalText(value, { maxLength: 80 });
 }
 
 function createPreview(content: string) {
-    return content.trim().slice(0, 160);
+    return normalizeRequiredText(content, { maxLength: 160, multiline: true }, "Message preview");
 }
 
 async function getViewer(ctx: QueryCtx | MutationCtx): Promise<Viewer | null> {
@@ -131,8 +131,8 @@ export const createThread = mutation({
         const viewer = await getViewer(ctx);
         if (!viewer) throw new Error("Not authenticated");
 
-        const subject = args.subject.trim();
-        const content = args.content.trim();
+        const subject = normalizeRequiredText(args.subject, { maxLength: 160 }, "Subject");
+        const content = normalizeRequiredText(args.content, { maxLength: 4000, multiline: true }, "Message");
         if (!subject) throw new Error("Please add a subject");
         if (!content) throw new Error("Please add a message");
 
@@ -169,7 +169,7 @@ export const sendMessage = mutation({
         const thread = await getAccessibleThread(ctx, args.threadId, viewer);
         if (!thread) throw new Error("Support thread not found");
 
-        const content = args.content.trim();
+        const content = normalizeRequiredText(args.content, { maxLength: 4000, multiline: true }, "Message");
         if (!content) throw new Error("Message cannot be empty");
 
         const now = Date.now();

@@ -38,6 +38,14 @@ export default defineSchema({
     })),
   }).index("by_email", ["email"]),
 
+  fileUploads: defineTable({
+    storageId: v.id("_storage"),
+    ownerId: v.id("users"),
+    createdAt: v.number(),
+  })
+    .index("by_storageId", ["storageId"])
+    .index("by_ownerId", ["ownerId"]),
+
   // Landlord Verification Requests
   landlordRequests: defineTable({
     userId: v.id("users"),
