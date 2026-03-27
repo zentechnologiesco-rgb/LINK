@@ -13,6 +13,7 @@ import { format } from 'date-fns'
 import { useQuery } from "convex/react"
 import { api } from "../../../../../../convex/_generated/api"
 import { Id } from "../../../../../../convex/_generated/dataModel"
+import { useUser } from '@/components/providers/UserProvider'
 
 import { use } from 'react'
 
@@ -46,10 +47,10 @@ const statusHelperCopy = {
 }
 
 function PropertyReviewContent({ id }: { id: string }) {
-    const currentUser = useQuery(api.users.currentUser)
+    const { user: currentUser, isLoading } = useUser()
     const property = useQuery(api.admin.getPropertyRequestById, { propertyId: id as Id<"properties"> })
 
-    if (currentUser === undefined || property === undefined) {
+    if (isLoading || property === undefined) {
         return (
             <div className="p-6">
                 <div className="animate-pulse space-y-4">

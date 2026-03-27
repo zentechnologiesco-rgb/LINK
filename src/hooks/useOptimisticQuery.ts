@@ -2,7 +2,7 @@
 
 import { useQuery } from "convex/react"
 import { FunctionReference, FunctionReturnType, OptionalRestArgs } from "convex/server"
-import { useEffect, useRef, useState, useCallback } from "react"
+import { useEffect, useMemo, useRef, useState, useCallback } from "react"
 
 /**
  * Enhanced useQuery hook with caching, stale-while-revalidate, and optimistic updates
@@ -64,7 +64,7 @@ export function useDebouncedQuery<Query extends FunctionReference<"query">>(
         return () => clearTimeout(handler)
     }, [args, delay])
 
-    return useQuery(query, debouncedArgs as any)
+    return useQuery(query, debouncedArgs as OptionalRestArgs<Query>[0])
 }
 
 /**
@@ -72,6 +72,7 @@ export function useDebouncedQuery<Query extends FunctionReference<"query">>(
  */
 const CACHE_PREFIX = 'link_cache_'
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+const memoryCache = new Map<string, CacheEntry<unknown>>()
 
 interface CacheEntry<T> {
     data: T
@@ -79,22 +80,44 @@ interface CacheEntry<T> {
     key: string
 }
 
-function getCacheKey(queryName: string, args: any): string {
-    return `${CACHE_PREFIX}${queryName}_${JSON.stringify(args)}`
+type CacheStorage = "local" | "session" | "none"
+
+function getCacheKey(queryName: string, args: unknown, cacheKeySuffix?: string): string {
+    return `${CACHE_PREFIX}${queryName}_${cacheKeySuffix ?? "default"}_${JSON.stringify(args)}`
 }
 
-function getFromCache<T>(key: string): T | null {
-    if (typeof window === 'undefined') return null
+function isEntryExpired(entry: CacheEntry<unknown>) {
+    return Date.now() - entry.timestamp > CACHE_TTL
+}
+
+function getStorage(storage: CacheStorage) {
+    if (typeof window === 'undefined' || storage === 'none') return null
+    return storage === 'session' ? window.sessionStorage : window.localStorage
+}
+
+function getFromMemoryCache<T>(key: string): T | null {
+    const cachedEntry = memoryCache.get(key)
+    if (!cachedEntry) return null
+
+    if (isEntryExpired(cachedEntry)) {
+        memoryCache.delete(key)
+        return null
+    }
+
+    return cachedEntry.data as T
+}
+
+function getFromStorageCache<T>(key: string, storage: CacheStorage): T | null {
+    const storageArea = getStorage(storage)
+    if (!storageArea) return null
 
     try {
-        const cached = localStorage.getItem(key)
+        const cached = storageArea.getItem(key)
         if (!cached) return null
 
         const entry: CacheEntry<T> = JSON.parse(cached)
-        const isExpired = Date.now() - entry.timestamp > CACHE_TTL
-
-        if (isExpired) {
-            localStorage.removeItem(key)
+        if (isEntryExpired(entry)) {
+            storageArea.removeItem(key)
             return null
         }
 
@@ -104,16 +127,20 @@ function getFromCache<T>(key: string): T | null {
     }
 }
 
-function setCache<T>(key: string, data: T): void {
-    if (typeof window === 'undefined') return
+function setCache<T>(key: string, data: T, storage: CacheStorage): void {
+    const entry: CacheEntry<T> = {
+        data,
+        timestamp: Date.now(),
+        key,
+    }
+
+    memoryCache.set(key, entry)
+
+    const storageArea = getStorage(storage)
+    if (!storageArea) return
 
     try {
-        const entry: CacheEntry<T> = {
-            data,
-            timestamp: Date.now(),
-            key,
-        }
-        localStorage.setItem(key, JSON.stringify(entry))
+        storageArea.setItem(key, JSON.stringify(entry))
     } catch (e) {
         // Storage full or other error - silently fail
         console.warn('Cache storage failed:', e)
@@ -125,30 +152,69 @@ function setCache<T>(key: string, data: T): void {
  */
 export function useCachedQuery<Query extends FunctionReference<"query">>(
     query: Query,
-    queryName: string,
+    options: {
+        queryName: string
+        cacheKeySuffix?: string
+        storage?: CacheStorage
+    },
     ...args: OptionalRestArgs<Query>
 ): {
     data: FunctionReturnType<Query> | undefined
     isLoading: boolean
     isCached: boolean
+    isRefetching: boolean
 } {
-    const cacheKey = getCacheKey(queryName, args)
-    const [cachedData] = useState<FunctionReturnType<Query> | undefined>(
-        () => getFromCache<FunctionReturnType<Query>>(cacheKey) ?? undefined
+    const { queryName, cacheKeySuffix, storage = "local" } = options
+    const cacheKey = useMemo(
+        () => getCacheKey(queryName, args, cacheKeySuffix),
+        [args, cacheKeySuffix, queryName]
     )
+    const [cachedData, setCachedData] = useState<FunctionReturnType<Query> | undefined>(
+        () => getFromMemoryCache<FunctionReturnType<Query>>(cacheKey) ?? undefined
+    )
+    const previousDataRef = useRef<FunctionReturnType<Query> | undefined>(cachedData)
 
     const result = useQuery(query, ...args)
 
     useEffect(() => {
-        if (result !== undefined) {
-            setCache(cacheKey, result)
+        const memoryData = getFromMemoryCache<FunctionReturnType<Query>>(cacheKey)
+        if (memoryData !== null) {
+            setCachedData(memoryData)
+            previousDataRef.current = memoryData
+            return
         }
-    }, [result, cacheKey])
+
+        const storageData = getFromStorageCache<FunctionReturnType<Query>>(cacheKey, storage)
+        if (storageData !== null) {
+            setCachedData(storageData)
+            previousDataRef.current = storageData
+            memoryCache.set(cacheKey, {
+                data: storageData,
+                timestamp: Date.now(),
+                key: cacheKey,
+            })
+            return
+        }
+
+        setCachedData(undefined)
+    }, [cacheKey, storage])
+
+    useEffect(() => {
+        if (result !== undefined) {
+            previousDataRef.current = result
+            setCachedData(result)
+            setCache(cacheKey, result, storage)
+        }
+    }, [result, cacheKey, storage])
+
+    const fallbackData = cachedData ?? previousDataRef.current
+    const hasFallbackData = fallbackData !== undefined
 
     return {
-        data: result ?? cachedData,
-        isLoading: result === undefined && cachedData === undefined,
-        isCached: result === undefined && cachedData !== undefined,
+        data: result ?? fallbackData,
+        isLoading: result === undefined && !hasFallbackData,
+        isCached: result === undefined && hasFallbackData,
+        isRefetching: result === undefined && hasFallbackData,
     }
 }
 
@@ -161,8 +227,11 @@ export function usePrefetch<Query extends FunctionReference<"query">>(
     ...args: OptionalRestArgs<Query>
 ) {
     // Only run the query when shouldPrefetch is true
-    const skip = !shouldPrefetch
-    return useQuery(query, skip ? "skip" : (args[0] as any))
+    const effectiveArgs = shouldPrefetch
+        ? args
+        : (["skip"] as unknown as OptionalRestArgs<Query>)
+
+    return useQuery(query, ...effectiveArgs)
 }
 
 /**

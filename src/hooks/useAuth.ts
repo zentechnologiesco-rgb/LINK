@@ -2,15 +2,14 @@
  * Authentication hooks for the LINK application
  */
 
-import { useQuery } from 'convex/react'
-import { api } from '../../convex/_generated/api'
+import { useUser } from '@/components/providers/UserProvider'
 
 /**
  * Hook to get the current authenticated user
  * @returns The current user object or undefined if loading/not authenticated
  */
 export function useCurrentUser() {
-    const user = useQuery(api.users.currentUser)
+    const { user } = useUser()
     return user
 }
 
@@ -20,10 +19,10 @@ export function useCurrentUser() {
  * @returns Object with loading state and authorization status
  */
 export function useHasRole(role: 'tenant' | 'landlord' | 'admin') {
-    const user = useCurrentUser()
+    const { user, isLoading } = useUser()
 
     return {
-        isLoading: user === undefined,
+        isLoading,
         hasRole: user?.role === role,
         user,
     }
@@ -54,10 +53,10 @@ export function useIsAdmin() {
  * Hook to check if the user is verified
  */
 export function useIsVerified() {
-    const user = useCurrentUser()
+    const { user, isLoading } = useUser()
 
     return {
-        isLoading: user === undefined,
+        isLoading,
         isVerified: user?.isVerified ?? false,
         user,
     }

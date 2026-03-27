@@ -36,6 +36,7 @@ import { useMutation, useQuery, useConvex } from 'convex/react'
 
 import { api } from '../../../../../../convex/_generated/api'
 import { Id } from '../../../../../../convex/_generated/dataModel'
+import { useUser } from '@/components/providers/UserProvider'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RentalRulesConfigurator, type RentalRulesData } from '@/components/leases/RentalRulesConfigurator'
@@ -356,7 +357,7 @@ export function CreateLeaseClient() {
     const [selectedTemplateId, setSelectedTemplateId] = useState<Id<'leaseTemplates'> | null>(null)
 
     // ── Queries ──
-    const currentUser = useQuery(api.users.currentUser)
+    const { isLoading: isUserLoading } = useUser()
     const properties = useQuery(api.properties.getByLandlord, {}) as LandlordProperty[] | undefined
     const leases = useQuery(api.leases.getForLandlord, {}) as LandlordLeaseSummary[] | undefined
     const templates = useQuery(api.leaseTemplates.getForLandlord, {}) as LeaseTemplateRecord[] | undefined
@@ -567,7 +568,7 @@ export function CreateLeaseClient() {
     }
 
     // ── Loading ──
-    if (currentUser === undefined || properties === undefined || leases === undefined) {
+    if (isUserLoading || properties === undefined || leases === undefined) {
         return <WizardSkeleton />
     }
 

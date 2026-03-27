@@ -12,12 +12,13 @@ import { CheckCircle, Clock, XCircle, Building2, ChevronLeft } from 'lucide-reac
 import { format } from 'date-fns'
 import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
+import { useUser } from '@/components/providers/UserProvider'
 
 function BecomeLandlordContent() {
-    const user = useQuery(api.users.currentUser)
+    const { user, isLoading } = useUser()
     const verificationStatus = useQuery(api.verification.getStatus)
 
-    if (user === undefined) {
+    if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-white">
                 <div className="flex flex-col items-center gap-4">
@@ -35,7 +36,7 @@ function BecomeLandlordContent() {
 
     return (
         <div className="min-h-screen bg-white font-sans text-neutral-900 overflow-x-hidden">
-            <Header user={user} userRole={user?.role} isLoading={user === undefined} />
+            <Header user={user} userRole={user?.role} isLoading={isLoading} />
 
             <main className="max-w-[1400px] mx-auto pt-8 sm:pt-12 pb-24 px-4 sm:px-6 md:px-12 flex flex-col items-center">
 
@@ -79,7 +80,7 @@ function BecomeLandlordContent() {
                                                 Verification Pending
                                             </h2>
                                             <p className="text-neutral-500 max-w-xs mx-auto mb-6 text-sm">
-                                                Your application is currently under review. We'll notify you once it's approved.
+                                                Your application is currently under review. We&apos;ll notify you once it&apos;s approved.
                                             </p>
                                             <span className="inline-flex items-center px-3 py-1 rounded-full bg-neutral-900 text-white text-[10px] sm:text-xs font-bold tracking-wide uppercase">
                                                 Pending Review
@@ -100,7 +101,7 @@ function BecomeLandlordContent() {
                                                 <CheckCircle className="h-7 w-7 text-emerald-600" />
                                             </div>
                                             <h2 className="text-xl font-bold text-neutral-900 mb-2">
-                                                You're Verified!
+                                                You&apos;re Verified!
                                             </h2>
                                             <p className="text-neutral-500 max-w-sm mx-auto mb-6 text-sm">
                                                 Your landlord account has been approved. You can now list properties.

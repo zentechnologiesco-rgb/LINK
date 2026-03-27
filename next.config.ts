@@ -23,6 +23,11 @@ const nextConfig: NextConfig = {
       '@radix-ui/react-select',
       '@radix-ui/react-tabs',
     ],
+    // Keep route payloads warm between navigations so revisits feel instant.
+    staleTimes: {
+      dynamic: 180,
+      static: 300,
+    },
   },
 
   images: {

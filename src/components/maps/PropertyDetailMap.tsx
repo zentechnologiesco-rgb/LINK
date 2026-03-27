@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { MapPin, Loader2, School, Hospital, ShoppingBag, Bus, Building2, Coffee } from 'lucide-react'
+import { MapPin, Loader2, School, Hospital, ShoppingBag, Bus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface PropertyDetailMapProps {
@@ -65,6 +65,7 @@ export function PropertyDetailMap({ coordinates, address }: PropertyDetailMapPro
     const [pois, setPois] = useState<POI[]>([])
     const [activeCategories, setActiveCategories] = useState<string[]>(['school', 'hospital', 'shopping', 'transit'])
     const [isLoadingPois, setIsLoadingPois] = useState(false)
+    const [showNearby, setShowNearby] = useState(false)
 
     const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
 
@@ -90,37 +91,37 @@ export function PropertyDetailMap({ coordinates, address }: PropertyDetailMapPro
         if (!token) return
 
         setIsLoadingPois(true)
-        const allPois: POI[] = []
 
         try {
-            for (const category of POI_CATEGORIES) {
-                const response = await fetch(
-                    `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(category.query)}.json?` +
-                    `proximity=${coordinates.lng},${coordinates.lat}&` +
-                    `limit=3&` +
-                    `types=poi&` +
-                    `access_token=${token}`
-                )
+            const categoryResults = await Promise.all(
+                POI_CATEGORIES.map(async (category) => {
+                    const response = await fetch(
+                        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(category.query)}.json?` +
+                        `proximity=${coordinates.lng},${coordinates.lat}&` +
+                        `limit=3&` +
+                        `types=poi&` +
+                        `access_token=${token}`
+                    )
 
-                if (!response.ok) continue
+                    if (!response.ok) return []
 
-                const data = await response.json()
+                    const data = await response.json()
+                    if (!data.features) return []
 
-                if (data.features) {
-                    for (const feature of data.features) {
+                    return data.features.map((feature: { center: [number, number]; id: string; text?: string; place_name?: string }) => {
                         const [lng, lat] = feature.center
-                        allPois.push({
+                        return {
                             id: feature.id,
                             name: feature.text || feature.place_name?.split(',')[0] || 'Unknown',
                             category: category.id,
-                            coordinates: [lng, lat],
-                            distance: getDistance(coordinates.lat, coordinates.lng, lat, lng)
-                        })
-                    }
-                }
-            }
+                            coordinates: [lng, lat] as [number, number],
+                            distance: getDistance(coordinates.lat, coordinates.lng, lat, lng),
+                        }
+                    })
+                })
+            )
 
-            setPois(allPois)
+            setPois(categoryResults.flat())
         } catch (err) {
             console.error('Error fetching POIs:', err)
         } finally {
@@ -227,9 +228,9 @@ export function PropertyDetailMap({ coordinates, address }: PropertyDetailMapPro
                 style: 'mapbox://styles/mapbox/streets-v12',
                 center: [coordinates.lng, coordinates.lat],
                 zoom: 15,
-                pitch: 45,
-                bearing: -17.6,
-                antialias: true,
+                pitch: 0,
+                bearing: 0,
+                antialias: false,
                 interactive: true,
                 attributionControl: false,
             })
@@ -240,50 +241,6 @@ export function PropertyDetailMap({ coordinates, address }: PropertyDetailMapPro
                 if (!map.current) return
 
                 setMapLoaded(true)
-
-                // Add 3D building layer
-                const layers = map.current.getStyle().layers
-                const labelLayerId = layers?.find(
-                    (layer) => layer.type === 'symbol' && layer.layout?.['text-field']
-                )?.id
-
-                map.current.addLayer(
-                    {
-                        id: '3d-buildings',
-                        source: 'composite',
-                        'source-layer': 'building',
-                        filter: ['==', 'extrude', 'true'],
-                        type: 'fill-extrusion',
-                        minzoom: 12,
-                        paint: {
-                            'fill-extrusion-color': [
-                                'interpolate',
-                                ['linear'],
-                                ['get', 'height'],
-                                0, '#e5e7eb',
-                                50, '#d1d5db',
-                                100, '#9ca3af',
-                                200, '#6b7280'
-                            ],
-                            'fill-extrusion-height': [
-                                'interpolate',
-                                ['linear'],
-                                ['zoom'],
-                                12, 0,
-                                13, ['get', 'height']
-                            ],
-                            'fill-extrusion-base': [
-                                'interpolate',
-                                ['linear'],
-                                ['zoom'],
-                                12, 0,
-                                13, ['get', 'min_height']
-                            ],
-                            'fill-extrusion-opacity': 0.8
-                        }
-                    },
-                    labelLayerId
-                )
 
                 // Create property marker element
                 const el = document.createElement('div')
@@ -339,17 +296,15 @@ export function PropertyDetailMap({ coordinates, address }: PropertyDetailMapPro
                     marker.current.setPopup(popup)
                 }
 
-                // Fetch POIs after map loads
-                fetchPOIs()
             })
 
             map.current.on('error', (e) => {
                 console.error('Mapbox error:', e)
                 setError('Map failed to load')
             })
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Map initialization error:', err)
-            setError(err?.message || 'Failed to initialize map')
+            setError(err instanceof Error ? err.message : 'Failed to initialize map')
         }
 
         return () => {
@@ -365,6 +320,11 @@ export function PropertyDetailMap({ coordinates, address }: PropertyDetailMapPro
     useEffect(() => {
         updatePoiMarkers()
     }, [updatePoiMarkers])
+
+    useEffect(() => {
+        if (!mapLoaded || !showNearby || pois.length > 0 || isLoadingPois) return
+        void fetchPOIs()
+    }, [fetchPOIs, isLoadingPois, mapLoaded, pois.length, showNearby])
 
     if (error || !token) {
         return (
@@ -391,7 +351,7 @@ export function PropertyDetailMap({ coordinates, address }: PropertyDetailMapPro
                 )}
 
                 {/* POI Loading indicator */}
-                {isLoadingPois && mapLoaded && (
+                {showNearby && isLoadingPois && mapLoaded && (
                     <div className="absolute top-4 left-4 bg-white/95 backdrop-blur rounded-lg px-3 py-2 border border-neutral-200 flex items-center gap-2">
                         <Loader2 className="h-3.5 w-3.5 animate-spin text-neutral-500" />
                         <span className="text-xs font-medium text-neutral-600">Finding nearby places...</span>
@@ -399,8 +359,18 @@ export function PropertyDetailMap({ coordinates, address }: PropertyDetailMapPro
                 )}
             </div>
 
+            {mapLoaded && !showNearby && (
+                <button
+                    type="button"
+                    onClick={() => setShowNearby(true)}
+                    className="w-full rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-50"
+                >
+                    Load nearby places
+                </button>
+            )}
+
             {/* POI Category Filters */}
-            {mapLoaded && pois.length > 0 && (
+            {mapLoaded && showNearby && pois.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                     {POI_CATEGORIES.map(category => {
                         const Icon = category.icon
@@ -435,7 +405,7 @@ export function PropertyDetailMap({ coordinates, address }: PropertyDetailMapPro
             )}
 
             {/* POI List */}
-            {mapLoaded && pois.length > 0 && activeCategories.length > 0 && (
+            {mapLoaded && showNearby && pois.length > 0 && activeCategories.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {pois
                         .filter(poi => activeCategories.includes(poi.category))

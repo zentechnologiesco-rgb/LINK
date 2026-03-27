@@ -5,6 +5,7 @@ import { TenantLeaseDetailClient } from './TenantLeaseDetailClient'
 import { useQuery } from "convex/react"
 import { api } from "../../../../../../convex/_generated/api"
 import { Id } from "../../../../../../convex/_generated/dataModel"
+import { useUser } from '@/components/providers/UserProvider'
 
 import { use } from 'react'
 
@@ -14,9 +15,9 @@ interface Props {
 
 function TenantLeaseDetailContent({ id }: { id: string }) {
     const lease = useQuery(api.leases.getById, { leaseId: id as Id<"leases"> })
-    const currentUser = useQuery(api.users.currentUser)
+    const { user: currentUser, isLoading } = useUser()
 
-    if (lease === undefined || currentUser === undefined) {
+    if (lease === undefined || isLoading) {
         return (
             <div className="min-h-[60vh] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">

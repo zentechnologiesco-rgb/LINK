@@ -3,6 +3,7 @@ import { type QueryCtx, mutation, query } from "./_generated/server";
 import { type Doc } from "./_generated/dataModel";
 import { auth } from "./auth";
 import { resolveAvatarUrl } from "./lib/avatar";
+import { normalizeEmail } from "./lib/normalizeEmail";
 import { normalizeUserPreferences } from "./lib/userPreferences";
 
 // Helper to resolve avatar URL
@@ -42,7 +43,7 @@ export const getByEmail = query({
     handler: async (ctx, args) => {
         const user = await ctx.db
             .query("users")
-            .withIndex("by_email", (q) => q.eq("email", args.email))
+            .withIndex("by_email", (q) => q.eq("email", normalizeEmail(args.email)))
             .first();
         return await getUserWithAvatarUrl(ctx, user);
     },

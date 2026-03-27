@@ -16,11 +16,27 @@ import {
 } from '@/components/ui/table'
 import { Eye, ClipboardList, CheckCircle2, XCircle, Clock, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
-import { useQuery } from "convex/react"
 import { api } from "../../../../../convex/_generated/api"
+import { useUser } from "@/components/providers/UserProvider"
+import { useCachedQuery } from "@/hooks/useOptimisticQuery"
 
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
+
+type LandlordRequest = {
+    _id: string
+    _creationTime: number
+    status: 'pending' | 'approved' | 'rejected'
+    documents?: {
+        businessName?: string | null
+        idType?: string | null
+        isResubmission?: boolean
+    } | null
+    user?: {
+        fullName?: string | null
+        email?: string | null
+    } | null
+}
 
 // Status badge variants
 const statusConfig = {
@@ -46,11 +62,26 @@ function LandlordRequestsContent() {
     const statusFilter = (searchParams.get('status') as 'pending' | 'approved' | 'rejected') || undefined
     const searchQuery = searchParams.get('search') || ''
 
-    const currentUser = useQuery(api.users.currentUser)
-    const requests = useQuery(api.verification.getAll, { status: statusFilter })
-    const stats = useQuery(api.verification.getStats)
+    const { user: currentUser, isLoading } = useUser()
+    const { data: requests } = useCachedQuery(
+        api.verification.getAll,
+        {
+            queryName: 'admin_landlord_requests_v1',
+            cacheKeySuffix: currentUser?._id ?? 'anonymous',
+            storage: 'session',
+        },
+        { status: statusFilter }
+    ) as { data: LandlordRequest[] | undefined }
+    const { data: stats } = useCachedQuery(
+        api.verification.getStats,
+        {
+            queryName: 'admin_landlord_stats_v1',
+            cacheKeySuffix: currentUser?._id ?? 'anonymous',
+            storage: 'session',
+        }
+    )
 
-    if (currentUser === undefined || requests === undefined || stats === undefined) {
+    if (isLoading || requests === undefined || stats === undefined) {
         return (
             <div className="p-6">
                 <div className="animate-pulse space-y-4">
@@ -78,7 +109,7 @@ function LandlordRequestsContent() {
     }
 
     // Filter by search query (client-side)
-    const filteredRequests = requests.filter((request: any) => {
+    const filteredRequests = requests.filter((request) => {
         if (!searchQuery) return true
         const searchLower = searchQuery.toLowerCase()
         return (
@@ -153,7 +184,7 @@ function LandlordRequestsContent() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredRequests.map((request: any) => {
+                                    {filteredRequests.map((request) => {
                                         const status = request.status as keyof typeof statusConfig
                                         const StatusIcon = statusConfig[status]?.icon || Clock
 

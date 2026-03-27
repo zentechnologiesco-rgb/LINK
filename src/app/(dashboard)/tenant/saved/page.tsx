@@ -1,14 +1,15 @@
 'use client'
 
 import { useState, useMemo, type ReactNode } from 'react'
-import { useQuery } from 'convex/react'
-import { api } from '../../../../../convex/_generated/api'
 import { TrustCard } from '@/components/properties/TrustCard'
 import { PropertyCardSkeleton } from '@/components/ui/skeleton'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { Heart, ArrowUpDown, Check } from 'lucide-react'
 import Link from 'next/link'
+import { api } from '../../../../../convex/_generated/api'
+import { useUser } from '@/components/providers/UserProvider'
+import { useCachedQuery } from '@/hooks/useOptimisticQuery'
 
 const SORT_OPTIONS = [
     { id: 'newest', label: 'Recently Saved' },
@@ -17,7 +18,15 @@ const SORT_OPTIONS = [
 ]
 
 export default function SavedPropertiesPage() {
-    const savedProperties = useQuery(api.savedProperties.list)
+    const { user: currentUser } = useUser()
+    const { data: savedProperties } = useCachedQuery(
+        api.savedProperties.list,
+        {
+            queryName: 'tenant_saved_properties_v1',
+            cacheKeySuffix: currentUser?._id ?? 'anonymous',
+            storage: 'session',
+        }
+    )
     const [sortBy, setSortBy] = useState('newest')
     const [showSortMenu, setShowSortMenu] = useState(false)
 
@@ -44,7 +53,7 @@ export default function SavedPropertiesPage() {
 
     // Sort logic
     const sortedProperties = useMemo(() => {
-        let result = [...normalizedProperties]
+        const result = [...normalizedProperties]
 
         switch (sortBy) {
             case 'price-low':

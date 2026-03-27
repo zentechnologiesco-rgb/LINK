@@ -4,9 +4,8 @@ import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Home, Heart, MessageSquare, User, Building2, LayoutDashboard, FileText, LucideIcon } from 'lucide-react'
-import { useQuery } from 'convex/react'
-import { api } from '../../../convex/_generated/api'
 import { Suspense } from 'react'
+import { useNotificationCounts } from '@/components/providers/NotificationCountsProvider'
 
 type MobileNavUser = {
     role?: 'tenant' | 'landlord' | 'admin' | null
@@ -50,19 +49,7 @@ function MobileNavInner({ user, userRole }: MobileNavProps) {
     const pathname = usePathname()
     const searchParams = useSearchParams()
     const currentRole = userRole || user?.role
-
-    // Only fetch counts if user is logged in
-    const unreadCountQuery = useQuery(
-        api.messages.getUnreadCount,
-        user ? {} : "skip"
-    )
-    const unreadCount = typeof unreadCountQuery === 'number' ? unreadCountQuery : 0
-
-    const leaseActionCountQuery = useQuery(
-        api.leases.getActionRequiredCount,
-        user ? {} : "skip"
-    )
-    const leaseActionCount = typeof leaseActionCountQuery === 'number' ? leaseActionCountQuery : 0
+    const { unreadCount, leaseActionCount } = useNotificationCounts()
 
     // Hide mobile nav completely when inside a chat thread, creation wizards, or detail pages with action bars
     const isChatThread = pathname === '/chat' && (

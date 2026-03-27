@@ -7,18 +7,19 @@ import { api } from "../../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../../convex/_generated/dataModel";
 import { use } from "react";
 import { Loader2 } from "lucide-react";
+import { useUser } from "@/components/providers/UserProvider";
 
 interface Props {
   params: Promise<{ id: string }>;
 }
 
 function EditPropertyContent({ id }: { id: string }) {
-  const currentUser = useQuery(api.users.currentUser);
+  const { user: currentUser, isLoading } = useUser();
   const property = useQuery(api.properties.getById, {
     propertyId: id as Id<"properties">,
   });
 
-  if (currentUser === undefined || property === undefined) {
+  if (isLoading || property === undefined) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
         <Loader2 className="h-7 w-7 animate-spin text-neutral-400" />

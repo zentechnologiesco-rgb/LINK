@@ -1,21 +1,22 @@
 'use client'
 
 import { useState } from 'react'
-import { Heart, LogIn } from 'lucide-react'
+import { Heart } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import {
     Dialog,
     DialogContent,
     DialogDescription,
-    DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { useQuery, useMutation } from "convex/react"
+import { useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
+import { useUser } from '@/components/providers/UserProvider'
+import { useSavedProperties } from '@/components/providers/SavedPropertiesProvider'
 
 interface SavePropertyButtonProps {
     propertyId: string
@@ -32,9 +33,9 @@ export function SavePropertyButton({
     className,
     variant = 'icon'
 }: SavePropertyButtonProps) {
-    const user = useQuery(api.users.currentUser)
-    const serverIsSaved = useQuery(api.savedProperties.isSaved, { propertyId: propertyId as Id<"properties"> })
-    const [localIsSaved, setLocalIsSaved] = useState<boolean | null>(null)
+    const { user } = useUser()
+    const { savedPropertyIds, isLoading: isLoadingSavedProperties, setSavedState } = useSavedProperties()
+    const toggleSave = useMutation(api.savedProperties.toggle)
     const [isLoading, setIsLoading] = useState(false)
     const [showLoginDialog, setShowLoginDialog] = useState(false)
 
@@ -43,29 +44,31 @@ export function SavePropertyButton({
         return null;
     }
 
-    // Sync the derived real state
-    const isSaved = localIsSaved !== null ? localIsSaved : (serverIsSaved ?? initialSaved)
-
-    const toggleSave = useMutation(api.savedProperties.toggle)
+    const isSaved = savedPropertyIds.has(propertyId) || (initialSaved && (!user || isLoadingSavedProperties))
 
     const handleToggle = async (e: React.MouseEvent) => {
         e.preventDefault() // Prevent link navigation if inside a card link
         e.stopPropagation()
 
-        if (isLoading || serverIsSaved === undefined) return
+        if (!user) {
+            setShowLoginDialog(true)
+            return
+        }
+
+        if (isLoading || isLoadingSavedProperties) return
 
         // Optimistic update
         const newState = !isSaved
-        setLocalIsSaved(newState)
+        setSavedState(propertyId, newState)
         setIsLoading(true)
 
         try {
             const result = await toggleSave({ propertyId: propertyId as Id<"properties"> })
-            setLocalIsSaved(result)
+            setSavedState(propertyId, result)
             toast.success(result ? 'Property saved to favorites' : 'Property removed from favorites')
         } catch (error) {
             // Revert if error
-            setLocalIsSaved(serverIsSaved)
+            setSavedState(propertyId, isSaved)
 
             if (error instanceof Error) {
                 if (error.message.includes('Authentication') || error.message.includes('Unauthenticated')) {
@@ -79,10 +82,7 @@ export function SavePropertyButton({
                 toast.error('An unexpected error occurred.')
             }
         } finally {
-            // Once the mutation finishes, we could clear localIsSaved and rely purely on serverIsSaved.
-            // But preserving it until the next server change is safer (Convex usually updates immediately).
             setIsLoading(false)
-            setLocalIsSaved(null)
         }
     }
 
@@ -137,7 +137,7 @@ export function SavePropertyButton({
                     variant="outline"
                     className={cn("gap-2", className)}
                     onClick={handleToggle}
-                    disabled={isLoading}
+                    disabled={isLoading || (Boolean(user) && isLoadingSavedProperties)}
                 >
                     <Heart className={cn("h-4 w-4", isSaved ? "fill-red-500 text-red-500" : "")} />
                     {isSaved ? 'Saved' : 'Save Property'}
@@ -161,7 +161,7 @@ export function SavePropertyButton({
                     className
                 )}
                 onClick={handleToggle}
-                disabled={isLoading}
+                disabled={isLoading || (Boolean(user) && isLoadingSavedProperties)}
             >
                 <Heart
                     className={cn(

@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { startTransition, useCallback, useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 
@@ -30,13 +31,13 @@ export function PropertyMap({
     center = [17.0658, -22.5609], // Windhoek default
     zoom = 12
 }: PropertyMapProps) {
+    const router = useRouter()
     const mapContainer = useRef<HTMLDivElement>(null)
     const map = useRef<mapboxgl.Map | null>(null)
     const popup = useRef<mapboxgl.Popup | null>(null)
     const [mapLoaded, setMapLoaded] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [hoveredPropertyId, setHoveredPropertyId] = useState<string | null>(null)
-    const [is3D, setIs3D] = useState(true) // 3D view toggle
+    const [is3D, setIs3D] = useState(false)
 
     // Store properties in a ref to compare changes
     const prevPropertiesRef = useRef<string>('')
@@ -86,9 +87,9 @@ export function PropertyMap({
                 style: 'mapbox://styles/mapbox/streets-v12',
                 center: center,
                 zoom: zoom,
-                pitch: 45, // Tilt for 3D view
-                bearing: -17.6, // Slight rotation for visual interest
-                antialias: true, // Smoother 3D buildings
+                pitch: is3D ? 45 : 0,
+                bearing: is3D ? -17.6 : 0,
+                antialias: false,
                 attributionControl: false
             })
 
@@ -212,6 +213,9 @@ export function PropertyMap({
                         'source-layer': 'building',
                         filter: ['==', 'extrude', 'true'],
                         type: 'fill-extrusion',
+                        layout: {
+                            visibility: is3D ? 'visible' : 'none'
+                        },
                         minzoom: 12,
                         paint: {
                             'fill-extrusion-color': [
@@ -250,9 +254,9 @@ export function PropertyMap({
                 console.error('Mapbox error:', e)
                 setError('Map failed to load')
             })
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Map initialization error:', err)
-            setError(err?.message || 'Failed to initialize map')
+            setError(err instanceof Error ? err.message : 'Failed to initialize map')
         }
 
         return () => {
@@ -261,7 +265,7 @@ export function PropertyMap({
             map.current = null
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [token])
+    }, [is3D, token])
 
     // Add interactions after map loads
     useEffect(() => {
@@ -302,7 +306,13 @@ export function PropertyMap({
 
             const propertyId = features[0].properties?.id
             if (propertyId) {
-                window.location.href = `/properties/${propertyId}`
+                if (onPropertyClick) {
+                    onPropertyClick(propertyId)
+                } else {
+                    startTransition(() => {
+                        router.push(`/properties/${propertyId}`)
+                    })
+                }
             }
         })
 
@@ -317,8 +327,6 @@ export function PropertyMap({
 
             const props = features[0].properties
             if (!props) return
-
-            setHoveredPropertyId(props.id)
 
             // Remove existing popup
             popup.current?.remove()
@@ -352,7 +360,6 @@ export function PropertyMap({
         mapInstance.on('mouseleave', 'unclustered-point-bg', () => {
             mapInstance.getCanvas().style.cursor = ''
             popup.current?.remove()
-            setHoveredPropertyId(null)
         })
 
         // Cursor changes for clusters
@@ -364,7 +371,7 @@ export function PropertyMap({
             mapInstance.getCanvas().style.cursor = ''
         })
 
-    }, [mapLoaded])
+    }, [mapLoaded, onPropertyClick, router])
 
     // Update source data when properties change
     useEffect(() => {

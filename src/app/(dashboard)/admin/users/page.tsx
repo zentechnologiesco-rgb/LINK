@@ -1,8 +1,9 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useQuery } from "convex/react"
 import { api } from "../../../../../convex/_generated/api"
+import { useUser } from "@/components/providers/UserProvider"
+import { useCachedQuery } from "@/hooks/useOptimisticQuery"
 
 import {
     Table,
@@ -17,10 +18,17 @@ import { UserAvatar } from "@/components/ui/user-avatar"
 import { getDisplayName } from "@/lib/user-name"
 
 function UsersContent() {
-    const currentUser = useQuery(api.users.currentUser)
-    const users = useQuery(api.admin.getAllUsers)
+    const { user: currentUser, isLoading } = useUser()
+    const { data: users } = useCachedQuery(
+        api.admin.getAllUsers,
+        {
+            queryName: 'admin_users_v1',
+            cacheKeySuffix: currentUser?._id ?? 'anonymous',
+            storage: 'session',
+        }
+    )
 
-    if (currentUser === undefined || users === undefined) {
+    if (isLoading || users === undefined) {
         return (
             <div className="p-6">
                 <div className="animate-pulse space-y-4">

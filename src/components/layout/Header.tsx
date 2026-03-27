@@ -16,10 +16,9 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useAuthActions } from "@convex-dev/auth/react"
-import { useQuery } from 'convex/react'
-import { api } from '../../../convex/_generated/api'
 import { toast } from 'sonner'
 import { getDisplayName } from '@/lib/user-name'
+import { useNotificationCounts } from '@/components/providers/NotificationCountsProvider'
 import {
     Bell,
     Menu,
@@ -46,27 +45,13 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
     const { signOut } = useAuthActions()
     const [isScrolled, setIsScrolled] = useState(false)
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
-
-    // Only fetch counts if user is logged in
-    const unreadCountQuery = useQuery(
-        api.messages.getUnreadCount,
-        user ? {} : "skip"
-    )
-    const unreadCount = typeof unreadCountQuery === 'number' ? unreadCountQuery : 0
-
-    const leaseActionCountQuery = useQuery(
-        api.leases.getActionRequiredCount,
-        user ? {} : "skip"
-    )
-    const leaseActionCount = typeof leaseActionCountQuery === 'number' ? leaseActionCountQuery : 0
-
-    const totalNotifications = unreadCount + leaseActionCount
+    const { unreadCount, leaseActionCount, totalNotifications } = useNotificationCounts()
 
     useEffect(() => {
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 10)
         }
-        window.addEventListener('scroll', handleScroll)
+        window.addEventListener('scroll', handleScroll, { passive: true })
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
 

@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { OptimizedImage } from '@/components/ui/optimized-image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { RequestActions } from './RequestActions'
 import { ArrowLeft, User, Building2, CreditCard, ClipboardList, CheckCircle2, XCircle, Clock, Calendar, MessageSquare } from 'lucide-react'
@@ -13,11 +12,49 @@ import { format } from 'date-fns'
 import { useQuery } from "convex/react"
 import { api } from "../../../../../../convex/_generated/api"
 import { Id } from "../../../../../../convex/_generated/dataModel"
+import { useUser } from '@/components/providers/UserProvider'
 
 import { use } from 'react'
 
 interface Props {
     params: Promise<{ id: string }>
+}
+
+type ReviewedBy = {
+    fullName?: string | null
+    email?: string | null
+} | null
+
+type PreviousRequest = {
+    _id: string
+    adminNotes?: string | null
+    submittedAt: string
+    reviewerName?: string | null
+}
+
+type AdminRequestDetail = {
+    _id: string
+    _creationTime: number
+    status: 'pending' | 'approved' | 'rejected'
+    reviewedAt?: number | null
+    adminNotes?: string | null
+    reviewer?: ReviewedBy
+    previousRequests?: PreviousRequest[]
+    documents: {
+        idType?: string | null
+        idNumber?: string | null
+        businessName?: string | null
+        businessRegistration?: string | null
+        idFrontUrl?: string | null
+        idBackUrl?: string | null
+        isResubmission?: boolean
+    }
+    user?: {
+        fullName?: string | null
+        email?: string | null
+        phone?: string | null
+        avatarUrl?: string | null
+    } | null
 }
 
 // Status configuration
@@ -40,10 +77,10 @@ const statusConfig = {
 }
 
 function RequestDetailContent({ id }: { id: string }) {
-    const currentUser = useQuery(api.users.currentUser)
-    const request = useQuery(api.verification.getByIdAdmin, { requestId: id as Id<"landlordRequests"> })
+    const { user: currentUser, isLoading } = useUser()
+    const request = useQuery(api.verification.getByIdAdmin, { requestId: id as Id<"landlordRequests"> }) as AdminRequestDetail | null | undefined
 
-    if (currentUser === undefined || request === undefined) {
+    if (isLoading || request === undefined) {
         return (
             <div className="p-6">
                 <div className="animate-pulse space-y-4">
@@ -194,10 +231,10 @@ function RequestDetailContent({ id }: { id: string }) {
                                         <p>{format(new Date(request.reviewedAt), 'PPP p')}</p>
                                     </div>
                                 )}
-                                {(request as any).reviewer && (
+                                {request.reviewer && (
                                     <div>
                                         <p className="text-sm font-medium text-muted-foreground">Reviewed By</p>
-                                        <p>{(request as any).reviewer.fullName || (request as any).reviewer.email}</p>
+                                        <p>{request.reviewer.fullName || request.reviewer.email}</p>
                                     </div>
                                 )}
                                 {request.adminNotes && request.status === 'rejected' && (
@@ -215,7 +252,7 @@ function RequestDetailContent({ id }: { id: string }) {
                     )}
 
                     {/* Previous Requests History */}
-                    {(request as any).previousRequests && (request as any).previousRequests.length > 0 && (
+                    {request.previousRequests && request.previousRequests.length > 0 && (
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
@@ -223,7 +260,7 @@ function RequestDetailContent({ id }: { id: string }) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                {(request as any).previousRequests.map((prev: any, index: number) => (
+                                {request.previousRequests.map((prev) => (
                                     <div key={prev._id} className="relative pl-4 border-l-2 border-muted pb-1 last:pb-0">
                                         <div className="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full bg-muted" />
                                         <div className="mb-1">
@@ -236,7 +273,7 @@ function RequestDetailContent({ id }: { id: string }) {
                                         </div>
                                         {prev.adminNotes && (
                                             <p className="text-sm bg-muted/50 p-2 rounded text-muted-foreground">
-                                                "{prev.adminNotes}"
+                                                &quot;{prev.adminNotes}&quot;
                                             </p>
                                         )}
                                         {prev.reviewerName && (

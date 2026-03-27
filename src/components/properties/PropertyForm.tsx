@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -44,6 +44,7 @@ import {
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { ImageUpload } from "./ImageUpload";
 import { LocationPicker } from "@/components/maps/LocationPicker";
+import { useUser } from "@/components/providers/UserProvider";
 import {
   AMENITIES,
   PET_POLICIES,
@@ -617,7 +618,7 @@ export function PropertyForm({
   pageBackgroundClassName = "bg-white",
 }: PropertyFormProps) {
   const router = useRouter();
-  const currentUser = useQuery(api.users.currentUser);
+  const { isLoading: isUserLoading } = useUser();
   const createProperty = useMutation(api.properties.create);
   const updateProperty = useMutation(api.properties.update);
 
@@ -1069,7 +1070,7 @@ export function PropertyForm({
   }
 
   // ── Loading ───────────────────────────────────────────────────────────────
-  if (currentUser === undefined) {
+  if (isUserLoading) {
     return (
       <div
         className={cn(

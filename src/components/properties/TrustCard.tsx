@@ -3,6 +3,7 @@
 import { memo, type MouseEvent } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import type { Id } from "../../../convex/_generated/dataModel"
 import { cn } from "@/lib/utils"
 import { SavePropertyButton } from "@/components/properties/SavePropertyButton"
@@ -42,6 +43,7 @@ export const TrustCard = memo(function TrustCard({
     actionType = 'save',
     onRemove,
 }: TrustCardProps) {
+    const router = useRouter()
     const imageSrc = property.images?.length > 0 ? property.images[0] : '/window.svg'
     const isMultiUnit = (property.unitCount ?? 1) > 1 || property.listingType === 'multi_unit_block' || property.listingType === 'student_accommodation'
     const availableCount = property.availableUnitCount ?? 0
@@ -49,10 +51,19 @@ export const TrustCard = memo(function TrustCard({
     const subtitle = isMultiUnit
         ? `${property.unitCount ?? 1} units • ${availableCount} available`
         : `${property.bedrooms || 0} bed • ${property.bathrooms || 0} bath`
+    const detailHref = `/properties/${property.id}`
+
+    const handlePrefetch = () => {
+        router.prefetch(detailHref)
+    }
 
     return (
         <Link
-            href={`/properties/${property.id}`}
+            href={detailHref}
+            prefetch
+            onMouseEnter={handlePrefetch}
+            onFocus={handlePrefetch}
+            onTouchStart={handlePrefetch}
             className="group block w-full outline-none flex flex-col gap-3.5"
         >
             <div className={cn(
