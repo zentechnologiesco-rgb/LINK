@@ -3,6 +3,7 @@
 import {
     type FormEvent,
     type KeyboardEvent,
+    type PointerEvent,
     useEffect,
     useLayoutEffect,
     useRef,
@@ -73,14 +74,13 @@ export function ChatThread({
 }: ChatThreadProps) {
     const [draft, setDraft] = useState('')
     const scrollAreaRef = useRef<HTMLDivElement>(null)
-    const messagesEndRef = useRef<HTMLDivElement>(null)
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const prevMessageCountRef = useRef(messages.length)
 
     const scrollThreadToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
-        messagesEndRef.current?.scrollIntoView({
+        scrollAreaRef.current?.scrollTo({
+            top: scrollAreaRef.current.scrollHeight,
             behavior,
-            block: 'end',
         })
     }, [])
 
@@ -130,6 +130,20 @@ export function ChatThread({
         }, 180)
     }
 
+    function handleComposerPointerDown(event: PointerEvent<HTMLTextAreaElement>) {
+        const textarea = textareaRef.current
+        if (!textarea || typeof window === 'undefined') return
+
+        const isMobile = window.matchMedia('(max-width: 1023px)').matches
+        if (!isMobile || document.activeElement === textarea) return
+
+        event.preventDefault()
+        textarea.focus({ preventScroll: true })
+
+        const cursorPosition = textarea.value.length
+        textarea.setSelectionRange(cursorPosition, cursorPosition)
+    }
+
     /* ── empty state ── */
     if (messages.length === 0) {
         return (
@@ -156,6 +170,7 @@ export function ChatThread({
                                 value={draft}
                                 onChange={(e) => setDraft(e.target.value)}
                                 onKeyDown={handleKeyDown}
+                                onPointerDown={handleComposerPointerDown}
                                 onFocus={handleComposerFocus}
                                 disabled={isSending}
                                 placeholder={placeholder}
@@ -270,7 +285,6 @@ export function ChatThread({
                             </div>
                         )
                     })}
-                    <div ref={messagesEndRef} />
                 </div>
             </div>
 
@@ -286,6 +300,7 @@ export function ChatThread({
                             value={draft}
                             onChange={(e) => setDraft(e.target.value)}
                             onKeyDown={handleKeyDown}
+                            onPointerDown={handleComposerPointerDown}
                             onFocus={handleComposerFocus}
                             disabled={isSending}
                             placeholder={placeholder}
