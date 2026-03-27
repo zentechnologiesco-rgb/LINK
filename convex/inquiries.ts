@@ -1,7 +1,26 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { type Id } from "./_generated/dataModel";
+import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { auth } from "./auth";
 import { resolveAvatarUrl } from "./lib/avatar";
+
+async function findExistingInquiry(
+    ctx: QueryCtx | MutationCtx,
+    userId: Id<"users">,
+    propertyId: Id<"properties">,
+    unitId?: Id<"propertyUnits">,
+) {
+    return await ctx.db
+        .query("inquiries")
+        .withIndex("by_tenantId", (q) => q.eq("tenantId", userId))
+        .filter((q) =>
+            q.and(
+                q.eq(q.field("propertyId"), propertyId),
+                unitId ? q.eq(q.field("unitId"), unitId) : q.eq(q.field("unitId"), undefined),
+            ),
+        )
+        .first();
+}
 
 // Get inquiries for tenant
 export const getForTenant = query({
@@ -121,8 +140,14 @@ export const create = mutation({
         const userId = await auth.getUserId(ctx);
         if (!userId) throw new Error("Not authenticated");
 
+        const trimmedMessage = args.message.trim();
+        if (!trimmedMessage) throw new Error("Message cannot be empty");
+
         const property = await ctx.db.get(args.propertyId);
         if (!property) throw new Error("Property not found");
+        if (property.landlordId === userId) {
+            throw new Error("You cannot contact yourself on your own property");
+        }
         const unit = args.unitId ? await ctx.db.get(args.unitId) : null;
         if (args.unitId && (!unit || unit.propertyId !== args.propertyId)) {
             throw new Error("Unit not found for this property");
@@ -130,23 +155,17 @@ export const create = mutation({
 
         let inquiryId;
 
-        // Manual check for existing (without compound index)
-        const existing = await ctx.db
-            .query("inquiries")
-            .withIndex("by_tenantId", (q) => q.eq("tenantId", userId))
-            .filter((q) =>
-                q.and(
-                    q.eq(q.field("propertyId"), args.propertyId),
-                    args.unitId ? q.eq(q.field("unitId"), args.unitId) : q.eq(q.field("unitId"), undefined),
-                ),
-            )
-            .first();
+        const existing = await findExistingInquiry(ctx, userId, args.propertyId, args.unitId);
 
         if (existing) {
             inquiryId = existing._id;
-            // Update move in date if provided?
-            if (args.moveInDate) {
-                await ctx.db.patch(inquiryId, { moveInDate: args.moveInDate });
+            const patch = {
+                ...(args.moveInDate ? { moveInDate: args.moveInDate } : {}),
+                ...(!existing.message ? { message: trimmedMessage } : {}),
+            };
+
+            if (Object.keys(patch).length > 0) {
+                await ctx.db.patch(inquiryId, patch);
             }
         } else {
             inquiryId = await ctx.db.insert("inquiries", {
@@ -154,7 +173,7 @@ export const create = mutation({
                 unitId: args.unitId,
                 tenantId: userId,
                 landlordId: property.landlordId,
-                message: args.message, // Initial message context
+                message: trimmedMessage,
                 moveInDate: args.moveInDate,
                 status: "pending",
             });
@@ -164,7 +183,7 @@ export const create = mutation({
         await ctx.db.insert("messages", {
             inquiryId,
             senderId: userId,
-            content: args.message,
+            content: trimmedMessage,
         });
 
         return inquiryId;
@@ -217,32 +236,32 @@ export const getUserInquiries = query({
 
         // Enrich with other party details and property
         const enriched = await Promise.all(allInquiries.map(async (inquiry) => {
-            const isLandlord = inquiry.landlordId === userId;
-            const otherPartyId = isLandlord ? inquiry.tenantId : inquiry.landlordId;
-            const otherParty = await ctx.db.get(otherPartyId);
-            const property = await ctx.db.get(inquiry.propertyId);
-            const unit = inquiry.unitId ? await ctx.db.get(inquiry.unitId) : null;
-
-            // Get last message? Ideally yes for sorting.
-            // For now, let's just return basic info. 
-            // Better: use an index on messages to get the last message.
-
             const lastMessage = await ctx.db
                 .query("messages")
                 .withIndex("by_inquiryId", (q) => q.eq("inquiryId", inquiry._id))
                 .order("desc")
                 .first();
 
-            const unreadMessages = await ctx.db
-                .query("messages")
-                .withIndex("by_inquiryId", (q) => q.eq("inquiryId", inquiry._id))
-                .filter((q) =>
-                    q.and(
-                        q.eq(q.field("readAt"), undefined),
-                        q.neq(q.field("senderId"), userId)
+            if (!lastMessage) return null;
+
+            const isLandlord = inquiry.landlordId === userId;
+            const otherPartyId = isLandlord ? inquiry.tenantId : inquiry.landlordId;
+
+            const [otherParty, property, unit, unreadMessages] = await Promise.all([
+                ctx.db.get(otherPartyId),
+                ctx.db.get(inquiry.propertyId),
+                inquiry.unitId ? ctx.db.get(inquiry.unitId) : Promise.resolve(null),
+                ctx.db
+                    .query("messages")
+                    .withIndex("by_inquiryId", (q) => q.eq("inquiryId", inquiry._id))
+                    .filter((q) =>
+                        q.and(
+                            q.eq(q.field("readAt"), undefined),
+                            q.neq(q.field("senderId"), userId),
+                        ),
                     )
-                )
-                .collect();
+                    .collect(),
+            ]);
 
             return {
                 ...inquiry,
@@ -264,12 +283,48 @@ export const getUserInquiries = query({
             };
         }));
 
-        return enriched.sort((a, b) => b.updatedAt - a.updatedAt);
+        return enriched
+            .filter((inquiry): inquiry is NonNullable<typeof inquiry> => inquiry !== null)
+            .sort((a, b) => b.updatedAt - a.updatedAt);
     },
 });
 
-// Get or create an inquiry for a property (for starting a chat)
-export const getOrCreateForProperty = mutation({
+export const getDraftContext = query({
+    args: {
+        propertyId: v.id("properties"),
+        unitId: v.optional(v.id("propertyUnits")),
+    },
+    handler: async (ctx, args) => {
+        const property = await ctx.db.get(args.propertyId);
+        if (!property) return null;
+
+        const unit = args.unitId ? await ctx.db.get(args.unitId) : null;
+        if (args.unitId && (!unit || unit.propertyId !== args.propertyId)) {
+            return null;
+        }
+
+        const landlord = await ctx.db.get(property.landlordId);
+
+        return {
+            property: {
+                title: property.title,
+            },
+            unit: unit ? {
+                title: unit.title,
+                unitCode: unit.unitCode,
+            } : null,
+            otherParty: landlord ? {
+                _id: landlord._id,
+                fullName: landlord.fullName,
+                email: landlord.email,
+                avatarUrl: await resolveAvatarUrl(ctx, landlord.avatarUrl),
+            } : null,
+        };
+    },
+});
+
+// Return an existing inquiry for a property if it already has messages.
+export const getExistingForProperty = mutation({
     args: {
         propertyId: v.id("properties"),
         unitId: v.optional(v.id("propertyUnits")),
@@ -290,33 +345,16 @@ export const getOrCreateForProperty = mutation({
             throw new Error("You cannot contact yourself on your own property");
         }
 
-        // Check if user already has an inquiry for this property
-        const existing = await ctx.db
-            .query("inquiries")
-            .withIndex("by_tenantId", (q) => q.eq("tenantId", userId))
-            .filter((q) =>
-                q.and(
-                    q.eq(q.field("propertyId"), args.propertyId),
-                    args.unitId ? q.eq(q.field("unitId"), args.unitId) : q.eq(q.field("unitId"), undefined),
-                ),
-            )
+        const existing = await findExistingInquiry(ctx, userId, args.propertyId, args.unitId);
+
+        if (!existing) return null;
+
+        const existingMessage = await ctx.db
+            .query("messages")
+            .withIndex("by_inquiryId", (q) => q.eq("inquiryId", existing._id))
             .first();
 
-        if (existing) {
-            return existing._id;
-        }
-
-        // Create new inquiry
-        const inquiryId = await ctx.db.insert("inquiries", {
-            propertyId: args.propertyId,
-            unitId: args.unitId,
-            tenantId: userId,
-            landlordId: property.landlordId,
-            message: "", // No initial message, chat will be empty
-            status: "pending",
-        });
-
-        return inquiryId;
+        return existingMessage ? existing._id : null;
     },
 });
 

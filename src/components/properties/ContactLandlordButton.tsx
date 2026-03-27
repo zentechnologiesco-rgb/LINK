@@ -26,7 +26,7 @@ export function ContactLandlordButton({ propertyId, unitId, landlordId, variant 
     const [isLoading, setIsLoading] = useState(false)
     const [showLoginDialog, setShowLoginDialog] = useState(false)
 
-    const getOrCreateInquiry = useMutation(api.inquiries.getOrCreateForProperty)
+    const getExistingInquiry = useMutation(api.inquiries.getExistingForProperty)
     const currentUser = useQuery(api.users.currentUser)
 
     // Don't show the button if the current user is the landlord
@@ -37,11 +37,30 @@ export function ContactLandlordButton({ propertyId, unitId, landlordId, variant 
     const handleContact = async () => {
         setIsLoading(true)
         try {
-            const inquiryId = await getOrCreateInquiry({
+            const inquiryId = await getExistingInquiry({
                 propertyId: propertyId as Id<"properties">,
                 unitId: unitId ? unitId as Id<"propertyUnits"> : undefined,
             })
-            router.push(`/chat?id=${inquiryId}`)
+
+            if (inquiryId) {
+                const params = new URLSearchParams({
+                    kind: 'inquiry',
+                    id: inquiryId,
+                })
+
+                router.push(`/chat?${params.toString()}`)
+                return
+            }
+
+            const params = new URLSearchParams({
+                propertyId,
+            })
+
+            if (unitId) {
+                params.set('unitId', unitId)
+            }
+
+            router.push(`/chat?${params.toString()}`)
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error)
             if (errorMessage.includes("Not authenticated")) {

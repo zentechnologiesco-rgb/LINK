@@ -77,6 +77,13 @@ export function ChatThread({
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const prevMessageCountRef = useRef(messages.length)
 
+    const scrollThreadToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
+        messagesEndRef.current?.scrollIntoView({
+            behavior,
+            block: 'end',
+        })
+    }, [])
+
     /* ── auto-resize textarea ── */
     const resizeTextarea = useCallback(() => {
         const el = textareaRef.current
@@ -94,11 +101,8 @@ export function ChatThread({
         const isNewMessage = messages.length > prevMessageCountRef.current
         prevMessageCountRef.current = messages.length
 
-        messagesEndRef.current?.scrollIntoView({
-            behavior: isNewMessage ? 'smooth' : 'auto',
-            block: 'end',
-        })
-    }, [messages.length])
+        scrollThreadToBottom(isNewMessage ? 'smooth' : 'auto')
+    }, [messages.length, scrollThreadToBottom])
 
     /* ── send ── */
     async function submitDraft() {
@@ -118,6 +122,12 @@ export function ChatThread({
             event.preventDefault()
             void submitDraft()
         }
+    }
+
+    function handleComposerFocus() {
+        window.setTimeout(() => {
+            scrollThreadToBottom('auto')
+        }, 180)
     }
 
     /* ── empty state ── */
@@ -146,10 +156,11 @@ export function ChatThread({
                                 value={draft}
                                 onChange={(e) => setDraft(e.target.value)}
                                 onKeyDown={handleKeyDown}
+                                onFocus={handleComposerFocus}
                                 disabled={isSending}
                                 placeholder={placeholder}
                                 rows={1}
-                                className="max-h-[120px] w-full resize-none overflow-y-auto border-0 bg-transparent text-[15px] leading-[1.35] text-neutral-900 outline-none placeholder:text-neutral-400"
+                                className="max-h-[120px] w-full resize-none overflow-y-auto border-0 bg-transparent text-[16px] leading-[1.35] text-neutral-900 outline-none placeholder:text-neutral-400 sm:text-[15px]"
                             />
                         </div>
 
@@ -275,10 +286,11 @@ export function ChatThread({
                             value={draft}
                             onChange={(e) => setDraft(e.target.value)}
                             onKeyDown={handleKeyDown}
+                            onFocus={handleComposerFocus}
                             disabled={isSending}
                             placeholder={placeholder}
                             rows={1}
-                            className="max-h-[120px] w-full resize-none overflow-y-auto border-0 bg-transparent text-[15px] leading-[1.35] text-neutral-900 outline-none placeholder:text-neutral-400"
+                            className="max-h-[120px] w-full resize-none overflow-y-auto border-0 bg-transparent text-[16px] leading-[1.35] text-neutral-900 outline-none placeholder:text-neutral-400 sm:text-[15px]"
                         />
                     </div>
 

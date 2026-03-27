@@ -65,7 +65,10 @@ function MobileNavInner({ user, userRole }: MobileNavProps) {
     const leaseActionCount = typeof leaseActionCountQuery === 'number' ? leaseActionCountQuery : 0
 
     // Hide mobile nav completely when inside a chat thread, creation wizards, or detail pages with action bars
-    const isChatThread = pathname === '/chat' && searchParams.get('id') !== null
+    const isChatThread = pathname === '/chat' && (
+        searchParams.get('id') !== null ||
+        searchParams.get('propertyId') !== null
+    )
     const isWizard = pathname?.endsWith('/new') || pathname?.includes('/edit')
     const isLeaseDetail = pathname?.includes('/leases/') && pathname.split('/').pop() !== 'leases'
 
