@@ -112,6 +112,7 @@ export default function HomePage() {
     const [searchQuery, setSearchQuery] = useState("")
 
     const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid')
+    const [hasOpenedMap, setHasOpenedMap] = useState(false)
 
     // Additional Filters
     const [priceRange, setPriceRange] = useState<{ min: string, max: string }>({ min: "", max: "" })
@@ -232,6 +233,15 @@ export default function HomePage() {
         void warmPropertyMap()
     }
 
+    const handleViewModeToggle = () => {
+        const nextViewMode = viewMode === 'grid' ? 'map' : 'grid'
+        if (nextViewMode === 'map') {
+            setHasOpenedMap(true)
+            void warmPropertyMap()
+        }
+        setViewMode(nextViewMode)
+    }
+
     const isMapView = viewMode === 'map'
     const nextViewLabel = isMapView ? 'List' : 'Map'
     const mapToggleDesktopClassName = cn(
@@ -277,7 +287,7 @@ export default function HomePage() {
 
                             <button
                                 type="button"
-                                onClick={() => setViewMode(viewMode === 'grid' ? 'map' : 'grid')}
+                                onClick={handleViewModeToggle}
                                 onMouseEnter={handleMapIntent}
                                 onFocus={handleMapIntent}
                                 onTouchStart={handleMapIntent}
@@ -463,43 +473,48 @@ export default function HomePage() {
                             Updating results...
                         </div>
                     )}
-                    {viewMode === 'map' ? (
-                        <div className="h-[75vh] w-full rounded-[24px] overflow-hidden relative border border-neutral-200/50 shadow-sm isolate">
-                            <PropertyMap properties={mapData} />
-                        </div>
-                    ) : (
-                        <div>
-                            {filtered.length === 0 ? (
-                                <div className="py-24 flex flex-col items-center text-center">
-                                    <div className="w-24 h-24 rounded-full bg-neutral-50 flex items-center justify-center mb-6 border border-neutral-100">
-                                        <Search className="w-10 h-10 text-neutral-400" strokeWidth={2} />
-                                    </div>
-                                    <h3 className="text-[22px] font-bold text-black tracking-tight">No exact matches</h3>
-                                    <p className="text-[16px] text-neutral-500 mt-2 font-medium">Try changing or removing some of your filters.</p>
-                                    <Button variant="outline" onClick={clearFilters} className="mt-8 rounded-full font-bold px-8 h-12 border-neutral-200">
-                                        Clear all filters
-                                    </Button>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-10">
-                                    {filtered.map((property, idx) => (
-                                        <TrustCard
-                                            key={property.id}
-                                            property={property}
-                                            priority={idx < 4}
-                                        />
-                                    ))}
-                                </div>
+                    {hasOpenedMap && (
+                        <div
+                            className={cn(
+                                "h-[75vh] w-full rounded-[24px] overflow-hidden relative border border-neutral-200/50 shadow-sm isolate",
+                                viewMode === 'map' ? 'block' : 'hidden'
                             )}
+                        >
+                            <PropertyMap properties={mapData} isVisible={viewMode === 'map'} />
                         </div>
                     )}
+
+                    <div className={cn(viewMode === 'map' ? 'hidden' : 'block')}>
+                        {filtered.length === 0 ? (
+                            <div className="py-24 flex flex-col items-center text-center">
+                                <div className="w-24 h-24 rounded-full bg-neutral-50 flex items-center justify-center mb-6 border border-neutral-100">
+                                    <Search className="w-10 h-10 text-neutral-400" strokeWidth={2} />
+                                </div>
+                                <h3 className="text-[22px] font-bold text-black tracking-tight">No exact matches</h3>
+                                <p className="text-[16px] text-neutral-500 mt-2 font-medium">Try changing or removing some of your filters.</p>
+                                <Button variant="outline" onClick={clearFilters} className="mt-8 rounded-full font-bold px-8 h-12 border-neutral-200">
+                                    Clear all filters
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-10">
+                                {filtered.map((property, idx) => (
+                                    <TrustCard
+                                        key={property.id}
+                                        property={property}
+                                        priority={idx < 4}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </main>
             </PullToRefresh>
 
             <div className="fixed bottom-10 right-4 z-50 hidden pointer-events-none md:right-6 md:block lg:right-8">
                 <div className="pointer-events-auto">
                     <button
-                        onClick={() => setViewMode(viewMode === 'grid' ? 'map' : 'grid')}
+                        onClick={handleViewModeToggle}
                         onMouseEnter={handleMapIntent}
                         onFocus={handleMapIntent}
                         onTouchStart={handleMapIntent}

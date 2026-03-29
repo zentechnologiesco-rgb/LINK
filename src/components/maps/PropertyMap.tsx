@@ -19,6 +19,7 @@ interface PropertyMapProps {
     onPropertyClick?: (propertyId: string) => void
     center?: [number, number]
     zoom?: number
+    isVisible?: boolean
 }
 
 // Cluster configuration
@@ -168,7 +169,8 @@ export function PropertyMap({
     properties,
     onPropertyClick,
     center = [17.0658, -22.5609], // Windhoek default
-    zoom = 12
+    zoom = 12,
+    isVisible = true,
 }: PropertyMapProps) {
     const router = useRouter()
     const mapContainer = useRef<HTMLDivElement>(null)
@@ -490,6 +492,16 @@ export function PropertyMap({
             source.setData(getGeoJSON())
         }
     }, [properties, mapLoaded, getGeoJSON])
+
+    useEffect(() => {
+        if (!isVisible || !mapLoaded || !map.current) return
+
+        const frameId = window.requestAnimationFrame(() => {
+            map.current?.resize()
+        })
+
+        return () => window.cancelAnimationFrame(frameId)
+    }, [isVisible, mapLoaded])
 
     // Fit bounds to show all properties
     useEffect(() => {
