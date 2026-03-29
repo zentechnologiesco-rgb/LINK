@@ -35,6 +35,8 @@ export interface PropertyDetailData {
     unitTypeLabels: string[]
     images: string[]
     amenities: string[]
+    commentCount: number
+    topLevelCommentCount: number
     coordinates?: { lat: number; lng: number } | null
     units: PropertyDetailUnit[]
     landlord?: {

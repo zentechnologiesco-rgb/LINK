@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 
 import { PropertyDetailDesktopSidebar, PropertyDetailMobileActionBar } from "@/components/properties/detail/PropertyDetailActionPanels"
+import { PropertyCommentsSection } from "@/components/properties/detail/PropertyCommentsSection"
 import { PropertyDetailLazyMap } from "@/components/properties/detail/PropertyDetailLazyMap"
 import { PropertyDetailMedia } from "@/components/properties/detail/PropertyDetailMedia"
 import {
@@ -109,6 +110,8 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
         unitTypeLabels: convexProperty.unitTypeLabels || [],
         images: convexProperty.imageUrls?.length ? convexProperty.imageUrls : ["/window.svg"],
         amenities: convexProperty.amenityNames || [],
+        commentCount: convexProperty.commentCount ?? 0,
+        topLevelCommentCount: convexProperty.topLevelCommentCount ?? 0,
         coordinates: convexProperty.coordinates || null,
         units: convexProperty.units || [],
         landlord: convexProperty.landlordInfo || null,
@@ -220,6 +223,11 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
                         </div>
                     </section>
 
+                    <PropertyCommentsSection
+                        propertyId={property.id}
+                        initialCommentCount={property.commentCount}
+                    />
+
                     {property.coordinates && (
                         <section className="mb-6">
                             <h2 className="mb-1 text-[18px] font-[800] tracking-[-0.02em] text-neutral-900">Location</h2>
@@ -330,6 +338,11 @@ export default async function PropertyPage({ params }: { params: Promise<{ id: s
                                     </div>
                                 </section>
                             )}
+
+                            <PropertyCommentsSection
+                                propertyId={property.id}
+                                initialCommentCount={property.commentCount}
+                            />
                         </div>
 
                         <div className="relative w-[340px] max-w-[380px] shrink-0">
