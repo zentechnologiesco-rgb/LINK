@@ -363,6 +363,7 @@ export default defineSchema({
     dueDate: v.string(),
     paidAt: v.optional(v.number()),
     paymentMethod: v.optional(v.string()),
+    paymentReference: v.optional(v.string()),
     notes: v.optional(v.string()),
   })
     .index("by_leaseId", ["leaseId"])
@@ -423,4 +424,30 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_user_property", ["userId", "propertyId"])
     .index("by_viewedAt", ["viewedAt"]),
+
+  propertyComments: defineTable({
+    propertyId: v.id("properties"),
+    authorId: v.id("users"),
+    parentCommentId: v.optional(v.id("propertyComments")),
+    content: v.string(),
+    status: v.union(
+      v.literal("active"),
+      v.literal("deleted"),
+      v.literal("hidden")
+    ),
+    likeCount: v.number(),
+    replyCount: v.number(),
+    editedAt: v.optional(v.number()),
+  })
+    .index("by_propertyId", ["propertyId"])
+    .index("by_parentCommentId", ["parentCommentId"])
+    .index("by_authorId", ["authorId"]),
+
+  propertyCommentLikes: defineTable({
+    commentId: v.id("propertyComments"),
+    userId: v.id("users"),
+  })
+    .index("by_commentId", ["commentId"])
+    .index("by_userId", ["userId"])
+    .index("by_user_comment", ["userId", "commentId"]),
 });

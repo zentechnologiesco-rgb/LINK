@@ -13,6 +13,7 @@ import {
     ArrowUpRight,
     CheckCircle2,
     Clock,
+    CreditCard,
     Search,
     Wallet,
 } from 'lucide-react'
@@ -72,9 +73,9 @@ export default function TenantPaymentsPage() {
         <div className="space-y-6 pb-8">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">Tenant Ledger</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">Payment Center</p>
                     <h1 className="mt-2 text-3xl font-semibold tracking-tight text-neutral-900">Payments</h1>
-                    <p className="mt-1 text-sm text-neutral-500">See what has been paid, what is still open, and what your landlord has already recorded.</p>
+                    <p className="mt-1 text-sm text-neutral-500">Track what is due, what has been recorded, and how your lease balance is moving over time.</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Link href="/tenant/leases">
@@ -97,6 +98,43 @@ export default function TenantPaymentsPage() {
                 <StatCard label="Paid" value={formatCurrency(stats.totalPaid)} tone="dark" icon={CheckCircle2} />
                 <StatCard label="Pending" value={formatCurrency(stats.pending)} tone="default" icon={Clock} />
                 <StatCard label="Overdue" value={formatCurrency(stats.overdue)} tone="danger" icon={AlertCircle} />
+            </div>
+
+            <div className="grid gap-3 lg:grid-cols-[1.3fr_0.7fr]">
+                <div className="rounded-3xl border border-neutral-200 bg-white p-5">
+                    <div className="flex items-start gap-3">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-neutral-950 text-white">
+                            <Wallet className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">Current Workflow</p>
+                            <h2 className="mt-2 text-xl font-semibold tracking-tight text-neutral-950">Your payment record is already live</h2>
+                            <p className="mt-1 text-sm leading-6 text-neutral-500">
+                                Use this page to review move-in costs, rent, overdue items, and anything your landlord has already recorded against your lease.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                        <FeaturePill label="Rent history" />
+                        <FeaturePill label="Deposit visibility" />
+                        <FeaturePill label="Balance tracking" />
+                    </div>
+                </div>
+
+                <div className="rounded-3xl border border-sky-200 bg-sky-50 p-5">
+                    <div className="flex items-start gap-3">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-sky-700 ring-1 ring-sky-200">
+                            <CreditCard className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">Gateway Roadmap</p>
+                            <p className="mt-2 text-sm font-semibold text-sky-950">Online pay and recurring gateway payments will be implemented later.</p>
+                            <p className="mt-1 text-sm leading-6 text-sky-800">
+                                For now, this center keeps the shared ledger clear while landlord confirmation and offline payment methods are still in use.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {activeLease?.nextPayment && (
@@ -159,7 +197,7 @@ export default function TenantPaymentsPage() {
                 <div className="mt-5 space-y-3">
                     {filteredPayments.length === 0 ? (
                         <div className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 px-4 py-10 text-center text-sm text-neutral-500">
-                            No payments match the current filter.
+                            No payments match the current filter right now. Once lease charges are scheduled or recorded, they will show up here automatically.
                         </div>
                     ) : (
                         filteredPayments.map((payment) => (
@@ -219,6 +257,14 @@ export default function TenantPaymentsPage() {
                 </div>
             </div>
         </div>
+    )
+}
+
+function FeaturePill({ label }: { label: string }) {
+    return (
+        <span className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-semibold text-neutral-600">
+            {label}
+        </span>
     )
 }
 

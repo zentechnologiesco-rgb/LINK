@@ -31,11 +31,13 @@ export const authenticatedNavItems: NavItem[] = [
 export const tenantNavItems: NavItem[] = [
     { label: 'My Favorites', href: '/tenant/saved', icon: Heart },
     { label: 'My Leases', href: '/tenant/leases', icon: FileCheck },
+    { label: 'Payments', href: '/tenant/payments', icon: Wallet },
 ]
 
 export const landlordNavItems: NavItem[] = [
     { label: 'My Properties', href: '/landlord/properties', icon: Building2 },
     { label: 'Leases', href: '/landlord/leases', icon: FileCheck },
+    { label: 'Payments', href: '/landlord/payments', icon: Wallet },
 ]
 
 export const adminNavItems: NavItem[] = [

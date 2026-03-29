@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { Home, Heart, MessageSquare, User, Building2, LayoutDashboard, FileText, LucideIcon } from 'lucide-react'
+import { Home, Heart, MessageSquare, User, Building2, LayoutDashboard, FileText, LucideIcon, Wallet } from 'lucide-react'
 import { Suspense } from 'react'
 import { useNotificationCounts } from '@/components/providers/NotificationCountsProvider'
 
@@ -27,6 +27,7 @@ const tenantNavItems: NavItem[] = [
     { label: 'Home', href: '/', icon: Home },
     { label: 'Saved', href: '/tenant/saved', icon: Heart },
     { label: 'Leases', href: '/tenant/leases', icon: FileText, badgeType: 'leases' },
+    { label: 'Payments', href: '/tenant/payments', icon: Wallet },
     { label: 'Messages', href: '/chat', icon: MessageSquare, badgeType: 'messages' },
     { label: 'Profile', href: '/settings', icon: User },
 ]
@@ -35,6 +36,7 @@ const landlordNavItems: NavItem[] = [
     { label: 'Home', href: '/', icon: Home },
     { label: 'Properties', href: '/landlord/properties', icon: Building2 },
     { label: 'Leases', href: '/landlord/leases', icon: FileText, badgeType: 'leases' },
+    { label: 'Payments', href: '/landlord/payments', icon: Wallet },
     { label: 'Messages', href: '/chat', icon: MessageSquare, badgeType: 'messages' },
 ]
 

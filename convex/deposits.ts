@@ -68,12 +68,28 @@ export const confirm = mutation({
             throw new Error("Only the landlord can confirm deposits");
         }
 
+        const relatedPayments = await ctx.db
+            .query("payments")
+            .withIndex("by_leaseId", (q) => q.eq("leaseId", deposit.leaseId))
+            .collect();
+        const depositPayment = relatedPayments.find((payment) => payment.type === "deposit");
+        const paidAt = Date.now();
+
         await ctx.db.patch(args.depositId, {
             status: "held",
-            paidAt: Date.now(),
+            paidAt,
             paymentMethod: args.paymentMethod,
             paymentReference: args.paymentReference,
         });
+
+        if (depositPayment && depositPayment.status !== "paid") {
+            await ctx.db.patch(depositPayment._id, {
+                status: "paid",
+                paidAt,
+                paymentMethod: args.paymentMethod,
+                paymentReference: args.paymentReference,
+            });
+        }
 
         return { success: true };
     },

@@ -5,12 +5,13 @@ import type { Id } from "./_generated/dataModel";
 import { auth } from "./auth";
 import { api, internal } from "./_generated/api";
 import { TEMPLATES } from "./emailTemplates";
-import { ALLOWED_DOCUMENT_TYPES, validateOwnedFile } from "./files";
+import { ALLOWED_DOCUMENT_TYPES, ALLOWED_IMAGE_TYPES, validateOwnedFile } from "./files";
 import { normalizeEmail } from "./lib/normalizeEmail";
 import { getStoredUnitsForProperty, resolveStorageUrls, syncPropertyInventory } from "./lib/propertyInventory";
 import { normalizeOptionalText, normalizeRequiredText } from "./lib/security";
 
 const BASE_URL = process.env.SITE_URL || "http://localhost:3000";
+const ALLOWED_TENANT_SIGNING_DOCUMENT_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_DOCUMENT_TYPES];
 
 // ─── Mandatory clauses that cannot be removed (legally defensible) ───
 const MANDATORY_CLAUSES = [
@@ -479,7 +480,7 @@ export const tenantSign = mutation({
         }
 
         for (const document of args.tenantDocuments) {
-            await validateOwnedFile(ctx, userId, document.storageId, ALLOWED_DOCUMENT_TYPES);
+            await validateOwnedFile(ctx, userId, document.storageId, ALLOWED_TENANT_SIGNING_DOCUMENT_TYPES);
         }
 
         await ctx.db.patch(args.leaseId, {

@@ -13,6 +13,7 @@ import {
     upsertPropertyUnits,
     type PropertyUnitDraft,
 } from "./lib/propertyInventory";
+import { getPropertyCommentSummary } from "./lib/propertyComments";
 import {
     isPropertyPubliclyVisible,
     normalizeOptionalText,
@@ -384,11 +385,17 @@ export const getById = query({
             return null;
         }
 
-        return await enrichProperty(ctx, property, {
+        const enrichedProperty = await enrichProperty(ctx, property, {
             includeUnits: true,
             publicOnly: !canViewPrivate,
             includePrivateLandlordContact: canViewPrivate,
         });
+        const commentSummary = await getPropertyCommentSummary(ctx, args.propertyId);
+
+        return {
+            ...enrichedProperty,
+            ...commentSummary,
+        };
     },
 });
 
