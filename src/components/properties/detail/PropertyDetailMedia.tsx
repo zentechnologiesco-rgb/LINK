@@ -112,6 +112,7 @@ export function PropertyDetailMedia({ property }: { property: PropertyDetailData
                                 src={property.images[currentPhotoIndex] || "/window.svg"}
                                 alt={`${property.title} - Photo ${currentPhotoIndex + 1}`}
                                 fill
+                                sizes="100vw"
                                 className="object-contain"
                                 qualityPreset="full"
                             />
@@ -211,6 +212,7 @@ export function PropertyDetailMedia({ property }: { property: PropertyDetailData
                             src={property.images[currentPhotoIndex] || "/window.svg"}
                             alt={property.title}
                             fill
+                            sizes="100vw"
                             className="object-cover"
                             qualityPreset="hero"
                             priority
@@ -293,6 +295,7 @@ export function PropertyDetailMedia({ property }: { property: PropertyDetailData
                                 src={property.images[0] || "/window.svg"}
                                 alt={`${property.title} hero`}
                                 fill
+                                sizes="(max-width: 1024px) 100vw, 592px"
                                 className="object-cover transition-all duration-300 hover:brightness-95"
                                 qualityPreset="hero"
                             />
@@ -307,6 +310,7 @@ export function PropertyDetailMedia({ property }: { property: PropertyDetailData
                                     src={property.images[index] || property.images[0] || "/window.svg"}
                                     alt={`${property.title} gallery ${index}`}
                                     fill
+                                    sizes="(max-width: 1024px) 50vw, 296px"
                                     className="object-cover transition-all duration-300 hover:brightness-95"
                                 />
                             </div>

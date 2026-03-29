@@ -178,10 +178,10 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                 width={140}
                 height={140}
                 priority
-                className="h-[42px] w-[42px] shrink-0 object-contain md:h-[52px] md:w-[52px]"
+                className="h-[38px] w-[38px] shrink-0 object-contain md:h-[46px] md:w-[46px]"
             />
             <span className="font-bold text-[28px] leading-none md:text-[34px] tracking-tight text-neutral-900">
-                LINK
+                Link
             </span>
         </Link>
     )

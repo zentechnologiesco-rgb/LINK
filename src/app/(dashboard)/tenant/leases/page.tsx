@@ -19,6 +19,7 @@ import { PullToRefresh } from '@/components/ui/pull-to-refresh'
 import { cn } from '@/lib/utils'
 import { useUser } from '@/components/providers/UserProvider'
 import { useCachedQuery } from '@/hooks/useOptimisticQuery'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 
 type TenantLease = {
     _id: string
@@ -158,10 +159,13 @@ export default function TenantLeasesPage() {
                                             {/* Property Hero Image */}
                                             <div className="relative aspect-[21/9] w-full shrink-0 bg-neutral-100 sm:aspect-[21/7]">
                                                 {activeLease.property?.imageUrl ? (
-                                                    /* eslint-disable-next-line @next/next/no-img-element */
-                                                    <img
+                                                    <OptimizedImage
                                                         src={activeLease.property.imageUrl}
                                                         alt={activeLease.property.title || 'Property'}
+                                                        fill
+                                                        sizes="(max-width: 820px) 100vw, 772px"
+                                                        qualityPreset="hero"
+                                                        priority
                                                         className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                                                     />
                                                 ) : (
@@ -318,10 +322,13 @@ function LeaseRow({ lease, tone }: { lease: TenantLease; tone: 'default' | 'atte
             <article className="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-neutral-50 sm:px-5">
                 <div className="relative flex h-[60px] w-[60px] shrink-0 items-center justify-center overflow-hidden rounded-[16px] bg-neutral-100 ring-1 ring-inset ring-neutral-200/60">
                     {lease.property?.imageUrl ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
+                        <OptimizedImage
                             src={lease.property.imageUrl}
                             alt={lease.property?.title || 'Property'}
+                            fill
+                            sizes="60px"
+                            qualityPreset="thumbnail"
+                            showSkeleton={false}
                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                     ) : (

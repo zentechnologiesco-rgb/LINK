@@ -1,5 +1,5 @@
 const STATIC_CACHE = 'link-static-v1'
-const OFFLINE_CACHE = 'link-offline-v1'
+const OFFLINE_CACHE = 'link-offline-v2'
 const OFFLINE_URL = '/offline'
 
 self.addEventListener('install', (event) => {

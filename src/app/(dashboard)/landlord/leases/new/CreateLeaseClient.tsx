@@ -44,6 +44,7 @@ import { ClauseEditor, type LeaseClause } from '@/components/leases/ClauseEditor
 import { MAINTENANCE_LABELS, PET_POLICY_LABELS } from '@/constants/lease'
 import { PROPERTY_TYPE_LABELS } from '@/constants/property'
 import { cn } from '@/lib/utils'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 
 /* ── Types ──────────────────────────────────────────────── */
 
@@ -742,15 +743,22 @@ export function CreateLeaseClient() {
                                                 >
                                                     {/* Thumbnail */}
                                                     <div className={cn(
-                                                        'flex h-[56px] w-[56px] shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-neutral-100 ring-2 transition-all',
+                                                        'relative flex h-[56px] w-[56px] shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-neutral-100 ring-2 transition-all',
                                                         isSelected ? 'ring-neutral-950' : 'ring-transparent'
                                                     )}>
-                                                        {property.imageUrls?.[0] ? (
-                                                            /* eslint-disable-next-line @next/next/no-img-element */
-                                                            <img src={property.imageUrls[0]} alt={property.title} className="h-full w-full object-cover" />
-                                                        ) : (
-                                                            <Building2 className="h-5 w-5 text-neutral-400" strokeWidth={1.8} />
-                                                        )}
+                                                    {property.imageUrls?.[0] ? (
+                                                        <OptimizedImage
+                                                            src={property.imageUrls[0]}
+                                                            alt={property.title}
+                                                            fill
+                                                            sizes="56px"
+                                                            qualityPreset="thumbnail"
+                                                            showSkeleton={false}
+                                                            className="h-full w-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <Building2 className="h-5 w-5 text-neutral-400" strokeWidth={1.8} />
+                                                    )}
                                                     </div>
 
                                                     {/* Info */}
@@ -946,10 +954,17 @@ export function CreateLeaseClient() {
                     <div className="animate-in fade-in slide-in-from-right-3 duration-300 divide-y divide-neutral-200/40">
                         <ReviewCard title="Property" icon={Building2} onEdit={() => setCurrentStep('property')}>
                             <div className="flex items-center gap-3.5">
-                                <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-neutral-100">
+                                <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-neutral-100">
                                     {selectedProperty?.imageUrls?.[0] ? (
-                                        /* eslint-disable-next-line @next/next/no-img-element */
-                                        <img src={selectedProperty.imageUrls[0]} alt={selectedProperty.title} className="h-full w-full object-cover" />
+                                        <OptimizedImage
+                                            src={selectedProperty.imageUrls[0]}
+                                            alt={selectedProperty.title}
+                                            fill
+                                            sizes="48px"
+                                            qualityPreset="thumbnail"
+                                            showSkeleton={false}
+                                            className="h-full w-full object-cover"
+                                        />
                                     ) : (
                                         <Building2 className="h-5 w-5 text-neutral-400" strokeWidth={1.8} />
                                     )}

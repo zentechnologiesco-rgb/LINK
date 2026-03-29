@@ -26,7 +26,7 @@ export function AuthBrandLink({ className }: AuthBrandLinkProps) {
                 className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10"
             />
             <span className="text-[22px] font-bold leading-none tracking-tight text-neutral-900 sm:text-[24px]">
-                LINK
+                Link
             </span>
         </Link>
     )

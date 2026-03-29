@@ -28,6 +28,7 @@ import { getPropertyWorkflow, type PropertyWorkflow } from '@/lib/property-workf
 import { PropertyActions } from './PropertyActions'
 import { useUser } from '@/components/providers/UserProvider'
 import { useCachedQuery } from '@/hooks/useOptimisticQuery'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 
 interface Property {
     _id: Id<"properties">
@@ -298,10 +299,12 @@ function PropertyCard({
         <article className="group relative overflow-hidden rounded-[24px] border border-neutral-200/80 bg-neutral-50/50 transition-all hover:bg-neutral-50 shadow-sm">
             {/* Property Image Hero */}
             <div className="relative aspect-[16/10] w-full shrink-0 bg-neutral-100 sm:aspect-[16/11]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <OptimizedImage
                     src={images[0]}
                     alt={property.title}
+                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                    qualityPreset="card"
                     className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/40" />

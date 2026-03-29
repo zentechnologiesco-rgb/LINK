@@ -24,8 +24,8 @@ export function createPwaIcon(size: number) {
           src={logoDataUrl}
           alt="LINK logo"
           style={{
-            width: '470%',
-            height: '470%',
+            width: '390%',
+            height: '390%',
             objectFit: 'contain',
           }}
         />

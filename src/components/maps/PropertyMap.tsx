@@ -114,6 +114,56 @@ function createPropertyPopupContent(
     return wrapper
 }
 
+function add3DBuildingsLayer(mapInstance: mapboxgl.Map) {
+    if (mapInstance.getLayer('3d-buildings')) return
+
+    const layers = mapInstance.getStyle().layers
+    const labelLayerId = layers?.find(
+        (layer) => layer.type === 'symbol' && layer.layout?.['text-field']
+    )?.id
+
+    mapInstance.addLayer(
+        {
+            id: '3d-buildings',
+            source: 'composite',
+            'source-layer': 'building',
+            filter: ['==', 'extrude', 'true'],
+            type: 'fill-extrusion',
+            layout: {
+                visibility: 'none'
+            },
+            minzoom: 12,
+            paint: {
+                'fill-extrusion-color': [
+                    'interpolate',
+                    ['linear'],
+                    ['get', 'height'],
+                    0, '#e5e7eb',
+                    50, '#d1d5db',
+                    100, '#9ca3af',
+                    200, '#6b7280'
+                ],
+                'fill-extrusion-height': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    12, 0,
+                    13, ['get', 'height']
+                ],
+                'fill-extrusion-base': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    12, 0,
+                    13, ['get', 'min_height']
+                ],
+                'fill-extrusion-opacity': 0.8
+            }
+        },
+        labelLayerId
+    )
+}
+
 export function PropertyMap({
     properties,
     onPropertyClick,
@@ -130,6 +180,8 @@ export function PropertyMap({
 
     // Store properties in a ref to compare changes
     const prevPropertiesRef = useRef<string>('')
+    const hasFitBoundsRef = useRef(false)
+    const has3DBuildingsRef = useRef(false)
 
     // Get token
     const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
@@ -176,8 +228,8 @@ export function PropertyMap({
                 style: 'mapbox://styles/mapbox/streets-v12',
                 center: center,
                 zoom: zoom,
-                pitch: is3D ? 45 : 0,
-                bearing: is3D ? -17.6 : 0,
+                pitch: 0,
+                bearing: 0,
                 antialias: false,
                 attributionControl: false
             })
@@ -190,7 +242,10 @@ export function PropertyMap({
                 // Add clustered source
                 map.current.addSource('properties', {
                     type: 'geojson',
-                    data: getGeoJSON(),
+                    data: {
+                        type: 'FeatureCollection',
+                        features: [],
+                    },
                     cluster: true,
                     clusterMaxZoom: CLUSTER_MAX_ZOOM,
                     clusterRadius: CLUSTER_RADIUS
@@ -289,53 +344,6 @@ export function PropertyMap({
                     }
                 })
 
-                // Add 3D building layer
-                const layers = map.current.getStyle().layers
-                const labelLayerId = layers?.find(
-                    (layer) => layer.type === 'symbol' && layer.layout?.['text-field']
-                )?.id
-
-                map.current.addLayer(
-                    {
-                        id: '3d-buildings',
-                        source: 'composite',
-                        'source-layer': 'building',
-                        filter: ['==', 'extrude', 'true'],
-                        type: 'fill-extrusion',
-                        layout: {
-                            visibility: is3D ? 'visible' : 'none'
-                        },
-                        minzoom: 12,
-                        paint: {
-                            'fill-extrusion-color': [
-                                'interpolate',
-                                ['linear'],
-                                ['get', 'height'],
-                                0, '#e5e7eb',
-                                50, '#d1d5db',
-                                100, '#9ca3af',
-                                200, '#6b7280'
-                            ],
-                            'fill-extrusion-height': [
-                                'interpolate',
-                                ['linear'],
-                                ['zoom'],
-                                12, 0,
-                                13, ['get', 'height']
-                            ],
-                            'fill-extrusion-base': [
-                                'interpolate',
-                                ['linear'],
-                                ['zoom'],
-                                12, 0,
-                                13, ['get', 'min_height']
-                            ],
-                            'fill-extrusion-opacity': 0.8
-                        }
-                    },
-                    labelLayerId
-                )
-
                 setMapLoaded(true)
             })
 
@@ -354,7 +362,7 @@ export function PropertyMap({
             map.current = null
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [is3D, token])
+    }, [token])
 
     // Add interactions after map loads
     useEffect(() => {
@@ -362,8 +370,7 @@ export function PropertyMap({
 
         const mapInstance = map.current
 
-        // Click on cluster to zoom in
-        mapInstance.on('click', 'cluster-inner', (e) => {
+        const handleClusterClick = (e: mapboxgl.MapLayerMouseEvent) => {
             const features = mapInstance.queryRenderedFeatures(e.point, {
                 layers: ['cluster-inner']
             })
@@ -384,10 +391,9 @@ export function PropertyMap({
                     zoom: zoom ?? 14
                 })
             })
-        })
+        }
 
-        // Click on individual property to navigate
-        mapInstance.on('click', 'unclustered-point-bg', (e) => {
+        const handlePropertyClick = (e: mapboxgl.MapLayerMouseEvent) => {
             const features = mapInstance.queryRenderedFeatures(e.point, {
                 layers: ['unclustered-point-bg']
             })
@@ -403,10 +409,9 @@ export function PropertyMap({
                     })
                 }
             }
-        })
+        }
 
-        // Hover on individual property - show popup
-        mapInstance.on('mouseenter', 'unclustered-point-bg', (e) => {
+        const handlePropertyMouseEnter = (e: mapboxgl.MapLayerMouseEvent) => {
             mapInstance.getCanvas().style.cursor = 'pointer'
 
             const features = mapInstance.queryRenderedFeatures(e.point, {
@@ -437,21 +442,36 @@ export function PropertyMap({
                     ),
                 )
                 .addTo(mapInstance)
-        })
+        }
 
-        mapInstance.on('mouseleave', 'unclustered-point-bg', () => {
+        const handlePropertyMouseLeave = () => {
             mapInstance.getCanvas().style.cursor = ''
             popup.current?.remove()
-        })
+        }
 
-        // Cursor changes for clusters
-        mapInstance.on('mouseenter', 'cluster-inner', () => {
+        const handleClusterMouseEnter = () => {
             mapInstance.getCanvas().style.cursor = 'pointer'
-        })
+        }
 
-        mapInstance.on('mouseleave', 'cluster-inner', () => {
+        const handleClusterMouseLeave = () => {
             mapInstance.getCanvas().style.cursor = ''
-        })
+        }
+
+        mapInstance.on('click', 'cluster-inner', handleClusterClick)
+        mapInstance.on('click', 'unclustered-point-bg', handlePropertyClick)
+        mapInstance.on('mouseenter', 'unclustered-point-bg', handlePropertyMouseEnter)
+        mapInstance.on('mouseleave', 'unclustered-point-bg', handlePropertyMouseLeave)
+        mapInstance.on('mouseenter', 'cluster-inner', handleClusterMouseEnter)
+        mapInstance.on('mouseleave', 'cluster-inner', handleClusterMouseLeave)
+
+        return () => {
+            mapInstance.off('click', 'cluster-inner', handleClusterClick)
+            mapInstance.off('click', 'unclustered-point-bg', handlePropertyClick)
+            mapInstance.off('mouseenter', 'unclustered-point-bg', handlePropertyMouseEnter)
+            mapInstance.off('mouseleave', 'unclustered-point-bg', handlePropertyMouseLeave)
+            mapInstance.off('mouseenter', 'cluster-inner', handleClusterMouseEnter)
+            mapInstance.off('mouseleave', 'cluster-inner', handleClusterMouseLeave)
+        }
 
     }, [mapLoaded, onPropertyClick, router])
 
@@ -459,10 +479,11 @@ export function PropertyMap({
     useEffect(() => {
         if (!mapLoaded || !map.current) return
 
-        // Check if property IDs actually changed
-        const currentPropertiesIds = properties.map(p => p.id).join(',')
-        if (currentPropertiesIds === prevPropertiesRef.current) return
-        prevPropertiesRef.current = currentPropertiesIds
+        const currentSignature = properties
+            .map((property) => `${property.id}:${property.coordinates?.lat ?? ''}:${property.coordinates?.lng ?? ''}:${property.price_nad}`)
+            .join('|')
+        if (currentSignature === prevPropertiesRef.current) return
+        prevPropertiesRef.current = currentSignature
 
         const source = map.current.getSource('properties') as mapboxgl.GeoJSONSource
         if (source) {
@@ -473,9 +494,11 @@ export function PropertyMap({
     // Fit bounds to show all properties
     useEffect(() => {
         if (!mapLoaded || !map.current || properties.length === 0) return
+        if (hasFitBoundsRef.current) return
 
         const validProperties = properties.filter(p => p.coordinates?.lat && p.coordinates?.lng)
         if (validProperties.length === 0) return
+        hasFitBoundsRef.current = true
 
         // Only fit bounds on initial load or significant change
         if (validProperties.length > 1) {
@@ -487,17 +510,20 @@ export function PropertyMap({
             map.current.fitBounds(bounds, {
                 padding: { top: 50, bottom: 50, left: 50, right: 50 },
                 maxZoom: 15,
-                duration: 1000
+                duration: 0
             })
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [mapLoaded]) // Only run once when map loads
+    }, [mapLoaded, properties])
 
     // Handle 3D toggle
     useEffect(() => {
         if (!mapLoaded || !map.current) return
 
         if (is3D) {
+            if (!has3DBuildingsRef.current) {
+                add3DBuildingsLayer(map.current)
+                has3DBuildingsRef.current = true
+            }
             map.current.easeTo({
                 pitch: 45,
                 bearing: -17.6,
