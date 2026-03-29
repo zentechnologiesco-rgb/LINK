@@ -10,7 +10,6 @@ import {
     CalendarRange,
     Cat,
     ChevronLeft,
-    ChevronRight,
     CircleParking,
     Cigarette,
     Clock3,
@@ -116,7 +115,10 @@ export function TenantLeaseDetailClient({ leaseId }: { leaseId: string }) {
     const isRevisionFlow = lease.status === 'revision_requested'
     const pendingAction = ['sent_to_tenant', 'revision_requested'].includes(lease.status)
     const missingDocs = REQUIRED_TENANT_DOCUMENTS.filter((type) => !tenantDocuments.find((document) => document.type === type))
-    const nextPayment = payments.find((payment) => payment.status !== 'paid') ?? null
+    const upcomingRentPayments = payments
+        .filter((payment) => payment.type === 'rent' && payment.status !== 'paid')
+        .toSorted((a, b) => a.dueDate.localeCompare(b.dueDate))
+    const nextPayment = upcomingRentPayments[0] ?? null
     const totals = payments.reduce((acc, payment) => {
         acc[payment.status] += payment.amount
         return acc
@@ -273,7 +275,7 @@ export function TenantLeaseDetailClient({ leaseId }: { leaseId: string }) {
 
                 <section>
                     <div className="flex items-end justify-between px-5 sm:px-6">
-                        <SectionHeader title="Payment Snapshot" description="Latest items and next payment." />
+                        <SectionHeader title="Rent Schedule" description="Your next rent items in due-date order." />
                         <Link href="/tenant/payments" className="mb-3">
                             <span className="text-[13px] font-semibold text-neutral-950 hover:underline">View all</span>
                         </Link>
@@ -284,8 +286,8 @@ export function TenantLeaseDetailClient({ leaseId }: { leaseId: string }) {
                         <InlineMetric label="Overdue" value={formatCurrency(totals.overdue)} tone="danger" />
                     </div>
                     <GroupedSection>
-                        {payments.length > 0 ? (
-                            payments.slice(0, 4).map((payment) => (
+                        {upcomingRentPayments.length > 0 ? (
+                            upcomingRentPayments.slice(0, 4).map((payment) => (
                                 <ListRow 
                                     key={payment._id}
                                     label={payment.type.replace('_', ' ')}
@@ -297,7 +299,9 @@ export function TenantLeaseDetailClient({ leaseId }: { leaseId: string }) {
                             ))
                         ) : (
                             <div className="px-5 py-6 text-center text-[14px] text-neutral-500">
-                                Payment items appear once the lease is approved.
+                                {payments.length > 0
+                                    ? 'No upcoming rent items are waiting right now.'
+                                    : 'Payment items appear once the lease is approved.'}
                             </div>
                         )}
                     </GroupedSection>

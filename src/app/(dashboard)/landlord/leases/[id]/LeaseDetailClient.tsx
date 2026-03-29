@@ -12,16 +12,13 @@ import {
     Cat,
     Check,
     ChevronLeft,
-    ChevronRight,
     CircleParking,
     Cigarette,
     Clock3,
     Dog,
-    Download,
     Eye,
     FileText,
     Home,
-    Layers3,
     Loader2,
     MapPin,
     MessageSquareMore,
@@ -39,14 +36,12 @@ import {
 
 import { api } from '../../../../../../convex/_generated/api'
 import { Id } from '../../../../../../convex/_generated/dataModel'
-import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { SignatureCanvas } from '@/components/leases/SignatureCanvas'
 import { LeaseStatusBadge, LeaseStatusTimeline } from '@/components/leases/LeaseStatusTimeline'
 import {
     Dialog,
     DialogContent,
-    DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
@@ -167,6 +162,9 @@ export function LeaseDetailClient({ leaseId }: { leaseId: string }) {
     const paidPayments = payments.filter((payment) => payment.status === 'paid')
     const pendingPayments = payments.filter((payment) => payment.status === 'pending')
     const overduePayments = payments.filter((payment) => payment.status === 'overdue')
+    const upcomingRentPayments = payments
+        .filter((payment) => payment.type === 'rent' && payment.status !== 'paid')
+        .toSorted((a, b) => a.dueDate.localeCompare(b.dueDate))
 
     const totalCollected = paidPayments.reduce((sum, payment) => sum + payment.amount, 0)
     const totalPending = pendingPayments.reduce((sum, payment) => sum + payment.amount, 0)
@@ -423,7 +421,7 @@ export function LeaseDetailClient({ leaseId }: { leaseId: string }) {
                 </div>
 
                 {/* Payments */}
-                <SectionHeader title="Financials" description="Snapshot of payments related to this lease." />
+                <SectionHeader title="Rent Schedule" description="Next rent items in due-date order." />
                 <div className="px-5 sm:px-6">
                     <div className="flex flex-wrap gap-2 pb-4">
                         <MiniStat label="Collected" value={formatCurrency(totalCollected)} tone="success" />
@@ -431,9 +429,9 @@ export function LeaseDetailClient({ leaseId }: { leaseId: string }) {
                         <MiniStat label="Overdue" value={formatCurrency(totalOverdue)} tone="danger" />
                     </div>
                     <div className="overflow-hidden rounded-[20px] border border-neutral-200/80 bg-neutral-50/50">
-                        {payments.length > 0 ? (
+                        {upcomingRentPayments.length > 0 ? (
                             <div className="divide-y divide-neutral-200/60">
-                                {payments.slice(0, 5).map((payment) => (
+                                {upcomingRentPayments.slice(0, 5).map((payment) => (
                                     <div key={payment._id} className="flex items-center justify-between px-4 py-3 sm:px-5">
                                         <div>
                                             <p className="text-[14px] font-semibold capitalize text-neutral-950">
@@ -461,10 +459,12 @@ export function LeaseDetailClient({ leaseId }: { leaseId: string }) {
                             </div>
                         ) : (
                             <div className="px-5 py-6 text-center text-[13px] text-neutral-500">
-                                No payment records generated yet.
+                                {payments.length > 0
+                                    ? 'No upcoming rent items are waiting right now.'
+                                    : 'No payment records generated yet.'}
                             </div>
                         )}
-                        {payments.length > 5 && (
+                        {upcomingRentPayments.length > 5 && (
                             <Link href="/landlord/payments" className="block border-t border-neutral-200/60 bg-white py-3 text-center text-[13px] font-semibold text-neutral-600 hover:bg-neutral-50">
                                 View all payments
                             </Link>
@@ -515,7 +515,7 @@ export function LeaseDetailClient({ leaseId }: { leaseId: string }) {
                 {/* Documents & Signatures */}
                 {((lease.tenantDocuments && lease.tenantDocuments.length > 0) || lease.tenantSignatureData) && (
                     <GroupedSection title="Documents & Signatures">
-                        {lease.tenantDocuments?.map((document, index) => {
+                        {lease.tenantDocuments?.map((document) => {
                             const documentUrl = documentUrlMap[document.storageId] ?? null
                             const documentLabel = TENANT_DOCUMENT_LABELS[document.type as keyof typeof TENANT_DOCUMENT_LABELS] || document.type.replace(/_/g, ' ')
 

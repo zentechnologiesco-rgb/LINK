@@ -15,9 +15,7 @@ import {
     LayoutDashboard,
     Loader2,
     Lock,
-    LogOut,
     Mail,
-    Phone,
     ShieldCheck,
     UserRound,
     Users,
@@ -65,14 +63,14 @@ function getQuickLinks(role: SettingsUser['role']): QuickLink[] {
         return [
             { label: 'Saved Properties', href: '/tenant/saved', icon: <Heart className="h-3.5 w-3.5 text-white" />, meta: 'Your bookmarks' },
             { label: 'My Leases', href: '/tenant/leases', icon: <FileText className="h-3.5 w-3.5 text-white" />, meta: 'Agreements' },
-            { label: 'Payments', href: '/tenant/payments', icon: <CreditCard className="h-3.5 w-3.5 text-white" />, meta: 'Coming soon' },
+            { label: 'Payments', href: '/tenant/payments', icon: <CreditCard className="h-3.5 w-3.5 text-white" />, meta: 'Gateway later' },
         ]
     }
     if (role === 'landlord') {
         return [
             { label: 'My Properties', href: '/landlord/properties', icon: <Building2 className="h-3.5 w-3.5 text-white" />, meta: 'Listings' },
             { label: 'Leases', href: '/landlord/leases', icon: <FileText className="h-3.5 w-3.5 text-white" />, meta: 'Agreements' },
-            { label: 'Payments', href: '/landlord/payments', icon: <CreditCard className="h-3.5 w-3.5 text-white" />, meta: 'Coming soon' },
+            { label: 'Payments', href: '/landlord/payments', icon: <CreditCard className="h-3.5 w-3.5 text-white" />, meta: 'Gateway later' },
         ]
     }
     return [

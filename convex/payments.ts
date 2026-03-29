@@ -180,9 +180,9 @@ async function getLeaseForAuthorizedUser(ctx: QueryCtx, leaseId: Id<"leases">, u
 export const record = mutation({
     args: {
         paymentId: v.id("payments"),
-        paymentMethod: v.string(),
+        paymentMethod: v.union(v.literal("cash"), v.literal("bank_transfer"), v.literal("eft")),
         paymentDate: v.optional(v.number()),
-        notes: v.optional(v.string()),
+        paymentReference: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         const userId = await auth.getUserId(ctx);
@@ -190,6 +190,12 @@ export const record = mutation({
 
         const payment = await ctx.db.get(args.paymentId);
         if (!payment) throw new Error("Payment not found");
+        if (payment.type === "deposit") {
+            throw new Error("Use the deposit collection flow for security deposits");
+        }
+        if (payment.status === "paid") {
+            throw new Error("This payment has already been recorded");
+        }
 
         const lease = await ctx.db.get(payment.leaseId);
         if (!lease) throw new Error("Lease not found");
@@ -203,7 +209,7 @@ export const record = mutation({
             status: "paid",
             paidAt: args.paymentDate || Date.now(),
             paymentMethod: args.paymentMethod,
-            notes: args.notes,
+            paymentReference: args.paymentReference,
         });
 
         return { success: true };

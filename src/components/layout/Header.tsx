@@ -29,6 +29,7 @@ import {
     MessageSquare,
     LayoutDashboard,
     FileText,
+    Wallet,
 } from 'lucide-react'
 
 interface HeaderProps {
@@ -121,6 +122,13 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                             </span>
                         )}
                     </DropdownMenuItem>
+                    <DropdownMenuItem
+                        className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium focus:bg-neutral-50"
+                        onClick={() => router.push('/tenant/payments')}
+                    >
+                        <Wallet className="mr-3 h-4 w-4 opacity-70" />
+                        Payments
+                    </DropdownMenuItem>
                 </>
             )}
 
@@ -146,6 +154,13 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                 {leaseActionCount}
                             </span>
                         )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium focus:bg-neutral-50"
+                        onClick={() => router.push('/landlord/payments')}
+                    >
+                        <Wallet className="mr-3 h-4 w-4 opacity-70" />
+                        Payments
                     </DropdownMenuItem>
                 </>
             )}

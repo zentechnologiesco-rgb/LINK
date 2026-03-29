@@ -363,6 +363,7 @@ export default defineSchema({
     dueDate: v.string(),
     paidAt: v.optional(v.number()),
     paymentMethod: v.optional(v.string()),
+    paymentReference: v.optional(v.string()),
     notes: v.optional(v.string()),
   })
     .index("by_leaseId", ["leaseId"])
