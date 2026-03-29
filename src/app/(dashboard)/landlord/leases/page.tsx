@@ -24,6 +24,7 @@ import { LEASE_STATUS_LABELS, type LeaseStatus } from '@/constants/lease'
 import { cn } from '@/lib/utils'
 import { useUser } from '@/components/providers/UserProvider'
 import { useCachedQuery } from '@/hooks/useOptimisticQuery'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 
 /* ── Types ──────────────────────────────────────────────── */
 
@@ -309,12 +310,15 @@ function LeaseCard({ lease }: { lease: LandlordLease }) {
         <Link href={`/landlord/leases/${lease._id}`} className="block">
             <article className="group flex items-center gap-3.5 px-4 py-3.5 transition-all duration-150 active:scale-[0.98] active:bg-neutral-50/80 hover:bg-neutral-50/60 sm:gap-4 sm:px-5 sm:py-4">
                 {/* Thumbnail */}
-                <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-neutral-100 sm:h-[58px] sm:w-[58px]">
+                <div className="relative flex h-[52px] w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-neutral-100 sm:h-[58px] sm:w-[58px]">
                     {lease.property?.imageUrl ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
+                        <OptimizedImage
                             src={lease.property.imageUrl}
                             alt={lease.property?.title || 'Property'}
+                            fill
+                            sizes="(max-width: 640px) 52px, 58px"
+                            qualityPreset="thumbnail"
+                            showSkeleton={false}
                             className="h-full w-full object-cover"
                         />
                     ) : (

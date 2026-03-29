@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useMemo, Suspense, lazy } from "react"
+import { useEffect, useMemo, useState } from "react"
+import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 import { api } from "../../convex/_generated/api"
 import type { Id } from "../../convex/_generated/dataModel"
@@ -37,8 +38,30 @@ import { useDebounce } from "@/hooks/useDebounce"
 import { useCachedQuery } from "@/hooks/useOptimisticQuery"
 import { AMENITIES } from "@/constants/property"
 
-// Lazy load the map component for faster initial page load
-const PropertyMap = lazy(() => import("@/components/maps/PropertyMap").then(m => ({ default: m.PropertyMap })))
+const loadPropertyMap = () => import("@/components/maps/PropertyMap").then((module) => module.PropertyMap)
+
+const PropertyMap = dynamic(loadPropertyMap, {
+    ssr: false,
+    loading: () => (
+        <div className="h-full w-full bg-neutral-100/50 animate-pulse flex items-center justify-center">
+            <div className="flex flex-col items-center gap-3 text-neutral-400">
+                <MapIcon className="w-8 h-8" />
+            </div>
+        </div>
+    ),
+})
+
+let propertyMapWarmPromise: Promise<unknown> | null = null
+
+function warmPropertyMap() {
+    propertyMapWarmPromise ??= Promise.all([
+        loadPropertyMap(),
+        import("mapbox-gl").then((module) => {
+            module.default.prewarm()
+        }),
+    ])
+    return propertyMapWarmPromise
+}
 
 // --- Types ---
 interface Property {
@@ -107,9 +130,8 @@ export default function HomePage() {
         minPrice,
         maxPrice,
         bedrooms: minBedrooms ?? undefined,
-        propertyType: selectedPropertyType ?? undefined,
         amenityNames: selectedAmenities.length > 0 ? selectedAmenities : undefined,
-    }), [debouncedSearchQuery, maxPrice, minBedrooms, minPrice, selectedAmenities, selectedPropertyType])
+    }), [debouncedSearchQuery, maxPrice, minBedrooms, minPrice, selectedAmenities])
 
     // Data Fetching
     const {
@@ -125,6 +147,16 @@ export default function HomePage() {
         propertyQueryArgs
     )
     const { user: currentUser } = useUser()
+
+    useEffect(() => {
+        if (viewMode === "map") return
+
+        const timeoutId = window.setTimeout(() => {
+            void warmPropertyMap()
+        }, 1200)
+
+        return () => window.clearTimeout(timeoutId)
+    }, [viewMode])
 
     // Pull-to-refresh handler
     const handleRefresh = async () => {
@@ -165,16 +197,23 @@ export default function HomePage() {
         return Array.from(types).sort()
     }, [normalizedProperties])
 
-    const filtered = normalizedProperties
+    const filtered = useMemo(() => {
+        if (!selectedPropertyType) return normalizedProperties
+        return normalizedProperties.filter((property) => property.type === selectedPropertyType)
+    }, [normalizedProperties, selectedPropertyType])
 
-    const mapData = useMemo(() => filtered.map((p, i) => ({
-        id: p.id,
-        title: p.title,
-        price_nad: p.price,
-        address: p.address,
-        images: p.images,
-        coordinates: p.coordinates || { lat: -22.56 + i * 0.01, lng: 17.06 + (i % 5) * 0.02 }
-    })), [filtered])
+    const mapData = useMemo(() => (
+        filtered
+            .filter((property) => property.coordinates?.lat != null && property.coordinates?.lng != null)
+            .map((property) => ({
+                id: property.id,
+                title: property.title,
+                price_nad: property.price,
+                address: property.address,
+                images: property.images,
+                coordinates: property.coordinates!,
+            }))
+    ), [filtered])
 
     const activeFilterCount = (minBedrooms !== null ? 1 : 0) +
         (priceRange.min ? 1 : 0) +
@@ -187,6 +226,10 @@ export default function HomePage() {
         setMinBedrooms(null)
         setSelectedAmenities([])
         setSelectedPropertyType(null)
+    }
+
+    const handleMapIntent = () => {
+        void warmPropertyMap()
     }
 
     const isMapView = viewMode === 'map'
@@ -235,6 +278,9 @@ export default function HomePage() {
                             <button
                                 type="button"
                                 onClick={() => setViewMode(viewMode === 'grid' ? 'map' : 'grid')}
+                                onMouseEnter={handleMapIntent}
+                                onFocus={handleMapIntent}
+                                onTouchStart={handleMapIntent}
                                 aria-label={viewMode === 'grid' ? 'Show map view' : 'Show list view'}
                                 className={cn(
                                     "h-[52px] w-[52px] shrink-0 rounded-[16px] flex items-center justify-center transition-all outline-none md:hidden",
@@ -419,15 +465,7 @@ export default function HomePage() {
                     )}
                     {viewMode === 'map' ? (
                         <div className="h-[75vh] w-full rounded-[24px] overflow-hidden relative border border-neutral-200/50 shadow-sm isolate">
-                            <Suspense fallback={
-                                <div className="h-full w-full bg-neutral-100/50 animate-pulse flex items-center justify-center">
-                                    <div className="flex flex-col items-center gap-3 text-neutral-400">
-                                        <MapIcon className="w-8 h-8" />
-                                    </div>
-                                </div>
-                            }>
-                                <PropertyMap properties={mapData} />
-                            </Suspense>
+                            <PropertyMap properties={mapData} />
                         </div>
                     ) : (
                         <div>
@@ -462,6 +500,9 @@ export default function HomePage() {
                 <div className="pointer-events-auto">
                     <button
                         onClick={() => setViewMode(viewMode === 'grid' ? 'map' : 'grid')}
+                        onMouseEnter={handleMapIntent}
+                        onFocus={handleMapIntent}
+                        onTouchStart={handleMapIntent}
                         className={cn(
                             "pointer-events-auto flex h-14 items-center gap-3 rounded-full px-4 pr-5 font-semibold tracking-tight",
                             mapToggleDesktopClassName
