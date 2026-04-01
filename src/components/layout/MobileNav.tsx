@@ -1,59 +1,29 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useSearchParams } from 'next/navigation'
-import { cn } from '@/lib/utils'
-import { Home, Heart, MessageSquare, User, Building2, LayoutDashboard, FileText, LucideIcon, Wallet } from 'lucide-react'
 import { Suspense } from 'react'
+import { usePathname, useSearchParams } from 'next/navigation'
+
+import { getNavigationItemsForSurface, type NavigationBadgeType } from '@/config/navigation'
 import { useNotificationCounts } from '@/components/providers/NotificationCountsProvider'
+import type { UserRole } from '@/lib/user-preferences'
+import { cn } from '@/lib/utils'
 
 type MobileNavUser = {
-    role?: 'tenant' | 'landlord' | 'admin' | null
+    role?: UserRole | null
 } | null
 
 interface MobileNavProps {
     user?: MobileNavUser
-    userRole?: 'tenant' | 'landlord' | 'admin' | null
+    userRole?: UserRole | null
 }
-
-interface NavItem {
-    label: string
-    href: string
-    icon: LucideIcon
-    badgeType?: 'messages' | 'leases'
-}
-
-const tenantNavItems: NavItem[] = [
-    { label: 'Home', href: '/', icon: Home },
-    { label: 'Saved', href: '/tenant/saved', icon: Heart },
-    { label: 'Leases', href: '/tenant/leases', icon: FileText, badgeType: 'leases' },
-    { label: 'Payments', href: '/tenant/payments', icon: Wallet },
-    { label: 'Messages', href: '/chat', icon: MessageSquare, badgeType: 'messages' },
-    { label: 'Profile', href: '/settings', icon: User },
-]
-
-const landlordNavItems: NavItem[] = [
-    { label: 'Home', href: '/', icon: Home },
-    { label: 'Properties', href: '/landlord/properties', icon: Building2 },
-    { label: 'Leases', href: '/landlord/leases', icon: FileText, badgeType: 'leases' },
-    { label: 'Payments', href: '/landlord/payments', icon: Wallet },
-    { label: 'Messages', href: '/chat', icon: MessageSquare, badgeType: 'messages' },
-]
-
-const adminNavItems: NavItem[] = [
-    { label: 'Home', href: '/', icon: Home },
-    { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-    { label: 'Messages', href: '/chat', icon: MessageSquare, badgeType: 'messages' },
-    { label: 'Profile', href: '/settings', icon: User },
-]
 
 function MobileNavInner({ user, userRole }: MobileNavProps) {
     const pathname = usePathname()
     const searchParams = useSearchParams()
-    const currentRole = userRole || user?.role
+    const currentRole = (userRole || user?.role || null) as UserRole | null
     const { unreadCount, leaseActionCount } = useNotificationCounts()
 
-    // Hide mobile nav completely when inside a chat thread, creation wizards, or detail pages with action bars
     const isChatThread = pathname === '/chat' && (
         searchParams.get('id') !== null ||
         searchParams.get('propertyId') !== null
@@ -61,11 +31,9 @@ function MobileNavInner({ user, userRole }: MobileNavProps) {
     const isWizard = pathname?.endsWith('/new') || pathname?.includes('/edit')
     const isLeaseDetail = pathname?.includes('/leases/') && pathname.split('/').pop() !== 'leases'
 
-    if (!user || isChatThread || isWizard || isLeaseDetail) return null
+    if (!user || !currentRole || isChatThread || isWizard || isLeaseDetail) return null
 
-    let items: NavItem[] = tenantNavItems
-    if (currentRole === 'landlord') items = landlordNavItems
-    else if (currentRole === 'admin') items = adminNavItems
+    const items = getNavigationItemsForSurface(currentRole, 'mobileNav')
 
     const navLabel = currentRole === 'admin'
         ? 'Admin navigation'
@@ -73,7 +41,7 @@ function MobileNavInner({ user, userRole }: MobileNavProps) {
             ? 'Landlord navigation'
             : 'Primary navigation'
 
-    const getBadgeCount = (badgeType?: 'messages' | 'leases') => {
+    const getBadgeCount = (badgeType?: NavigationBadgeType) => {
         if (badgeType === 'messages') return unreadCount
         if (badgeType === 'leases') return leaseActionCount
         return 0
@@ -87,13 +55,11 @@ function MobileNavInner({ user, userRole }: MobileNavProps) {
 
     return (
         <>
-            {/* Spacer to prevent content from being hidden behind nav */}
             <div
                 className="mobile-nav-spacer md:hidden"
                 style={{ height: 'calc(6.55rem + env(safe-area-inset-bottom, 0px))' }}
             />
 
-            {/* Floating glass bottom navigation */}
             <nav
                 aria-label={navLabel}
                 className="mobile-nav-root fixed inset-x-0 bottom-0 z-50 px-3 md:hidden"
@@ -114,7 +80,7 @@ function MobileNavInner({ user, userRole }: MobileNavProps) {
 
                                 return (
                                     <Link
-                                        key={item.href}
+                                        key={item.id}
                                         href={item.href}
                                         aria-current={isActive ? 'page' : undefined}
                                         className={cn(

@@ -208,7 +208,7 @@ function SignInContent() {
                         
                         <div className="text-center pt-1.5 pb-2">
                             <p className="text-[15px] font-medium text-neutral-500">
-                                Don't have an account?{' '}
+                                Don&apos;t have an account?{' '}
                                 <Link
                                     href={redirectUrl ? `/sign-up?redirect=${encodeURIComponent(redirectUrl)}` : '/sign-up'}
                                     className="text-black font-bold outline-none rounded-md focus-visible:ring-2 focus-visible:ring-black"

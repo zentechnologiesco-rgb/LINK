@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { CreateLeaseClient } from './CreateLeaseClient'
+import { CreateLeaseWorkspace } from './_components/CreateLeaseWorkspace'
 
 export default function CreateLeasePage() {
     return (
@@ -11,7 +11,7 @@ export default function CreateLeasePage() {
                 </div>
             </div>
         }>
-            <CreateLeaseClient />
+            <CreateLeaseWorkspace />
         </Suspense>
     )
 }

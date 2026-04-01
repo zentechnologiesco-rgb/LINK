@@ -20,13 +20,14 @@ export function createPwaIcon(size: number) {
           overflow: 'hidden',
         }}
       >
-        <img
-          src={logoDataUrl}
-          alt="LINK logo"
+        <div
           style={{
             width: '390%',
             height: '390%',
-            objectFit: 'contain',
+            backgroundImage: `url(${logoDataUrl})`,
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            backgroundSize: 'contain',
           }}
         />
       </div>

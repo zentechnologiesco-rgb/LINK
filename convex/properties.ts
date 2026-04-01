@@ -126,10 +126,11 @@ async function validateUnitImages(
 async function enrichProperty(
     ctx: QueryCtx,
     property: Doc<"properties">,
-    options?: { includeUnits?: boolean } & ViewerPermissions,
+    options?: { includeUnits?: boolean; includeVideos?: boolean } & ViewerPermissions,
 ) {
-    const [imageUrls, landlordInfo, storedUnits] = await Promise.all([
+    const [imageUrls, videoUrls, landlordInfo, storedUnits] = await Promise.all([
         resolveStorageUrls(ctx, property.images),
+        options?.includeVideos ? resolveStorageUrls(ctx, property.videos) : Promise.resolve(undefined),
         resolveLandlordInfo(ctx, property.landlordId, {
             includeEmail: options?.includePrivateLandlordContact,
         }),
@@ -157,6 +158,7 @@ async function enrichProperty(
         listingType: property.listingType ?? "single_home",
         publicationStatus: property.publicationStatus ?? (property.isAvailable ? "published" : "unpublished"),
         imageUrls,
+        ...(options?.includeVideos ? { videoUrls: videoUrls ?? [] } : {}),
         landlordInfo,
         amenityNames: property.amenityNames ?? [],
         minPriceNad: inventory.minPriceNad,
@@ -370,6 +372,65 @@ export const list = query({
     },
 });
 
+export const listDiscover = query({
+    args: {
+        limit: v.optional(v.number()),
+    },
+    handler: async (ctx, args) => {
+        const allProperties = await ctx.db.query("properties").collect();
+
+        const discoverCandidates = allProperties.filter((property) => {
+            const publicationStatus = property.publicationStatus ?? (property.isAvailable ? "published" : "unpublished");
+            return (
+                property.approvalStatus === "approved" &&
+                publicationStatus === "published" &&
+                Boolean(property.videos?.length)
+            );
+        });
+
+        const enriched = await Promise.all(
+            discoverCandidates.map((property) =>
+                enrichProperty(ctx, property, {
+                    publicOnly: true,
+                    includeVideos: true,
+                }),
+            ),
+        );
+
+        const filtered = enriched
+            .filter((property) => property.isPublicReady && (property.videoUrls?.length ?? 0) > 0)
+            .sort((a, b) => {
+                if (b.featured !== a.featured) return Number(b.featured) - Number(a.featured);
+                if (b.availableUnitCount !== a.availableUnitCount) return b.availableUnitCount - a.availableUnitCount;
+                return b._creationTime - a._creationTime;
+            });
+
+        const limited = args.limit ? filtered.slice(0, args.limit) : filtered;
+
+        return limited.map((property) => ({
+            _id: property._id,
+            landlordId: property.landlordId,
+            title: property.title,
+            description: property.description,
+            city: property.city,
+            address: property.address,
+            propertyType: property.propertyType,
+            listingType: property.listingType,
+            minPriceNad: property.minPriceNad ?? property.priceNad,
+            maxPriceNad: property.maxPriceNad ?? property.priceNad,
+            bedrooms: property.bedrooms,
+            bathrooms: property.bathrooms,
+            sizeSqm: property.sizeSqm,
+            imageUrls: property.imageUrls,
+            videoUrl: property.videoUrls?.[0] ?? null,
+            unitCount: property.unitCount,
+            availableUnitCount: property.availableUnitCount,
+            unitTypeLabels: property.unitTypeLabels,
+            landlordInfo: property.landlordInfo,
+        }));
+    },
+});
+
 // Get property by ID with resolved media, landlord info, and units
 export const getById = query({
     args: { propertyId: v.id("properties") },
@@ -387,6 +448,7 @@ export const getById = query({
 
         const enrichedProperty = await enrichProperty(ctx, property, {
             includeUnits: true,
+            includeVideos: true,
             publicOnly: !canViewPrivate,
             includePrivateLandlordContact: canViewPrivate,
         });
@@ -606,7 +668,6 @@ export const update = mutation({
             "petPolicy",
             "utilitiesIncluded",
             "images",
-            "videos",
         ];
 
         const requiresReapproval =
@@ -648,7 +709,12 @@ export const update = mutation({
             await syncPropertyInventory(ctx, propertyId);
         }
 
-        return { success: true };
+        return {
+            success: true,
+            requiresReapproval,
+            approvalStatus: updatedProperty.approvalStatus,
+            publicationStatus: updatedProperty.publicationStatus,
+        };
     },
 });
 

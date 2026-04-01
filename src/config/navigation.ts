@@ -1,50 +1,190 @@
 import {
-    Home,
-    MessageSquare,
-    Heart,
-    FileCheck,
-    Wallet,
     Building2,
-    LayoutDashboard,
-    Users,
-    Shield,
     ClipboardList,
-    FileText
+    Clapperboard,
+    FileText,
+    Heart,
+    Home,
+    LayoutDashboard,
+    MessageSquare,
+    Shield,
+    User,
+    Users,
+    Wallet,
+    type LucideIcon,
 } from 'lucide-react'
 
-export interface NavItem {
+import type { UserRole } from '@/lib/user-preferences'
+
+export type NavigationBadgeType = 'messages' | 'leases'
+export type NavigationSurface = 'headerMenu' | 'mobileNav' | 'settingsQuickLinks'
+
+export interface NavigationItem {
+    id: string
     label: string
     href: string
-    icon: React.ElementType
-    badge?: number
-    tag?: string
+    icon: LucideIcon
+    badgeType?: NavigationBadgeType
+    surfaces: NavigationSurface[]
+    settingsMeta?: string
 }
 
-export const publicNavItems: NavItem[] = [
-    { label: 'Home', href: '/', icon: Home },
+export const discoverNavItem: NavigationItem = {
+    id: 'discover',
+    label: 'Discover',
+    href: '/discover',
+    icon: Clapperboard,
+    surfaces: ['headerMenu', 'mobileNav'],
+}
+
+export const settingsNavItem: NavigationItem = {
+    id: 'settings',
+    label: 'Profile',
+    href: '/settings',
+    icon: User,
+    surfaces: ['mobileNav'],
+}
+
+const tenantNavigationItems: NavigationItem[] = [
+    discoverNavItem,
+    {
+        id: 'saved',
+        label: 'Saved',
+        href: '/tenant/saved',
+        icon: Heart,
+        surfaces: ['headerMenu', 'mobileNav', 'settingsQuickLinks'],
+        settingsMeta: 'Your bookmarks',
+    },
+    {
+        id: 'tenant-leases',
+        label: 'Leases',
+        href: '/tenant/leases',
+        icon: FileText,
+        badgeType: 'leases',
+        surfaces: ['headerMenu', 'mobileNav', 'settingsQuickLinks'],
+        settingsMeta: 'Agreements',
+    },
+    {
+        id: 'tenant-payments',
+        label: 'Payments',
+        href: '/tenant/payments',
+        icon: Wallet,
+        surfaces: ['headerMenu', 'mobileNav', 'settingsQuickLinks'],
+        settingsMeta: 'Payment tracking',
+    },
+    {
+        id: 'messages',
+        label: 'Messages',
+        href: '/chat',
+        icon: MessageSquare,
+        badgeType: 'messages',
+        surfaces: ['headerMenu', 'mobileNav'],
+    },
+    settingsNavItem,
 ]
 
-export const authenticatedNavItems: NavItem[] = [
-    { label: 'Messages', href: '/chat', icon: MessageSquare },
+const landlordNavigationItems: NavigationItem[] = [
+    discoverNavItem,
+    {
+        id: 'properties',
+        label: 'Properties',
+        href: '/landlord/properties',
+        icon: Building2,
+        surfaces: ['headerMenu', 'mobileNav', 'settingsQuickLinks'],
+        settingsMeta: 'Listings',
+    },
+    {
+        id: 'landlord-leases',
+        label: 'Leases',
+        href: '/landlord/leases',
+        icon: FileText,
+        badgeType: 'leases',
+        surfaces: ['headerMenu', 'mobileNav', 'settingsQuickLinks'],
+        settingsMeta: 'Agreements',
+    },
+    {
+        id: 'landlord-payments',
+        label: 'Payments',
+        href: '/landlord/payments',
+        icon: Wallet,
+        surfaces: ['headerMenu', 'mobileNav', 'settingsQuickLinks'],
+        settingsMeta: 'Collections',
+    },
+    {
+        id: 'messages',
+        label: 'Messages',
+        href: '/chat',
+        icon: MessageSquare,
+        badgeType: 'messages',
+        surfaces: ['headerMenu', 'mobileNav'],
+    },
 ]
 
-export const tenantNavItems: NavItem[] = [
-    { label: 'My Favorites', href: '/tenant/saved', icon: Heart },
-    { label: 'My Leases', href: '/tenant/leases', icon: FileCheck },
-    { label: 'Payments', href: '/tenant/payments', icon: Wallet },
+const adminNavigationItems: NavigationItem[] = [
+    {
+        id: 'home',
+        label: 'Home',
+        href: '/',
+        icon: Home,
+        surfaces: ['mobileNav'],
+    },
+    {
+        id: 'dashboard',
+        label: 'Dashboard',
+        href: '/admin',
+        icon: LayoutDashboard,
+        surfaces: ['headerMenu', 'mobileNav', 'settingsQuickLinks'],
+        settingsMeta: 'Overview',
+    },
+    {
+        id: 'users',
+        label: 'Users',
+        href: '/admin/users',
+        icon: Users,
+        surfaces: ['headerMenu', 'settingsQuickLinks'],
+        settingsMeta: 'Accounts',
+    },
+    {
+        id: 'property-requests',
+        label: 'Property Requests',
+        href: '/admin/property-requests',
+        icon: Shield,
+        surfaces: ['headerMenu', 'settingsQuickLinks'],
+        settingsMeta: 'Reviews',
+    },
+    {
+        id: 'landlord-requests',
+        label: 'Landlord Requests',
+        href: '/admin/landlord-requests',
+        icon: ClipboardList,
+        surfaces: ['headerMenu', 'settingsQuickLinks'],
+        settingsMeta: 'Verifications',
+    },
+    {
+        id: 'messages',
+        label: 'Messages',
+        href: '/chat',
+        icon: MessageSquare,
+        badgeType: 'messages',
+        surfaces: ['headerMenu', 'mobileNav'],
+    },
+    settingsNavItem,
 ]
 
-export const landlordNavItems: NavItem[] = [
-    { label: 'My Properties', href: '/landlord/properties', icon: Building2 },
-    { label: 'Leases', href: '/landlord/leases', icon: FileCheck },
-    { label: 'Payments', href: '/landlord/payments', icon: Wallet },
-]
+const roleNavigationItems = {
+    tenant: tenantNavigationItems,
+    landlord: landlordNavigationItems,
+    admin: adminNavigationItems,
+} satisfies Record<UserRole, NavigationItem[]>
 
-export const adminNavItems: NavItem[] = [
-    { label: 'Overview', href: '/admin', icon: LayoutDashboard },
-    { label: 'Users', href: '/admin/users', icon: Users },
-    { label: 'All Properties', href: '/admin/properties', icon: Building2 },
-    { label: 'Property Requests', href: '/admin/property-requests', icon: Shield },
-    { label: 'Landlord Requests', href: '/admin/landlord-requests', icon: ClipboardList },
-    { label: 'System Reports', href: '/admin/reports', icon: FileText },
-]
+export function canAccessDiscover(role?: UserRole | null) {
+    return role !== 'admin'
+}
+
+export function getNavigationItems(role: UserRole) {
+    return roleNavigationItems[role]
+}
+
+export function getNavigationItemsForSurface(role: UserRole, surface: NavigationSurface) {
+    return getNavigationItems(role).filter((item) => item.surfaces.includes(surface))
+}

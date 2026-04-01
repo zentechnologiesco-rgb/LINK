@@ -1,12 +1,11 @@
 'use client'
 
-import React from 'react'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { Anton } from 'next/font/google'
+import type { ReactNode } from 'react'
 
 interface AppLayoutProps {
-    children: React.ReactNode
+    children: ReactNode
 }
 
 // No sidebar, no global nav - each page handles its own layout
@@ -19,11 +18,6 @@ export function AppLayout({ children }: AppLayoutProps) {
 
     // Auth pages have their own full layout
     const isAuthPage = pathname?.startsWith('/sign-in') || pathname?.startsWith('/sign-up')
-
-    // Dashboard pages (will use DashboardLayout wrapper)
-    const isDashboardPage = pathname?.startsWith('/landlord') ||
-        pathname?.startsWith('/admin') ||
-        pathname?.startsWith('/tenant')
 
     return (
         <div className={cn(

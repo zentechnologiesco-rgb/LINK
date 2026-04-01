@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { UserAvatar } from '@/components/ui/user-avatar'
-import { PropertyApprovalActions } from './PropertyApprovalActions'
+import { PropertyRequestApprovalActions } from './_components/PropertyRequestApprovalActions'
 import { ArrowLeft, User, Building2, MapPin, Bed, Bath, Square, Clock, CheckCircle2, XCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import { useQuery } from "convex/react"
@@ -113,7 +113,7 @@ function PropertyReviewContent({ id }: { id: string }) {
                         </p>
                     </div>
                     {approvalStatus === 'pending' && (
-                        <PropertyApprovalActions propertyId={property._id} />
+                        <PropertyRequestApprovalActions propertyId={property._id} />
                     )}
                 </div>
             </div>

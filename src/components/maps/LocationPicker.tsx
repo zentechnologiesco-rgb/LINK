@@ -6,7 +6,6 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { MapPin, Search, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 interface LocationPickerProps {
     initialCoordinates?: { lat: number; lng: number } | null
@@ -17,6 +16,10 @@ interface LocationPickerProps {
 interface GeocodingResult {
     place_name: string
     center: [number, number] // [lng, lat]
+}
+
+interface GeocodingResponse {
+    features?: GeocodingResult[]
 }
 
 export function LocationPicker({
@@ -124,9 +127,9 @@ export function LocationPicker({
                 console.error('Mapbox error:', e)
                 setError('Map failed to load')
             })
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Map initialization error:', err)
-            setError(err?.message || 'Failed to initialize map')
+            setError(err instanceof Error ? err.message : 'Failed to initialize map')
         }
 
         return () => {
@@ -159,12 +162,12 @@ export function LocationPicker({
             const response = await fetch(
                 `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${token}&country=na&limit=5`
             )
-            const data = await response.json()
+            const data = await response.json() as GeocodingResponse
 
             if (data.features && data.features.length > 0) {
-                setSearchResults(data.features.map((f: any) => ({
-                    place_name: f.place_name,
-                    center: f.center,
+                setSearchResults(data.features.map((feature) => ({
+                    place_name: feature.place_name,
+                    center: feature.center,
                 })))
             } else {
                 setSearchResults([])

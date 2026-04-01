@@ -11,6 +11,8 @@ import { useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 
+type VerificationIdType = 'national_id' | 'passport' | 'drivers_license'
+
 interface ResubmissionFormProps {
     previousRequestId: string
     previousData: {
@@ -85,7 +87,7 @@ export function ResubmissionForm({ previousRequestId, previousData, rejectionRea
             // 3. Resubmit Verification
             await resubmitVerification({
                 previousRequestId: previousRequestId as Id<"landlordRequests">,
-                idType: formData.get('id_type') as any,
+                idType: formData.get('id_type') as VerificationIdType,
                 idNumber: formData.get('id_number') as string,
                 businessName: formData.get('business_name') as string || undefined,
                 businessRegistration: formData.get('business_registration') as string || undefined,
@@ -146,7 +148,7 @@ export function ResubmissionForm({ previousRequestId, previousData, rejectionRea
                                 <SelectContent>
                                     <SelectItem value="national_id">Namibian ID</SelectItem>
                                     <SelectItem value="passport">Passport</SelectItem>
-                                    <SelectItem value="drivers_license">Driver's License</SelectItem>
+                                    <SelectItem value="drivers_license">Driver&apos;s License</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -243,7 +245,7 @@ export function ResubmissionForm({ previousRequestId, previousData, rejectionRea
                         </li>
                         <li className="flex items-center gap-2">
                             <div className="w-1.5 h-1.5 rounded-full bg-neutral-300" />
-                            Once approved, you'll be able to list properties
+                            Once approved, you&apos;ll be able to list properties
                         </li>
                     </ul>
                 </div>

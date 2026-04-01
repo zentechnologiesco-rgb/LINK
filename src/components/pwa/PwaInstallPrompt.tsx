@@ -2,16 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { Download, Share2, Smartphone, PlusSquare } from 'lucide-react'
+import { Share2, Smartphone, PlusSquare } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { cn } from '@/lib/utils'
 
 const PROMPT_STORAGE_KEY = 'link:pwa-install-prompt:v1'
 const DISMISS_FOR_MS = 1000 * 60 * 60 * 24 * 7
@@ -94,7 +92,6 @@ export function PwaInstallPrompt() {
 
   const [isEligible, setIsEligible] = useState(false)
   const [isIOS, setIsIOS] = useState(false)
-  const [isInstallReady, setIsInstallReady] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const [isInstalling, setIsInstalling] = useState(false)
   const [showManualTips, setShowManualTips] = useState(false)
@@ -152,13 +149,11 @@ export function PwaInstallPrompt() {
       const installEvent = event as BeforeInstallPromptEvent
       installEvent.preventDefault()
       installPromptRef.current = installEvent
-      setIsInstallReady(true)
       openPrompt()
     }
 
     const handleAppInstalled = () => {
       installPromptRef.current = null
-      setIsInstallReady(false)
       writePromptPreference({ installed: true, dismissedUntil: 0 })
       setIsOpen(false)
     }
@@ -185,7 +180,6 @@ export function PwaInstallPrompt() {
 
       const promptEvent = installPromptRef.current
       installPromptRef.current = null
-      setIsInstallReady(false)
 
       try {
         const result = await promptEvent.prompt()

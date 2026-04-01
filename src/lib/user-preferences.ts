@@ -21,7 +21,7 @@ export type UserPreferences = {
     };
 };
 
-export type StartPageOption = {
+type StartPageOption = {
     value: string;
     label: string;
     description: string;
@@ -100,16 +100,10 @@ const START_PAGE_OPTIONS: Record<UserRole, StartPageOption[]> = {
             description: "Start with landlord verification queues.",
             href: "/admin/landlord-requests",
         },
-        {
-            value: "reports",
-            label: "Reports",
-            description: "Open reporting and system insights first.",
-            href: "/admin/reports",
-        },
     ],
 };
 
-export function getDefaultUserPreferences(role: UserRole): UserPreferences {
+function getDefaultUserPreferences(role: UserRole): UserPreferences {
     return {
         notifications: {
             email: true,
@@ -160,12 +154,4 @@ export function normalizeUserPreferences(
     }
 
     return normalized;
-}
-
-export function getStartPageOptions(role: UserRole) {
-    return START_PAGE_OPTIONS[role];
-}
-
-export function getStartPageOption(role: UserRole, value: string) {
-    return START_PAGE_OPTIONS[role].find((option) => option.value === value) ?? START_PAGE_OPTIONS[role][0];
 }
