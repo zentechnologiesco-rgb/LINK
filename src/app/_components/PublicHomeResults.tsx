@@ -1,16 +1,21 @@
 'use client'
 
+import { Suspense } from 'react'
 import { Search } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { PropertyBrowseCard } from '@/features/properties/public/components/PropertyBrowseCard'
 import { cn } from '@/lib/utils'
 
+import { DiscoverVideoShelf } from './DiscoverVideoShelf'
 import { PublicHomePropertyMap } from './PublicHomePropertyMap'
 import type {
     PublicHomeMapProperty,
     PublicHomeProperty,
 } from '../_lib/public-home-types'
+
+/** Number of property cards to show BEFORE the discover shelf */
+const SHELF_INSERT_AFTER = 4
 
 export function PublicHomeResults({
     filteredProperties,
@@ -27,6 +32,9 @@ export function PublicHomeResults({
     mapProperties: PublicHomeMapProperty[]
     onClearFilters: () => void
 }) {
+    const firstBatch = filteredProperties.slice(0, SHELF_INSERT_AFTER)
+    const remainingBatch = filteredProperties.slice(SHELF_INSERT_AFTER)
+
     return (
         <main className="mx-auto w-full max-w-[1440px] px-4 pt-6 sm:px-6 lg:px-8">
             {isRefetching ? (
@@ -65,14 +73,34 @@ export function PublicHomeResults({
                         </Button>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        {filteredProperties.map((property, index) => (
-                            <PropertyBrowseCard
-                                key={property.id}
-                                property={property}
-                                priority={index < 4}
-                            />
-                        ))}
+                    <div className="flex flex-col gap-10">
+                        {/* First row of property cards */}
+                        <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                            {firstBatch.map((property, index) => (
+                                <PropertyBrowseCard
+                                    key={property.id}
+                                    property={property}
+                                    priority={index < 4}
+                                />
+                            ))}
+                        </div>
+
+                        {/* YouTube Shorts-style Discover Video Shelf */}
+                        <Suspense fallback={null}>
+                            <DiscoverVideoShelf />
+                        </Suspense>
+
+                        {/* Remaining property cards */}
+                        {remainingBatch.length > 0 && (
+                            <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                                {remainingBatch.map((property) => (
+                                    <PropertyBrowseCard
+                                        key={property.id}
+                                        property={property}
+                                    />
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
