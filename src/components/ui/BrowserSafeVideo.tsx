@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils"
 
 type BrowserSafeVideoProps = Omit<ComponentPropsWithoutRef<"video">, "poster"> & {
     posterSrc?: string | null
-    posterAlt: string
+    posterAlt?: string
     containerClassName?: string
     posterClassName?: string
     warningText?: string
@@ -136,7 +136,7 @@ export const BrowserSafeVideo = forwardRef<HTMLVideoElement, BrowserSafeVideoPro
             assignVideoRef(ref, node)
         }, [ref])
 
-        const handleLoadedData: ComponentPropsWithoutRef<"video">["onLoadedData"] = useCallback((event) => {
+        const handleLoadedData = useCallback<NonNullable<ComponentPropsWithoutRef<"video">["onLoadedData"]>>((event) => {
             onLoadedData?.(event)
 
             if (!event.currentTarget.paused && !event.currentTarget.ended) {
@@ -144,12 +144,12 @@ export const BrowserSafeVideo = forwardRef<HTMLVideoElement, BrowserSafeVideoPro
             }
         }, [onLoadedData, startFrameGuard])
 
-        const handlePlaying: ComponentPropsWithoutRef<"video">["onPlaying"] = useCallback((event) => {
+        const handlePlaying = useCallback<NonNullable<ComponentPropsWithoutRef<"video">["onPlaying"]>>((event) => {
             onPlaying?.(event)
             startFrameGuard()
         }, [onPlaying, startFrameGuard])
 
-        const handleError: ComponentPropsWithoutRef<"video">["onError"] = useCallback((event) => {
+        const handleError = useCallback<NonNullable<ComponentPropsWithoutRef<"video">["onError"]>>((event) => {
             onError?.(event)
             setShowWarning(Boolean(warningText))
         }, [onError, warningText])
@@ -176,7 +176,7 @@ export const BrowserSafeVideo = forwardRef<HTMLVideoElement, BrowserSafeVideoPro
                             <div className="relative h-full w-full">
                                 <OptimizedImage
                                     src={posterSrc ?? "/window.svg"}
-                                    alt={posterAlt}
+                                    alt={posterAlt ?? ""}
                                     fill
                                     sizes="100vw"
                                     qualityPreset="hero"
