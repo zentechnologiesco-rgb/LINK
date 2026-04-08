@@ -20,11 +20,11 @@ export function PropertyFormRejectedBanner({
   adminNotes?: string;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-red-100 bg-red-50 p-4">
+    <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
       <XCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-500" />
       <div>
-        <p className="text-[14px] font-semibold text-red-900">Listing Rejected</p>
-        <p className="mt-0.5 text-[13px] leading-relaxed text-red-700">
+        <p className="text-[14px] font-semibold text-red-700">Listing Rejected</p>
+        <p className="mt-0.5 text-[13px] leading-relaxed text-red-600">
           {adminNotes || "Review the feedback and resubmit."}
         </p>
         <p className="mt-1.5 flex items-center gap-1 text-[12px] text-red-500">
@@ -54,8 +54,8 @@ export function PropertyFormEditOverview({
   clipHref: string;
 }) {
   return (
-    <section className="overflow-hidden rounded-[28px] border border-neutral-200 bg-white">
-      <div className="border-b border-neutral-200 px-5 py-5">
+    <section className="overflow-hidden rounded-[28px] border border-neutral-200/80 bg-neutral-50/50">
+      <div className="border-b border-neutral-100/60 px-5 py-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 className="text-balance text-[28px] font-semibold tracking-[-0.04em] text-neutral-950">
@@ -80,8 +80,8 @@ export function PropertyFormEditOverview({
         </p>
       </div>
 
-      <div className="grid gap-3 border-b border-neutral-200 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_auto]">
-        <div className="rounded-[22px] border border-neutral-200 bg-[#f5f5f7] p-4">
+      <div className="grid gap-3 border-b border-neutral-100/60 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="rounded-[22px] border border-neutral-200/80 bg-white p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <p className="text-[13px] font-semibold text-neutral-950">
@@ -111,14 +111,14 @@ export function PropertyFormEditOverview({
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:w-[220px]">
-          <div className="rounded-[22px] border border-neutral-200 bg-[#f5f5f7] p-4">
-            <p className="text-[12px] font-semibold text-neutral-500">Photos</p>
+          <div className="rounded-[22px] border border-neutral-200/80 bg-white p-4">
+            <p className="text-[12px] font-semibold text-neutral-400">Photos</p>
             <p className="mt-2 text-[22px] font-semibold tracking-[-0.04em] text-neutral-950 tabular-nums">
               {imagesCount}
             </p>
           </div>
-          <div className="rounded-[22px] border border-neutral-200 bg-[#f5f5f7] p-4">
-            <p className="text-[12px] font-semibold text-neutral-500">Units</p>
+          <div className="rounded-[22px] border border-neutral-200/80 bg-white p-4">
+            <p className="text-[12px] font-semibold text-neutral-400">Units</p>
             <p className="mt-2 text-[22px] font-semibold tracking-[-0.04em] text-neutral-950 tabular-nums">
               {unitCount}
             </p>
@@ -140,7 +140,7 @@ export function PropertyFormEditOverview({
                 "inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-all active:scale-[0.98]",
                 isActive
                   ? "border-neutral-950 bg-neutral-950 text-white"
-                  : "border-neutral-200 bg-[#f5f5f7] text-neutral-700 hover:bg-white",
+                  : "border-neutral-200/60 bg-white text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950",
               )}
             >
               <Icon className="h-4 w-4" strokeWidth={2.1} />

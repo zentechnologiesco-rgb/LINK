@@ -152,9 +152,9 @@ export function PublicHomeWorkspace() {
     const isMapView = viewMode === 'map'
     const nextViewLabel = isMapView ? 'List' : 'Map'
     const mapToggleDesktopClassName = cn(
-        'border border-[#0000ff]/35 bg-[#0A0B0D]/95 text-white backdrop-blur-xl',
-        'shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(0,0,255,0.12),0_8px_20px_rgba(2,6,23,0.26),0_0_12px_rgba(0,0,255,0.14)]',
-        'transition-all duration-300 hover:-translate-y-0.5 hover:border-[#0000ff]/50 hover:bg-[#0A0B0D] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_0_1px_rgba(0,0,255,0.16),0_10px_24px_rgba(2,6,23,0.32),0_0_16px_rgba(0,0,255,0.18)] active:scale-[0.98]'
+        'bg-neutral-900 border border-white/10 text-white backdrop-blur-xl',
+        'shadow-md',
+        'transition-all duration-300 hover:-translate-y-0.5 hover:bg-neutral-800 hover:shadow-lg active:scale-[0.98]'
     )
 
     if (isPropertiesLoading) {
@@ -214,7 +214,7 @@ export function PublicHomeWorkspace() {
                             mapToggleDesktopClassName
                         )}
                     >
-                        <span className="flex items-center justify-center text-[#8ea2ff]">
+                        <span className="flex items-center justify-center text-white">
                             {viewMode === 'grid' ? (
                                 <MapIcon className="h-[18px] w-[18px]" strokeWidth={2.4} />
                             ) : (

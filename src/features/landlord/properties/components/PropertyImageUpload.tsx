@@ -13,6 +13,7 @@ interface PropertyImageUploadProps {
     maxImages?: number
     onImagesChange: (storageIds: Id<"_storage">[]) => void
     initialImages?: Id<"_storage">[]
+    mode?: "create" | "edit"
 }
 
 type UploadPhase = 'idle' | 'compressing' | 'uploading'
@@ -26,7 +27,8 @@ interface UploadStats {
 export function PropertyImageUpload({
     maxImages = 15,
     onImagesChange,
-    initialImages = []
+    initialImages = [],
+    mode = "create",
 }: PropertyImageUploadProps) {
     const [imageIds, setImageIds] = useState<Id<"_storage">[]>(initialImages)
     const [uploadPhase, setUploadPhase] = useState<UploadPhase>('idle')
@@ -41,6 +43,8 @@ export function PropertyImageUpload({
 
     // Query to get URLs for display
     const imageUrls = useQuery(api.files.getUrls, { storageIds: imageIds })
+
+    const isEdit = mode === "edit"
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files
@@ -185,8 +189,12 @@ export function PropertyImageUpload({
                 className={cn(
                     'rounded-xl border-2 border-dashed p-10 text-center cursor-pointer transition-all duration-300',
                     isProcessing
-                        ? 'border-neutral-200 bg-neutral-50 cursor-not-allowed'
-                        : 'border-neutral-200 bg-white hover:bg-neutral-50 hover:border-neutral-300'
+                        ? isEdit
+                            ? 'border-neutral-200 bg-neutral-100 cursor-not-allowed'
+                            : 'border-white/5 bg-surface-2 cursor-not-allowed'
+                        : isEdit
+                            ? 'border-neutral-200 bg-neutral-50 hover:bg-neutral-100 hover:border-neutral-300'
+                            : 'border-white/10 bg-surface-1 hover:bg-surface-2 hover:border-white/20'
                 )}
             >
                 <input
@@ -201,7 +209,14 @@ export function PropertyImageUpload({
                 {isProcessing ? (
                     <div className="flex flex-col items-center gap-4">
                         <div className="relative">
-                            <div className="h-12 w-12 border-2 border-neutral-200 border-t-neutral-900 rounded-full animate-spin" />
+                            <div
+                                className={cn(
+                                    "h-12 w-12 border-2 rounded-full animate-spin",
+                                    isEdit
+                                        ? "border-neutral-200 border-t-neutral-600"
+                                        : "border-white/10 border-t-white/60",
+                                )}
+                            />
                             {uploadPhase === 'compressing' && (
                                 <Sparkles className="absolute inset-0 m-auto h-5 w-5 text-amber-500 animate-pulse" />
                             )}
@@ -210,17 +225,32 @@ export function PropertyImageUpload({
                             )}
                         </div>
                         <div className="space-y-1">
-                            <p className="text-xs font-mono font-bold uppercase tracking-widest text-neutral-700">
+                            <p
+                                className={cn(
+                                    "text-xs font-mono font-bold uppercase tracking-widest",
+                                    isEdit ? "text-neutral-700" : "text-white/70",
+                                )}
+                            >
                                 {uploadPhase === 'compressing' ? 'Optimizing...' : 'Uploading...'} {progress}%
                             </p>
                             {currentFile && (
-                                <p className="text-[10px] font-mono text-neutral-400 truncate max-w-[200px]">
+                                <p
+                                    className={cn(
+                                        "text-[10px] font-mono truncate max-w-[200px]",
+                                        isEdit ? "text-neutral-400" : "text-white/40",
+                                    )}
+                                >
                                     {currentFile}
                                 </p>
                             )}
                         </div>
                         {/* Progress bar */}
-                        <div className="w-full max-w-xs h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                        <div
+                            className={cn(
+                                "w-full max-w-xs h-1.5 rounded-full overflow-hidden",
+                                isEdit ? "bg-neutral-200" : "bg-white/10",
+                            )}
+                        >
                             <div
                                 className={cn(
                                     "h-full transition-all duration-300 rounded-full",
@@ -232,19 +262,61 @@ export function PropertyImageUpload({
                     </div>
                 ) : (
                     <div className="flex flex-col items-center gap-4">
-                        <div className="h-12 w-12 rounded-full bg-neutral-100 flex items-center justify-center">
-                            <ImagePlus className="h-5 w-5 text-neutral-500" strokeWidth={1.5} />
+                        <div
+                            className={cn(
+                                "h-12 w-12 rounded-full flex items-center justify-center border",
+                                isEdit
+                                    ? "bg-white border-neutral-200/60"
+                                    : "bg-surface-2 border-white/5",
+                            )}
+                        >
+                            <ImagePlus
+                                className={cn(
+                                    "h-5 w-5",
+                                    isEdit ? "text-neutral-400" : "text-white/50",
+                                )}
+                                strokeWidth={1.5}
+                            />
                         </div>
                         <div className="space-y-1">
-                            <p className="text-sm font-bold text-neutral-900">Click to upload images</p>
-                            <p className="text-[10px] font-mono font-bold uppercase tracking-wide text-neutral-400">
+                            <p
+                                className={cn(
+                                    "text-sm font-bold",
+                                    isEdit ? "text-neutral-950" : "text-foreground",
+                                )}
+                            >
+                                Click to upload images
+                            </p>
+                            <p
+                                className={cn(
+                                    "text-[10px] font-mono font-bold uppercase tracking-wide",
+                                    isEdit ? "text-neutral-400" : "text-white/40",
+                                )}
+                            >
                                 PNG, JPG up to 10MB • Auto-optimized • {imageIds.length}/{maxImages}
                             </p>
                         </div>
                         {uploadStats && uploadStats.savedBytes > 0 && (
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-full">
-                                <Sparkles className="h-3 w-3 text-emerald-600" />
-                                <span className="text-[10px] font-mono font-bold text-emerald-700">
+                            <div
+                                className={cn(
+                                    "flex items-center gap-2 px-3 py-1.5 rounded-full border",
+                                    isEdit
+                                        ? "bg-emerald-50 border-emerald-200"
+                                        : "bg-emerald-500/10 border-emerald-500/20",
+                                )}
+                            >
+                                <Sparkles
+                                    className={cn(
+                                        "h-3 w-3",
+                                        isEdit ? "text-emerald-600" : "text-emerald-400",
+                                    )}
+                                />
+                                <span
+                                    className={cn(
+                                        "text-[10px] font-mono font-bold",
+                                        isEdit ? "text-emerald-600" : "text-emerald-400",
+                                    )}
+                                >
                                     Last upload saved {formatBytes(uploadStats.savedBytes)} bandwidth
                                 </span>
                             </div>
@@ -262,7 +334,10 @@ export function PropertyImageUpload({
                             <div
                                 key={id}
                                 className={cn(
-                                    'relative rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200 group transition-all hover:shadow-lg hover:shadow-neutral-900/5',
+                                    'relative rounded-xl overflow-hidden group transition-all hover:shadow-lg hover:shadow-black/10',
+                                    isEdit
+                                        ? 'bg-neutral-100 border border-neutral-200/80'
+                                        : 'bg-surface-2 border border-white/10',
                                     index === 0 ? 'col-span-2 row-span-2 aspect-[4/3]' : 'aspect-square'
                                 )}
                             >
@@ -276,11 +351,16 @@ export function PropertyImageUpload({
                                     />
                                 ) : (
                                     <div className="absolute inset-0 flex items-center justify-center">
-                                        <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
+                                        <Loader2
+                                            className={cn(
+                                                "h-6 w-6 animate-spin",
+                                                isEdit ? "text-neutral-400" : "text-white/40",
+                                            )}
+                                        />
                                     </div>
                                 )}
                                 {index === 0 && (
-                                    <span className="absolute top-4 left-4 rounded-full bg-neutral-900/90 backdrop-blur-md px-3 py-1 text-[10px] font-mono font-bold uppercase tracking-widest text-white shadow-sm">
+                                    <span className="absolute top-4 left-4 rounded-full bg-black/60 backdrop-blur-md px-3 py-1 text-[10px] font-mono font-bold uppercase tracking-widest text-white shadow-sm border border-white/10">
                                         Main Photo
                                     </span>
                                 )}
@@ -290,7 +370,12 @@ export function PropertyImageUpload({
                                         e.stopPropagation()
                                         removeImage(id)
                                     }}
-                                    className="absolute top-3 right-3 rounded-full bg-white/90 backdrop-blur border border-neutral-200 p-2 opacity-0 group-hover:opacity-100 transition-all text-neutral-500 hover:text-red-500 hover:bg-white shadow-sm hover:scale-110"
+                                    className={cn(
+                                        "absolute top-3 right-3 rounded-full backdrop-blur border p-2 opacity-0 group-hover:opacity-100 transition-all shadow-sm hover:scale-110",
+                                        isEdit
+                                            ? "bg-white/90 border-neutral-200 text-neutral-400 hover:text-red-500 hover:bg-white"
+                                            : "bg-surface-2/90 border-white/10 text-white/60 hover:text-red-400 hover:bg-surface-3",
+                                    )}
                                 >
                                     <X className="h-3.5 w-3.5" strokeWidth={2} />
                                 </button>

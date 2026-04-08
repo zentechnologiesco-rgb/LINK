@@ -20,6 +20,7 @@ interface PropertyClipUploadProps {
   initialVideos?: Id<"_storage">[];
   onVideosChange: (storageIds: Id<"_storage">[]) => void;
   highlighted?: boolean;
+  mode?: "create" | "edit";
   title?: string;
   description?: string;
   badgeLabel?: string;
@@ -29,6 +30,7 @@ export function PropertyClipUpload({
   initialVideos = [],
   onVideosChange,
   highlighted = false,
+  mode = "create",
   title = "Discovery Clip",
   description = "Optional. Add one short vertical clip to help this listing appear in the Discover feed once the property is live.",
   badgeLabel = "Optional",
@@ -44,6 +46,7 @@ export function PropertyClipUpload({
 
   const currentVideoId = videoIds[0];
   const currentVideoUrl = videoUrls?.find((item) => item.id === currentVideoId)?.url ?? null;
+  const isEdit = mode === "edit";
 
   const handleVideoSelect = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -114,14 +117,31 @@ export function PropertyClipUpload({
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[16px] font-semibold tracking-[-0.02em] text-neutral-950">
+          <p
+            className={cn(
+              "text-[16px] font-semibold tracking-[-0.02em]",
+              isEdit ? "text-neutral-950" : "text-foreground",
+            )}
+          >
             {title}
           </p>
-          <p className="mt-1 max-w-[32rem] text-[13px] leading-relaxed text-neutral-500">
+          <p
+            className={cn(
+              "mt-1 max-w-[32rem] text-[13px] leading-relaxed",
+              isEdit ? "text-neutral-500" : "text-white/50",
+            )}
+          >
             {description}
           </p>
         </div>
-        <div className="rounded-full border border-neutral-200 bg-[#f5f5f7] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-600">
+        <div
+          className={cn(
+            "rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]",
+            isEdit
+              ? "border-neutral-200/60 bg-neutral-100 text-neutral-500"
+              : "border-white/5 bg-surface-2 text-white/60",
+          )}
+        >
           {badgeLabel}
         </div>
       </div>
@@ -138,8 +158,15 @@ export function PropertyClipUpload({
       {currentVideoUrl ? (
         <div
           className={cn(
-            "overflow-hidden rounded-[24px] border bg-white",
-            highlighted ? "border-neutral-900" : "border-neutral-200",
+            "overflow-hidden rounded-[24px] border",
+            highlighted
+              ? isEdit
+                ? "border-neutral-300"
+                : "border-white/20"
+              : isEdit
+                ? "border-neutral-200/80"
+                : "border-white/5",
+            isEdit ? "bg-neutral-50/50" : "bg-surface-1",
           )}
         >
           <div className="relative aspect-[9/16] w-full overflow-hidden bg-black sm:max-h-[28rem]">
@@ -153,18 +180,30 @@ export function PropertyClipUpload({
               className="h-full w-full object-cover"
             />
             <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-4">
-              <div className="rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-950 backdrop-blur-md">
+              <div className="rounded-full border border-white/10 bg-black/50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-md">
                 Visible In Discover
               </div>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 border-t border-neutral-200 bg-white px-4 py-4 text-neutral-950">
+          <div
+            className={cn(
+              "flex flex-wrap items-center gap-3 border-t px-4 py-4",
+              isEdit
+                ? "border-neutral-100/60 bg-white text-neutral-950"
+                : "border-white/5 bg-surface-1 text-foreground",
+            )}
+          >
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
               disabled={isUploading}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-neutral-950 px-4 text-[14px] font-semibold text-white transition-colors hover:bg-neutral-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
+              className={cn(
+                "inline-flex h-11 items-center justify-center gap-2 rounded-full px-4 text-[14px] font-semibold transition-colors active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70",
+                isEdit
+                  ? "bg-neutral-950 text-white hover:bg-neutral-800"
+                  : "bg-foreground text-background hover:opacity-90",
+              )}
             >
               <Upload className="h-4 w-4" strokeWidth={2.3} />
               Replace Clip
@@ -172,7 +211,12 @@ export function PropertyClipUpload({
             <button
               type="button"
               onClick={handleRemoveVideo}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-neutral-200 px-4 text-[14px] font-semibold text-neutral-700 transition-colors hover:bg-neutral-50 active:scale-[0.98]"
+              className={cn(
+                "inline-flex h-11 items-center justify-center gap-2 rounded-full border px-4 text-[14px] font-semibold transition-colors active:scale-[0.98]",
+                isEdit
+                  ? "border-neutral-200/80 text-neutral-600 hover:bg-neutral-50"
+                  : "border-white/10 text-white/70 hover:bg-surface-3",
+              )}
             >
               <X className="h-4 w-4" strokeWidth={2.3} />
               Remove
@@ -187,29 +231,59 @@ export function PropertyClipUpload({
           className={cn(
             "w-full rounded-[24px] border border-dashed px-5 py-10 text-left transition-all",
             isUploading
-              ? "cursor-not-allowed border-neutral-300 bg-[#f5f5f7] opacity-80"
+              ? isEdit
+                ? "cursor-not-allowed border-neutral-200 bg-neutral-100 opacity-80"
+                : "cursor-not-allowed border-white/5 bg-surface-2 opacity-80"
               : highlighted
-                ? "border-neutral-900 bg-white hover:border-neutral-950"
-                : "border-neutral-300 bg-[#f5f5f7] hover:border-neutral-400 hover:bg-white",
+                ? isEdit
+                  ? "border-neutral-300 bg-neutral-100 hover:border-neutral-400"
+                  : "border-white/20 bg-surface-1 hover:border-white/30"
+                : isEdit
+                  ? "border-neutral-200 bg-neutral-50 hover:border-neutral-300 hover:bg-neutral-100"
+                  : "border-white/10 bg-surface-1 hover:border-white/20 hover:bg-surface-2",
           )}
         >
-          <div className="flex flex-col items-center text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-900">
+            <div className="flex flex-col items-center text-center">
+            <div
+              className={cn(
+                "flex h-14 w-14 items-center justify-center rounded-full border",
+                isEdit
+                  ? "border-neutral-200/60 bg-white text-neutral-400"
+                  : "border-white/5 bg-surface-2 text-foreground",
+              )}
+            >
               {isUploading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <Clapperboard className="h-5 w-5" strokeWidth={2.2} />
               )}
             </div>
-            <p className="mt-4 text-[16px] font-semibold tracking-[-0.02em] text-neutral-950">
+            <p
+              className={cn(
+                "mt-4 text-[16px] font-semibold tracking-[-0.02em]",
+                isEdit ? "text-neutral-950" : "text-foreground",
+              )}
+            >
               {isUploading ? "Uploading clip…" : "Upload a Discovery Clip"}
             </p>
-            <p className="mt-2 max-w-[26rem] text-[13px] leading-relaxed text-neutral-500">
+            <p
+              className={cn(
+                "mt-2 max-w-[26rem] text-[13px] leading-relaxed",
+                isEdit ? "text-neutral-500" : "text-white/50",
+              )}
+            >
               {isUploading
                 ? currentFileName || "Finishing upload…"
                 : "Best results: 9:16 vertical, under 30 seconds, clear walkthrough, and good lighting."}
             </p>
-            <div className="mt-4 inline-flex items-center rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+            <div
+              className={cn(
+                "mt-4 inline-flex items-center rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em]",
+                isEdit
+                  ? "border-neutral-200/60 bg-white text-neutral-400"
+                  : "border-white/5 bg-surface-2 text-white/50",
+              )}
+            >
               MP4, WebM, or MOV up to 10MB
             </div>
           </div>

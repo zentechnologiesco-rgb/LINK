@@ -41,7 +41,7 @@ export function Pill({
         "inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[14px] font-medium transition-all duration-150 active:scale-95 select-none",
         selected
           ? "bg-neutral-950 text-white"
-          : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200",
+          : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
       )}
     >
       {selected ? (
@@ -70,7 +70,7 @@ export function CardSection({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-[24px] border border-neutral-200 bg-white",
+        "overflow-hidden rounded-[24px] border border-neutral-200/80 bg-white",
         className,
       )}
     >
@@ -92,7 +92,7 @@ export function CardRow({
     <div
       className={cn(
         "px-4 py-3.5",
-        !last && "border-b border-neutral-100/80",
+        !last && "border-b border-neutral-100",
         className,
       )}
     >
@@ -120,7 +120,7 @@ export function InlineSelectRow({
         {label}
       </span>
       <Select value={value} onValueChange={onValueChange}>
-        <SelectTrigger className="h-8 w-auto min-w-[120px] max-w-[180px] truncate rounded-lg border-neutral-200 bg-neutral-50/80 px-3 text-[14px] font-medium text-neutral-700 shadow-none focus:border-neutral-300 focus:ring-0">
+        <SelectTrigger className="h-8 w-auto min-w-[120px] max-w-[180px] truncate rounded-lg border-neutral-200 bg-neutral-50 px-3 text-[14px] font-medium text-neutral-950 shadow-none focus:border-neutral-300 focus:bg-white focus:ring-0">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -159,7 +159,7 @@ export function NumberStepperRow({
       <div className="min-w-0">
         <p className="text-[15px] text-neutral-950">{label}</p>
         {sublabel ? (
-          <p className="mt-0.5 text-[12px] text-neutral-400">{sublabel}</p>
+          <p className="mt-0.5 text-[12px] text-neutral-500">{sublabel}</p>
         ) : null}
       </div>
       <div className="flex flex-shrink-0 items-center gap-3">
@@ -167,7 +167,7 @@ export function NumberStepperRow({
           type="button"
           onClick={() => onChange(String(Math.max(min, num - 1)))}
           disabled={num <= min}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-neutral-700 transition-all hover:bg-neutral-200 disabled:opacity-30 active:scale-90"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 transition-all hover:bg-neutral-200 disabled:opacity-30 active:scale-90 border border-neutral-200"
         >
           <Minus className="h-4 w-4" strokeWidth={2.5} />
         </button>
@@ -178,7 +178,7 @@ export function NumberStepperRow({
           type="button"
           onClick={() => onChange(String(Math.min(max, num + 1)))}
           disabled={num >= max}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-neutral-700 transition-all hover:bg-neutral-200 disabled:opacity-30 active:scale-90"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 transition-all hover:bg-neutral-200 disabled:opacity-30 active:scale-90 border border-neutral-200"
         >
           <Plus className="h-4 w-4" strokeWidth={2.5} />
         </button>
@@ -206,13 +206,13 @@ export function UnitCard({
   const size = parseFloat(unit.sizeSqm) || 0;
 
   return (
-    <div className="overflow-hidden rounded-[24px] border border-neutral-200 bg-white">
+    <div className="overflow-hidden rounded-[24px] border border-neutral-200/80 bg-white">
       <button
         type="button"
         onClick={onEdit}
         className="flex w-full items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-neutral-50 active:bg-neutral-100"
       >
-        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-neutral-100">
+        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-neutral-100 border border-neutral-200/50">
           <span className="text-[14px] font-bold tabular-nums text-neutral-500">
             {index + 1}
           </span>
@@ -228,7 +228,7 @@ export function UnitCard({
             {price > 0 ? (
               <span className="text-[14px] font-semibold text-neutral-950">
                 N${price.toLocaleString()}
-                <span className="font-normal text-neutral-400">/mo</span>
+                <span className="font-normal text-neutral-500">/mo</span>
               </span>
             ) : null}
             {beds > 0 ? (
@@ -267,7 +267,7 @@ export function UnitCard({
         <button
           type="button"
           onClick={onDuplicate}
-          className="flex items-center justify-center gap-2 py-3 text-[13px] font-medium text-neutral-500 transition-all hover:bg-neutral-50 hover:text-neutral-800 active:bg-neutral-100"
+          className="flex items-center justify-center gap-2 py-3 text-[13px] font-medium text-neutral-600 transition-all hover:bg-neutral-50 hover:text-neutral-950 active:bg-neutral-100"
         >
           <CopyPlus className="h-3.5 w-3.5" strokeWidth={2} />
           Duplicate
@@ -275,7 +275,7 @@ export function UnitCard({
         <button
           type="button"
           onClick={onRemove}
-          className="flex items-center justify-center gap-2 py-3 text-[13px] font-medium text-red-500 transition-all hover:bg-red-50 hover:text-red-700 active:bg-red-100"
+          className="flex items-center justify-center gap-2 py-3 text-[13px] font-medium text-red-500 transition-all hover:bg-red-50 hover:text-red-600 active:bg-red-100"
         >
           <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
           Remove

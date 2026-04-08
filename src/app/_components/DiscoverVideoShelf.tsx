@@ -190,7 +190,7 @@ export function DiscoverVideoShelf() {
             {/* Header */}
             <div className="flex items-center justify-between mb-4 px-1">
                 <div className="flex items-center gap-2.5">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#fe2c55] to-[#ff6b81] shadow-sm">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-900 shadow-sm">
                         <Clapperboard className="h-[18px] w-[18px] text-white" strokeWidth={2.2} />
                     </div>
                     <div className="flex flex-col">
@@ -204,7 +204,7 @@ export function DiscoverVideoShelf() {
                 </div>
                 <Link
                     href="/discover"
-                    className="flex items-center gap-1 text-[13px] font-semibold text-[#fe2c55] hover:text-[#d92548] transition-colors active:scale-[0.97] group"
+                    className="flex items-center gap-1 text-[13px] font-semibold text-neutral-900 hover:text-neutral-600 transition-colors active:scale-[0.97] group"
                 >
                     See all
                     <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />

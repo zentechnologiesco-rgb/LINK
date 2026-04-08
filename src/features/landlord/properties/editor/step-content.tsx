@@ -180,7 +180,7 @@ export function PropertyFormStepContent({
         />
       ) : null}
 
-      <PropertyFormStepHero stepData={stepData} />
+      <PropertyFormStepHero mode={mode} stepData={stepData} />
 
       {step === 0 ? (
         <ListingTypeStepSection

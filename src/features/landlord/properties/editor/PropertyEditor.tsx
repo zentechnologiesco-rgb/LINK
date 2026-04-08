@@ -82,8 +82,7 @@ export function PropertyEditor({
   const searchParamString = searchParams.toString();
   const routedStep = normalizeStepIndex(initialStep, mode);
   const routedStepRef = useRef(routedStep);
-  const resolvedPageBackgroundClassName =
-    mode === "edit" ? "bg-[#f5f5f7]" : pageBackgroundClassName;
+  const resolvedPageBackgroundClassName = cn(pageBackgroundClassName, "text-neutral-950");
   const { isLoading: isUserLoading } = useUser();
   const createProperty = useMutation(api.properties.create);
   const updateProperty = useMutation(api.properties.update);
@@ -275,11 +274,12 @@ export function PropertyEditor({
 
   useEffect(() => {
     if (mode === "edit") return;
+    if (initialStep == null) return;
+    
+    // Only set stepState from initialStep if it explicitly changes
     const nextStep = normalizeStepIndex(initialStep, mode);
-    if (stepState === nextStep) return;
-    setDirection(nextStep > stepState ? "forward" : "back");
     setStepState(nextStep);
-  }, [initialStep, mode, stepState]);
+  }, [initialStep, mode]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleAmenityChange = (name: string) => {
@@ -525,15 +525,7 @@ export function PropertyEditor({
     <div
       className={cn("min-h-screen font-sans", resolvedPageBackgroundClassName)}
     >
-      <PropertyFormHeader
-        mode={mode}
-        step={step}
-        totalSteps={TOTAL_STEPS}
-        stepData={stepData}
-        onNavigate={navigateTo}
-      />
-
-      <main className="pt-[60px] pb-28">
+      <main className="pt-4 pb-28">
         <form onSubmit={handleSubmit} noValidate>
           <PropertyFormStepViewport
             mode={mode}
@@ -606,6 +598,7 @@ export function PropertyEditor({
           </PropertyFormStepViewport>
 
           <PropertyFormBottomBar
+            mode={mode}
             step={step}
             totalSteps={TOTAL_STEPS}
             isLoading={isLoading}

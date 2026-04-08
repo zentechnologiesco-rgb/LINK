@@ -7,6 +7,7 @@ import { api } from '@convex/_generated/api'
 import { type Id } from '@convex/_generated/dataModel'
 import { useUser } from '@/components/providers/UserProvider'
 import { PropertyEditor } from '@/features/landlord/properties/editor/PropertyEditor'
+import { ClipManager } from '@/features/landlord/properties/components/ClipManager'
 import {
   getInitialEditFocus,
   getInitialEditStep,
@@ -23,6 +24,7 @@ export function EditPropertyWorkspace({ id }: { id: string }) {
     })
     const initialStep = getInitialEditStep(searchParams.get('step'))
     const initialFocus = getInitialEditFocus(searchParams.get('focus'))
+    const isClipMode = initialFocus === 'clip'
 
     if (isLoading || property === undefined) {
         return <PropertyEditorLoadingState />
@@ -47,6 +49,18 @@ export function EditPropertyWorkspace({ id }: { id: string }) {
         return null
     }
 
+    // ── Focused clip manager ───────────────────────────────────
+    if (isClipMode) {
+        return (
+            <ClipManager
+                propertyId={property._id as Id<'properties'>}
+                propertyTitle={property.title}
+                initialVideos={(property.videos ?? []) as Id<'_storage'>[]}
+            />
+        )
+    }
+
+    // ── Full property editor ───────────────────────────────────
     return (
         <PropertyEditor
             mode="edit"

@@ -150,11 +150,11 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                 'inline-flex items-center justify-center gap-1.5 rounded-[8px] transition-all active:scale-[0.98]',
                 options?.iconOnly
                     ? 'h-9 w-9 rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-                    : 'h-[38px] bg-[#fe2c55] px-4 text-[15px] font-semibold text-white hover:bg-[#ef2b51]',
+                    : 'h-[38px] bg-neutral-900 px-4 text-[15px] font-semibold text-white hover:bg-neutral-800',
                 isDiscoverActive
                     ? options?.iconOnly
                         ? 'bg-neutral-900 text-white'
-                        : 'bg-neutral-900 text-white hover:bg-neutral-800'
+                        : ''
                     : ''
             )}
         >
