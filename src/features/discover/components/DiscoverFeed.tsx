@@ -31,7 +31,6 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { PROPERTY_TYPE_LABELS } from "@/constants/property";
 import { ContactLandlordButton } from "@/features/properties/public/components/ContactLandlordButton";
 import { SavePropertyButton } from "@/features/properties/public/components/SavePropertyButton";
-import { cn } from "@/lib/utils";
 import { BrowserSafeVideo } from "@/components/ui/BrowserSafeVideo";
 
 type DiscoverProperty = {
@@ -158,7 +157,6 @@ function DiscoverSlide({
     if (!video || !property.videoUrl) return;
 
     if (isActive) {
-      setIsPaused(false);
       void video.play().catch(() => { });
       return;
     }
@@ -179,10 +177,8 @@ function DiscoverSlide({
 
     if (video.paused) {
       void video.play().catch(() => { });
-      setIsPaused(false);
     } else {
       video.pause();
-      setIsPaused(true);
     }
   };
 
@@ -223,6 +219,7 @@ function DiscoverSlide({
       <div className="absolute inset-0">
         {property.videoUrl ? (
           <BrowserSafeVideo
+            key={property.videoUrl}
             ref={videoRef}
             src={property.videoUrl}
             posterSrc={posterUrl}
@@ -232,6 +229,8 @@ function DiscoverSlide({
             playsInline
             preload={isActive ? "auto" : "metadata"}
             onClick={handleTapVideo}
+            onPlay={() => setIsPaused(false)}
+            onPause={() => setIsPaused(true)}
             className="h-full w-full object-cover cursor-pointer"
             containerClassName="h-full w-full"
           />

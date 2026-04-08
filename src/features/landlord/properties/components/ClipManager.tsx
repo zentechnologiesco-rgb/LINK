@@ -263,7 +263,7 @@ export function ClipManager({
                     <div className="mt-6 rounded-2xl bg-neutral-50 px-4 py-3.5">
                         <p className="text-[13px] leading-relaxed text-neutral-500">
                             <span className="font-semibold text-neutral-700">Tip:</span>{' '}
-                            A quick walk-through with good lighting works best. The clip won't affect your listing's approval status.
+                            A quick walk-through with good lighting works best. The clip does not affect the listing approval status.
                         </p>
                     </div>
                 ) : null}

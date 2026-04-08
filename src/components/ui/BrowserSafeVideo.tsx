@@ -10,6 +10,7 @@ import {
     type ForwardedRef,
 } from "react"
 
+import { OptimizedImage } from "@/components/ui/optimized-image"
 import { cn } from "@/lib/utils"
 
 type BrowserSafeVideoProps = Omit<ComponentPropsWithoutRef<"video">, "poster"> & {
@@ -128,14 +129,7 @@ export const BrowserSafeVideo = forwardRef<HTMLVideoElement, BrowserSafeVideoPro
             }, frameWaitMs)
         }, [clearPendingFrameChecks, frameWaitMs, markFrameRendered, warningText])
 
-        useEffect(() => {
-            hasRenderedFrameRef.current = false
-            setHasRenderedFrame(false)
-            setShowWarning(false)
-            clearPendingFrameChecks()
-
-            return clearPendingFrameChecks
-        }, [clearPendingFrameChecks, src])
+        useEffect(() => clearPendingFrameChecks, [clearPendingFrameChecks])
 
         const setCombinedRef = useCallback((node: HTMLVideoElement | null) => {
             videoRef.current = node
@@ -179,11 +173,17 @@ export const BrowserSafeVideo = forwardRef<HTMLVideoElement, BrowserSafeVideoPro
                 {showOverlay ? (
                     <div className="pointer-events-none absolute inset-0">
                         {showPosterOverlay ? (
-                            <img
-                                src={posterSrc ?? undefined}
-                                alt={posterAlt}
-                                className={cn("h-full w-full object-cover", posterClassName)}
-                            />
+                            <div className="relative h-full w-full">
+                                <OptimizedImage
+                                    src={posterSrc ?? "/window.svg"}
+                                    alt={posterAlt}
+                                    fill
+                                    sizes="100vw"
+                                    qualityPreset="hero"
+                                    showSkeleton={false}
+                                    className={cn("object-cover", posterClassName)}
+                                />
+                            </div>
                         ) : null}
 
                         {showWarning && warningText ? (
