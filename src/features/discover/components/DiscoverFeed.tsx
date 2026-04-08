@@ -118,6 +118,10 @@ function getLocationLabel(property: DiscoverProperty) {
   return [property.address, property.city].filter(Boolean).join(", ");
 }
 
+const DISCOVER_VIEWPORT_HEIGHT_CLASS = "h-[calc(100dvh-4rem)] md:h-[calc(100dvh-5rem)]";
+const DISCOVER_FEED_CLASS = `discover-feed ${DISCOVER_VIEWPORT_HEIGHT_CLASS} overflow-y-auto overscroll-y-contain snap-y snap-mandatory`;
+const DISCOVER_SLIDE_CLASS = `discover-slide ${DISCOVER_VIEWPORT_HEIGHT_CLASS} relative w-full shrink-0 snap-start overflow-hidden flex items-end bg-black`;
+
 /* ─── Individual slide ────────────────────────────────────── */
 
 function DiscoverSlide({
@@ -213,7 +217,7 @@ function DiscoverSlide({
     <div
       ref={setNode}
       data-index={index}
-      className="discover-slide relative flex items-end"
+      className={DISCOVER_SLIDE_CLASS}
     >
       {/* Full-screen media background */}
       <div className="absolute inset-0">
@@ -404,7 +408,7 @@ function DiscoverEmptyState({
   currentUser: ReturnType<typeof useUser>["user"];
 }) {
   return (
-    <div className="discover-slide flex items-center justify-center bg-background">
+    <div className={`${DISCOVER_SLIDE_CLASS} items-center justify-center bg-background`}>
       <div className="w-full max-w-sm px-6 text-center">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           No walkthroughs yet
@@ -444,15 +448,15 @@ function DiscoverSkeleton({
   currentUser: ReturnType<typeof useUser>["user"];
 }) {
   return (
-    <div className="discover-feed-container">
+    <div className="discover-feed-container min-h-screen bg-black">
       <Header
         user={currentUser}
         userRole={currentUser?.role}
         isLoading={currentUser === undefined}
       />
 
-      <div className="discover-feed">
-        <div className="discover-slide flex items-end bg-neutral-100 dark:bg-neutral-900">
+      <div className={DISCOVER_FEED_CLASS}>
+        <div className={`${DISCOVER_SLIDE_CLASS} bg-neutral-100 dark:bg-neutral-900`}>
           {/* Shimmer background */}
           <div className="absolute inset-0 animate-pulse bg-neutral-200 dark:bg-neutral-800" />
 
@@ -653,13 +657,13 @@ export function DiscoverFeed() {
 
   if (properties.length === 0) {
     return (
-      <div className="discover-feed-container">
+      <div className="discover-feed-container min-h-screen bg-black">
         <Header
           user={currentUser}
           userRole={currentUser?.role}
           isLoading={currentUser === undefined}
         />
-        <div className="discover-feed">
+        <div className={DISCOVER_FEED_CLASS}>
           <DiscoverEmptyState currentUser={currentUser} />
         </div>
         <MobileNav user={currentUser} userRole={currentUser?.role} />
@@ -668,14 +672,14 @@ export function DiscoverFeed() {
   }
 
   return (
-    <div className="discover-feed-container">
+    <div className="discover-feed-container min-h-screen bg-black">
       <Header
         user={currentUser}
         userRole={currentUser?.role}
         isLoading={currentUser === undefined}
       />
 
-      <div ref={feedRef} className="discover-feed">
+      <div ref={feedRef} className={DISCOVER_FEED_CLASS}>
         {properties.map((property, index) => (
           <DiscoverSlide
             key={property._id}
