@@ -13,6 +13,7 @@ import {
 
 import { api } from '@convex/_generated/api'
 import { UserAvatar } from '@/components/ui/user-avatar'
+import { BrowserSafeVideo } from '@/components/ui/BrowserSafeVideo'
 
 type DiscoverShelfProperty = {
     _id: string
@@ -91,14 +92,17 @@ function ShelfVideoCard({
         >
             {/* Video / Poster */}
             {property.videoUrl ? (
-                <video
+                <BrowserSafeVideo
                     ref={videoRef}
                     src={`${property.videoUrl}#t=0.1`}
+                    posterSrc={posterUrl}
+                    posterAlt={property.title}
                     muted
                     loop
                     playsInline
                     preload="metadata"
-                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+                    className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+                    containerClassName="absolute inset-0 h-full w-full"
                 />
             ) : (
                 <div

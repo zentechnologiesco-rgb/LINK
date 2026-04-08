@@ -7,14 +7,16 @@ import { toast } from "sonner";
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { BrowserSafeVideo } from "@/components/ui/BrowserSafeVideo";
 import { cn } from "@/lib/utils";
+import {
+  DISCOVER_CLIP_ACCEPT,
+  DISCOVER_CLIP_PREVIEW_WARNING,
+  DISCOVER_CLIP_UPLOAD_ERROR,
+  isSupportedDiscoverClip,
+} from "./discoverClipValidation";
 
 const MAX_VIDEO_SIZE_MB = 10;
-const ALLOWED_VIDEO_TYPES = new Set([
-  "video/mp4",
-  "video/webm",
-  "video/quicktime",
-]);
 
 interface PropertyClipUploadProps {
   initialVideos?: Id<"_storage">[];
@@ -32,7 +34,7 @@ export function PropertyClipUpload({
   highlighted = false,
   mode = "create",
   title = "Discovery Clip",
-  description = "Optional. Add one short vertical clip to help this listing appear in the Discover feed once the property is live.",
+  description = "Optional. Add one short vertical clip to help this listing appear in the Discover feed once the property is live. Use H.264 MP4 or WebM for the most reliable playback.",
   badgeLabel = "Optional",
 }: PropertyClipUploadProps) {
   const [videoIds, setVideoIds] = useState<Id<"_storage">[]>(initialVideos);
@@ -54,8 +56,8 @@ export function PropertyClipUpload({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!ALLOWED_VIDEO_TYPES.has(file.type)) {
-      toast.error("Upload an MP4, WebM, or MOV clip.");
+    if (!isSupportedDiscoverClip(file)) {
+      toast.error(DISCOVER_CLIP_UPLOAD_ERROR);
       return;
     }
 
@@ -149,7 +151,7 @@ export function PropertyClipUpload({
       <input
         ref={inputRef}
         type="file"
-        accept="video/mp4,video/webm,video/quicktime"
+        accept={DISCOVER_CLIP_ACCEPT}
         onChange={handleVideoSelect}
         className="hidden"
         disabled={isUploading}
@@ -170,13 +172,14 @@ export function PropertyClipUpload({
           )}
         >
           <div className="relative aspect-[9/16] w-full overflow-hidden bg-black sm:max-h-[28rem]">
-            <video
+            <BrowserSafeVideo
               key={currentVideoUrl}
               src={currentVideoUrl}
               controls
               muted
               playsInline
               preload="metadata"
+              warningText={DISCOVER_CLIP_PREVIEW_WARNING}
               className="h-full w-full object-cover"
             />
             <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-4">
@@ -274,7 +277,7 @@ export function PropertyClipUpload({
             >
               {isUploading
                 ? currentFileName || "Finishing upload…"
-                : "Best results: 9:16 vertical, under 30 seconds, clear walkthrough, and good lighting."}
+                : "Best results: 9:16 vertical, under 30 seconds, clear walkthrough, good lighting, and an H.264 MP4 export."}
             </p>
             <div
               className={cn(
@@ -284,7 +287,7 @@ export function PropertyClipUpload({
                   : "border-white/5 bg-surface-2 text-white/50",
               )}
             >
-              MP4, WebM, or MOV up to 10MB
+              MP4 or WebM up to 10MB
             </div>
           </div>
         </button>
