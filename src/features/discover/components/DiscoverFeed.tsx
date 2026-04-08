@@ -32,6 +32,7 @@ import { PROPERTY_TYPE_LABELS } from "@/constants/property";
 import { ContactLandlordButton } from "@/features/properties/public/components/ContactLandlordButton";
 import { SavePropertyButton } from "@/features/properties/public/components/SavePropertyButton";
 import { cn } from "@/lib/utils";
+import { BrowserSafeVideo } from "@/components/ui/BrowserSafeVideo";
 
 type DiscoverProperty = {
   _id: string;
@@ -221,16 +222,18 @@ function DiscoverSlide({
       {/* Full-screen media background */}
       <div className="absolute inset-0">
         {property.videoUrl ? (
-          <video
+          <BrowserSafeVideo
             ref={videoRef}
             src={property.videoUrl}
-            poster={posterUrl}
+            posterSrc={posterUrl}
+            posterAlt={property.title}
             muted={isMuted}
             loop
             playsInline
             preload={isActive ? "auto" : "metadata"}
             onClick={handleTapVideo}
             className="h-full w-full object-cover cursor-pointer"
+            containerClassName="h-full w-full"
           />
         ) : (
           <div

@@ -22,7 +22,6 @@ export const ALLOWED_DOCUMENT_TYPES = [
 export const ALLOWED_VIDEO_TYPES = [
     "video/mp4",
     "video/webm",
-    "video/quicktime",
 ];
 
 // All allowed types combined
@@ -241,7 +240,7 @@ export const generateUploadUrl = mutation({
 
         // Validate file type if provided
         if (args.contentType && !ALLOWED_TYPES.includes(args.contentType)) {
-            throw new Error(`File type '${args.contentType}' is not allowed. Allowed types: images (JPEG, PNG, GIF, WebP, HEIC), PDF documents, and videos (MP4, WebM, MOV).`);
+            throw new Error(`File type '${args.contentType}' is not allowed. Allowed types: images (JPEG, PNG, GIF, WebP, HEIC), PDF documents, and videos (MP4, WebM).`);
         }
 
         // Validate file size if provided

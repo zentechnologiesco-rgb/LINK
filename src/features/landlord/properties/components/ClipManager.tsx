@@ -8,14 +8,16 @@ import { toast } from 'sonner'
 
 import { api } from '@convex/_generated/api'
 import type { Id } from '@convex/_generated/dataModel'
+import { BrowserSafeVideo } from '@/components/ui/BrowserSafeVideo'
 import { cn } from '@/lib/utils'
+import {
+    DISCOVER_CLIP_ACCEPT,
+    DISCOVER_CLIP_PREVIEW_WARNING,
+    DISCOVER_CLIP_UPLOAD_ERROR,
+    isSupportedDiscoverClip,
+} from './discoverClipValidation'
 
 const MAX_VIDEO_SIZE_MB = 10
-const ALLOWED_VIDEO_TYPES = new Set([
-    'video/mp4',
-    'video/webm',
-    'video/quicktime',
-])
 
 interface ClipManagerProps {
     propertyId: Id<'properties'>
@@ -51,8 +53,8 @@ export function ClipManager({
         const file = e.target.files?.[0]
         if (!file) return
 
-        if (!ALLOWED_VIDEO_TYPES.has(file.type)) {
-            toast.error('Upload an MP4, WebM, or MOV clip.')
+        if (!isSupportedDiscoverClip(file)) {
+            toast.error(DISCOVER_CLIP_UPLOAD_ERROR)
             return
         }
 
@@ -166,7 +168,7 @@ export function ClipManager({
                 <p className="mt-1.5 text-[15px] leading-relaxed text-neutral-500">
                     {hasClip
                         ? 'This clip appears in Discover when the listing is live. Replace or remove it below.'
-                        : 'Add a short vertical video to help renters find this listing in Discover.'}
+                        : 'Add a short vertical video to help renters find this listing in Discover. Use H.264 MP4 or WebM for the most reliable playback.'}
                 </p>
 
                 {/* ── Video Preview / Upload ──────────────────────── */}
@@ -174,7 +176,7 @@ export function ClipManager({
                     <input
                         ref={inputRef}
                         type="file"
-                        accept="video/mp4,video/webm,video/quicktime"
+                        accept={DISCOVER_CLIP_ACCEPT}
                         onChange={handleUpload}
                         className="hidden"
                         disabled={isUploading}
@@ -185,13 +187,14 @@ export function ClipManager({
                             {/* Video */}
                             <div className="overflow-hidden rounded-[20px] border border-neutral-200/80 bg-black">
                                 <div className="relative aspect-[9/16] w-full sm:max-h-[480px]">
-                                    <video
+                                    <BrowserSafeVideo
                                         key={currentVideoUrl}
                                         src={currentVideoUrl}
                                         controls
                                         muted
                                         playsInline
                                         preload="metadata"
+                                        warningText={DISCOVER_CLIP_PREVIEW_WARNING}
                                         className="h-full w-full object-cover"
                                     />
                                 </div>
@@ -249,7 +252,7 @@ export function ClipManager({
                                 Upload a Clip
                             </p>
                             <p className="mt-1.5 max-w-[280px] text-center text-[13px] leading-relaxed text-neutral-400">
-                                9:16 vertical · Under 30s · MP4, WebM, or MOV · Max 10 MB
+                                9:16 vertical · Under 30s · MP4 or WebM · Max 10 MB
                             </p>
                         </button>
                     )}

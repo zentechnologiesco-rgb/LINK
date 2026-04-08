@@ -4,6 +4,7 @@ import { type MouseEventHandler } from "react"
 import { PlayCircle } from "lucide-react"
 
 import { OptimizedImage } from "@/components/ui/optimized-image"
+import { BrowserSafeVideo } from "@/components/ui/BrowserSafeVideo"
 import { cn } from "@/lib/utils"
 
 type MediaQualityPreset = "hero" | "full" | "card"
@@ -39,10 +40,11 @@ export function PropertyDetailPrimaryMedia({
         <div className={cn("relative", className)}>
             {videoUrl ? (
                 <>
-                    <video
+                    <BrowserSafeVideo
                         key={videoUrl}
                         src={videoUrl}
-                        poster={imageSrc}
+                        posterSrc={imageSrc}
+                        posterAlt={imageAlt}
                         controls
                         muted
                         loop
@@ -50,6 +52,7 @@ export function PropertyDetailPrimaryMedia({
                         preload="metadata"
                         aria-label={title}
                         className={cn("h-full w-full object-cover", imageClassName)}
+                        containerClassName="h-full w-full"
                     />
                     <div
                         className={cn(
