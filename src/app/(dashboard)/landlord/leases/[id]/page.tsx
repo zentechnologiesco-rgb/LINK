@@ -3,9 +3,9 @@
 import { use } from 'react'
 import { notFound } from 'next/navigation'
 import { useQuery } from 'convex/react'
-import { api } from '../../../../../../convex/_generated/api'
-import { Id } from '../../../../../../convex/_generated/dataModel'
-import { LeaseDetailClient } from './LeaseDetailClient'
+import { api } from '@convex/_generated/api'
+import { type Id } from '@convex/_generated/dataModel'
+import { LandlordLeaseDetailWorkspace } from './_components/LandlordLeaseDetailWorkspace'
 import { useUser } from '@/components/providers/UserProvider'
 
 interface Props {
@@ -31,7 +31,7 @@ function LandlordLeaseDetailContent({ id }: { id: string }) {
         notFound()
     }
 
-    return <LeaseDetailClient leaseId={id} />
+    return <LandlordLeaseDetailWorkspace leaseId={id} />
 }
 
 export default function LandlordLeaseDetailPage({ params }: Props) {

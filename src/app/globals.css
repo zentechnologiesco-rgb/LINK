@@ -48,6 +48,12 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-panel: var(--panel);
+  --color-panel-foreground: var(--panel-foreground);
 }
 
 :root {
@@ -83,6 +89,14 @@
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.705 0.015 286.067);
+
+  --surface-0: 220 10% 8%;
+  --surface-1: 220 10% 10%;
+  --surface-2: 220 9% 12%;
+  --surface-3: 220 8% 15%;
+
+  --panel: 220 9% 11%;
+  --panel-foreground: 0 0% 92%;
 
   /* Flat Design System */
   --card-border: rgba(0, 0, 0, 0.08);
@@ -143,6 +157,14 @@
   --mobile-nav-tab-active: rgba(255, 255, 255, 0.08);
   --mobile-nav-muted: rgba(212, 212, 216, 0.72);
   --mobile-nav-text: rgba(250, 250, 250, 0.95);
+
+  --surface-0: 220 10% 8%;
+  --surface-1: 220 10% 10%;
+  --surface-2: 220 9% 12%;
+  --surface-3: 220 8% 15%;
+
+  --panel: 220 9% 11%;
+  --panel-foreground: 0 0% 92%;
 }
 
 @layer base {

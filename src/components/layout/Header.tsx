@@ -1,13 +1,23 @@
 'use client'
 
 import Image from 'next/image'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { type AvatarIdentity } from '@/lib/avatar'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+import { usePathname, useRouter } from 'next/navigation'
+import { useAuthActions } from "@convex-dev/auth/react"
+import { Bell, LogOut, Menu } from 'lucide-react'
+import { toast } from 'sonner'
+
+import {
+    canAccessDiscover,
+    discoverNavItem,
+    getNavigationItemsForSurface,
+    settingsNavItem,
+    type NavigationBadgeType,
+} from '@/config/navigation'
+import type { UserRole } from '@/lib/user-preferences'
 import { UserAvatar } from '@/components/ui/user-avatar'
+import { Button } from '@/components/ui/button'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -15,34 +25,23 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useAuthActions } from "@convex-dev/auth/react"
-import { toast } from 'sonner'
-import { getDisplayName } from '@/lib/user-name'
 import { useNotificationCounts } from '@/components/providers/NotificationCountsProvider'
-import {
-    Bell,
-    Menu,
-    Settings,
-    LogOut,
-    Building2,
-    Heart,
-    MessageSquare,
-    LayoutDashboard,
-    FileText,
-    Wallet,
-} from 'lucide-react'
+import { type AvatarIdentity } from '@/lib/avatar'
+import { getDisplayName } from '@/lib/user-name'
+import { cn } from '@/lib/utils'
 
 interface HeaderProps {
     user?: (AvatarIdentity & {
         email?: string | null
-        role?: 'tenant' | 'landlord' | 'admin' | null
+        role?: UserRole | null
     }) | null
-    userRole?: 'tenant' | 'landlord' | 'admin' | null
+    userRole?: UserRole | null
     isLoading?: boolean
 }
 
 export function Header({ user, userRole, isLoading }: HeaderProps) {
     const router = useRouter()
+    const pathname = usePathname()
     const { signOut } = useAuthActions()
     const [isScrolled, setIsScrolled] = useState(false)
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
@@ -67,14 +66,12 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
         }
     }
 
-    const currentRole = userRole || user?.role
-
-    // Get dashboard link based on role
-    const getDashboardLink = () => {
-        if (currentRole === 'landlord') return '/landlord/properties'
-        if (currentRole === 'admin') return '/admin'
-        return '/tenant/saved'
-    }
+    const currentRole = (userRole || user?.role || null) as UserRole | null
+    const canShowDiscover = canAccessDiscover(currentRole)
+    const isDiscoverActive = pathname === discoverNavItem.href
+    const headerMenuItems = currentRole
+        ? getNavigationItemsForSurface(currentRole, 'headerMenu')
+        : []
 
     const getNotificationLink = () => {
         if (leaseActionCount > 0) {
@@ -87,100 +84,45 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
         return '/chat'
     }
 
+    const getBadgeCount = (badgeType?: NavigationBadgeType) => {
+        if (badgeType === 'messages') return unreadCount
+        if (badgeType === 'leases') return leaseActionCount
+        return 0
+    }
+
     const renderNavigationMenuItems = () => (
         <>
-            {currentRole === 'admin' && (
-                <DropdownMenuItem
-                    className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium focus:bg-neutral-50"
-                    onClick={() => router.push(getDashboardLink())}
-                >
-                    <LayoutDashboard className="mr-3 h-4 w-4 opacity-70" />
-                    Dashboard
-                </DropdownMenuItem>
-            )}
+            {headerMenuItems.map((item) => {
+                const Icon = item.icon
+                const badgeCount = getBadgeCount(item.badgeType)
+                const hasBadge = badgeCount > 0
 
-            {currentRole === 'tenant' && (
-                <>
+                return (
                     <DropdownMenuItem
+                        key={item.id}
                         className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium focus:bg-neutral-50"
-                        onClick={() => router.push('/tenant/saved')}
-                    >
-                        <Heart className="mr-3 h-4 w-4 opacity-70" />
-                        Saved Properties
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                        className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium focus:bg-neutral-50"
-                        onClick={() => router.push('/tenant/leases')}
+                        onClick={() => router.push(item.href)}
                     >
                         <div className="flex items-center flex-1">
-                            <FileText className="mr-3 h-4 w-4 opacity-70" />
-                            My Leases
+                            <Icon className="mr-3 h-4 w-4 opacity-70" />
+                            {item.label}
                         </div>
-                        {leaseActionCount > 0 && (
-                            <span className="h-5 min-w-[20px] px-1.5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center ml-2">
-                                {leaseActionCount}
+                        {hasBadge && (
+                            <span className={cn(
+                                'ml-2 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-white',
+                                item.badgeType === 'leases' ? 'bg-amber-500' : 'bg-red-500'
+                            )}>
+                                {badgeCount > 99 ? '99+' : badgeCount}
                             </span>
                         )}
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                        className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium focus:bg-neutral-50"
-                        onClick={() => router.push('/tenant/payments')}
-                    >
-                        <Wallet className="mr-3 h-4 w-4 opacity-70" />
-                        Payments
-                    </DropdownMenuItem>
-                </>
-            )}
-
-            {currentRole === 'landlord' && (
-                <>
-                    <DropdownMenuItem
-                        className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium focus:bg-neutral-50"
-                        onClick={() => router.push('/landlord/properties')}
-                    >
-                        <Building2 className="mr-3 h-4 w-4 opacity-70" />
-                        My Properties
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                        className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium focus:bg-neutral-50"
-                        onClick={() => router.push('/landlord/leases')}
-                    >
-                        <div className="flex items-center flex-1">
-                            <FileText className="mr-3 h-4 w-4 opacity-70" />
-                            Leases
-                        </div>
-                        {leaseActionCount > 0 && (
-                            <span className="h-5 min-w-[20px] px-1.5 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center ml-2">
-                                {leaseActionCount}
-                            </span>
-                        )}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                        className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium focus:bg-neutral-50"
-                        onClick={() => router.push('/landlord/payments')}
-                    >
-                        <Wallet className="mr-3 h-4 w-4 opacity-70" />
-                        Payments
-                    </DropdownMenuItem>
-                </>
-            )}
-
-            <DropdownMenuItem
-                className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium focus:bg-neutral-50"
-                onClick={() => router.push('/chat')}
-            >
-                <div className="flex items-center flex-1">
-                    <MessageSquare className="mr-3 h-4 w-4 opacity-70" />
-                    Messages
-                </div>
-                {unreadCount > 0 && (
-                    <span className="h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center ml-2">
-                        {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
-                )}
-            </DropdownMenuItem>
+                )
+            })}
         </>
     )
+
+    const DiscoverIcon = discoverNavItem.icon
+    const SettingsIcon = settingsNavItem.icon
 
     const renderBrandLink = (className?: string) => (
         <Link
@@ -195,9 +137,29 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                 priority
                 className="h-[38px] w-[38px] shrink-0 object-contain md:h-[46px] md:w-[46px]"
             />
-            <span className="font-bold text-[28px] leading-none md:text-[34px] tracking-tight text-neutral-900">
+            <span className="font-bold text-[28px] leading-none tracking-tight text-neutral-900 md:text-[34px]">
                 Link
             </span>
+        </Link>
+    )
+
+    const renderDiscoverLink = (options?: { iconOnly?: boolean }) => (
+        <Link
+            href={discoverNavItem.href}
+            className={cn(
+                'inline-flex items-center justify-center gap-1.5 rounded-[8px] transition-all active:scale-[0.98]',
+                options?.iconOnly
+                    ? 'h-9 w-9 rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                    : 'h-[38px] bg-neutral-900 px-4 text-[15px] font-semibold text-white hover:bg-neutral-800',
+                isDiscoverActive
+                    ? options?.iconOnly
+                        ? 'bg-neutral-900 text-white'
+                        : ''
+                    : ''
+            )}
+        >
+            <DiscoverIcon className={cn(options?.iconOnly ? 'h-4 w-4' : 'h-[18px] w-[18px]')} strokeWidth={2.5} />
+            {!options?.iconOnly && <span>{discoverNavItem.label}</span>}
         </Link>
     )
 
@@ -213,26 +175,24 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
             >
                 <div className="w-full px-4 sm:px-5 lg:px-6">
                     <div className="flex h-16 items-center md:h-20">
-                        {/* Left Side: Mobile Logo / Desktop Menu */}
                         <div className="flex items-center gap-2 md:flex-1 md:justify-start md:gap-3">
                             {user && (
                                 <div className="hidden md:block">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                             <button className="relative outline-none">
-                                                <div className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors">
+                                                <div className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-neutral-100">
                                                     <Menu className="h-6 w-6 text-neutral-900" />
                                                 </div>
-                                                {/* Notification badge on hamburger */}
                                                 {totalNotifications > 0 && (
-                                                    <span className="absolute top-0 right-0 h-4.5 w-4.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white z-10">
+                                                    <span className="absolute top-0 right-0 z-10 flex h-4.5 w-4.5 items-center justify-center rounded-full border-2 border-white bg-red-500 text-[10px] font-bold text-white">
                                                         {totalNotifications > 9 ? '9+' : totalNotifications}
                                                     </span>
                                                 )}
                                             </button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent
-                                            className="w-64 p-2 rounded-[20px] border border-neutral-100 bg-white shadow-xl mt-2"
+                                            className="mt-2 w-64 rounded-[20px] border border-neutral-100 bg-white p-2 shadow-xl"
                                             align="start"
                                         >
                                             {renderNavigationMenuItems()}
@@ -243,17 +203,25 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                             {renderBrandLink('md:hidden')}
                         </div>
 
-                        {/* Center: Desktop Logo */}
                         <div className="hidden items-center justify-center md:flex">
                             {renderBrandLink()}
                         </div>
 
-                        {/* Right Side: Avatar */}
                         <div className="ml-auto flex justify-end md:flex-1">
                             {isLoading ? (
-                                <div className="h-10 w-10 rounded-full bg-gray-100 animate-pulse" />
+                                <div className="h-10 w-10 animate-pulse rounded-full bg-gray-100" />
                             ) : user ? (
                                 <div className="flex items-center gap-1.5">
+                                    {canShowDiscover && (
+                                        <>
+                                            <div className="hidden md:flex">
+                                                {renderDiscoverLink()}
+                                            </div>
+                                            <div className="md:hidden">
+                                                {renderDiscoverLink({ iconOnly: true })}
+                                            </div>
+                                        </>
+                                    )}
                                     <Link
                                         href={getNotificationLink()}
                                         aria-label="Open notifications"
@@ -276,14 +244,14 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                             </button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent
-                                            className="w-64 p-2 rounded-[20px] border border-neutral-100 bg-white shadow-xl mt-2"
+                                            className="mt-2 w-64 rounded-[20px] border border-neutral-100 bg-white p-2 shadow-xl"
                                             align="end"
                                         >
-                                            <div className="px-3 py-2 mb-1">
+                                            <div className="mb-1 px-3 py-2">
                                                 <p className="text-sm font-semibold text-black">
                                                     {getDisplayName(user)}
                                                 </p>
-                                                <p className="text-xs text-black/50 truncate">
+                                                <p className="truncate text-xs text-black/50">
                                                     {user.email}
                                                 </p>
                                             </div>
@@ -292,10 +260,10 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
 
                                             <DropdownMenuItem
                                                 className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium focus:bg-neutral-50"
-                                                onClick={() => router.push('/settings')}
+                                                onClick={() => router.push(settingsNavItem.href)}
                                             >
-                                                <Settings className="mr-3 h-4 w-4 opacity-70" />
-                                                Settings
+                                                <SettingsIcon className="mr-3 h-4 w-4 opacity-70" />
+                                                {settingsNavItem.label}
                                             </DropdownMenuItem>
 
                                             <DropdownMenuItem
@@ -309,21 +277,28 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                     </DropdownMenu>
                                 </div>
                             ) : (
-                                <Link href="/sign-in">
-                                    <Button
-                                        variant="outline"
-                                        className="rounded-full text-xs font-semibold px-4 border-neutral-200 hover:bg-neutral-50"
-                                    >
-                                        Sign In
-                                    </Button>
-                                </Link>
+                                <div className="flex items-center gap-2">
+                                    <div className="hidden sm:flex">
+                                        {renderDiscoverLink()}
+                                    </div>
+                                    <div className="sm:hidden">
+                                        {renderDiscoverLink({ iconOnly: true })}
+                                    </div>
+                                    <Link href="/sign-in">
+                                        <Button
+                                            variant="outline"
+                                            className="rounded-full border-neutral-200 px-4 text-xs font-semibold hover:bg-neutral-50"
+                                        >
+                                            Sign In
+                                        </Button>
+                                    </Link>
+                                </div>
                             )}
                         </div>
                     </div>
                 </div>
             </header>
 
-            {/* Spacer for fixed header */}
             <div className="h-16 md:h-20" />
         </>
     )

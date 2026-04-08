@@ -6,7 +6,7 @@ import { OptimizedImage } from '@/components/ui/optimized-image'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { RequestActions } from './RequestActions'
+import { LandlordRequestActions } from './_components/LandlordRequestActions'
 import { ArrowLeft, User, Building2, CreditCard, ClipboardList, CheckCircle2, XCircle, Clock, Calendar, MessageSquare } from 'lucide-react'
 import { format } from 'date-fns'
 import { useQuery } from "convex/react"
@@ -142,7 +142,7 @@ function RequestDetailContent({ id }: { id: string }) {
                         </p>
                     </div>
                     {request.status === 'pending' && (
-                        <RequestActions requestId={request._id} />
+                        <LandlordRequestActions requestId={request._id} />
                     )}
                 </div>
             </div>

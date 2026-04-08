@@ -1,16 +1,18 @@
-import { MutationCtx } from "./_generated/server";
-import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
+
+type AuditDetails = Record<string, unknown> | undefined
 
 export async function logAdminAction(
     ctx: MutationCtx,
-    adminId: string,
+    adminId: Id<"users">,
     action: string,
     targetId: string,
     targetType: string,
-    details?: any
+    details?: AuditDetails
 ) {
     await ctx.db.insert("auditLogs", {
-        adminId: adminId as any,
+        adminId,
         action,
         targetId,
         targetType,

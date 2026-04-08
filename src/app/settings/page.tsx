@@ -1,5 +1,5 @@
-import { SettingsPageClient } from '@/components/settings/SettingsPageClient'
+import { SettingsWorkspace } from '@/features/settings/components/SettingsWorkspace'
 
 export default function SettingsPage() {
-    return <SettingsPageClient />
+    return <SettingsWorkspace />
 }

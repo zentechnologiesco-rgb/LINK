@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense } from 'react'
-import { AuthedChatInterface } from './ChatInterface'
+import { ChatWorkspace } from './_components/ChatWorkspace'
 
 function ChatLoading() {
     return (
@@ -18,7 +18,7 @@ export default function ChatPage() {
     return (
         <div className="-mx-4 -mt-4 sm:-mx-6 md:-mx-12">
             <Suspense fallback={<ChatLoading />}>
-                <AuthedChatInterface />
+                <ChatWorkspace />
             </Suspense>
         </div>
     )

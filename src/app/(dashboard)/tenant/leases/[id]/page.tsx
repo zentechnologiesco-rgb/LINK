@@ -1,10 +1,10 @@
 'use client'
 
 import { notFound } from 'next/navigation'
-import { TenantLeaseDetailClient } from './TenantLeaseDetailClient'
-import { useQuery } from "convex/react"
-import { api } from "../../../../../../convex/_generated/api"
-import { Id } from "../../../../../../convex/_generated/dataModel"
+import { useQuery } from 'convex/react'
+import { api } from '@convex/_generated/api'
+import { type Id } from '@convex/_generated/dataModel'
+import { TenantLeaseDetailWorkspace } from './_components/TenantLeaseDetailWorkspace'
 import { useUser } from '@/components/providers/UserProvider'
 
 import { use } from 'react'
@@ -14,7 +14,7 @@ interface Props {
 }
 
 function TenantLeaseDetailContent({ id }: { id: string }) {
-    const lease = useQuery(api.leases.getById, { leaseId: id as Id<"leases"> })
+    const lease = useQuery(api.leases.getById, { leaseId: id as Id<'leases'> })
     const { user: currentUser, isLoading } = useUser()
 
     if (lease === undefined || isLoading) {
@@ -37,7 +37,7 @@ function TenantLeaseDetailContent({ id }: { id: string }) {
         notFound()
     }
 
-    return <TenantLeaseDetailClient leaseId={lease._id} />
+    return <TenantLeaseDetailWorkspace leaseId={lease._id} />
 }
 
 export default function TenantLeaseDetailPage({ params }: Props) {
