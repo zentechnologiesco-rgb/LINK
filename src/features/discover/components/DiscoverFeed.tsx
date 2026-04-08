@@ -224,6 +224,7 @@ function DiscoverSlide({
             src={property.videoUrl}
             posterSrc={posterUrl}
             posterAlt={property.title}
+            autoPlay={isActive}
             muted={isMuted}
             loop
             playsInline
