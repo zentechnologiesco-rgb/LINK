@@ -30,6 +30,35 @@ export const currentUser = query({
     },
 });
 
+export const linkedAuthMethods = query({
+    args: {},
+    handler: async (ctx) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) {
+            return {
+                providers: [] as string[],
+                hasPassword: false,
+                hasGoogle: false,
+            };
+        }
+
+        const accounts = await ctx.db
+            .query("authAccounts")
+            .withIndex("userIdAndProvider", (q) => q.eq("userId", userId))
+            .collect();
+
+        const providers = Array.from(
+            new Set(accounts.map((account) => account.provider)),
+        ).sort();
+
+        return {
+            providers,
+            hasPassword: providers.includes("password"),
+            hasGoogle: providers.includes("google"),
+        };
+    },
+});
+
 // Get user by ID
 export const getById = query({
     args: { userId: v.id("users") },
@@ -61,7 +90,7 @@ export const getByEmail = query({
 
         const user = await ctx.db
             .query("users")
-            .withIndex("by_email", (q) => q.eq("email", normalizeEmail(args.email)))
+            .withIndex("email", (q) => q.eq("email", normalizeEmail(args.email)))
             .first();
 
         if (!user) return null;

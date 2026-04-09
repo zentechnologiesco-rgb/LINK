@@ -147,14 +147,14 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
         <Link
             href={discoverNavItem.href}
             className={cn(
-                'inline-flex items-center justify-center gap-1.5 rounded-[8px] transition-all active:scale-[0.98]',
+                'inline-flex items-center justify-center gap-1.5 rounded-full transition-[background-color,color,box-shadow,transform] duration-200 active:scale-[0.98]',
                 options?.iconOnly
-                    ? 'h-9 w-9 rounded-full bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-                    : 'h-[38px] bg-neutral-900 px-4 text-[15px] font-semibold text-white hover:bg-neutral-800',
+                    ? 'apple-glass-control h-9 w-9 text-neutral-700 hover:text-neutral-900'
+                    : 'apple-glass-control h-10 px-4 text-[15px] font-semibold text-neutral-800 hover:text-neutral-950',
                 isDiscoverActive
                     ? options?.iconOnly
-                        ? 'bg-neutral-900 text-white'
-                        : ''
+                        ? 'border-transparent bg-neutral-900 text-white shadow-[0_10px_22px_-12px_rgba(15,23,42,0.45)]'
+                        : 'border-transparent bg-neutral-900 text-white shadow-[0_12px_26px_-16px_rgba(15,23,42,0.45)]'
                     : ''
             )}
         >
@@ -167,10 +167,11 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
         <>
             <header
                 className={cn(
-                    'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+                    'fixed top-0 left-0 right-0 z-50 border-b border-white/50 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300',
+                    'apple-glass-bar',
                     isScrolled
-                        ? 'bg-white/90 backdrop-blur-md border-b border-neutral-100'
-                        : 'bg-white border-b border-transparent'
+                        ? 'shadow-[0_18px_36px_-24px_rgba(15,23,42,0.24)]'
+                        : 'shadow-[0_12px_28px_-24px_rgba(15,23,42,0.18)]'
                 )}
             >
                 <div className="w-full px-4 sm:px-5 lg:px-6">
@@ -180,8 +181,8 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                 <div className="hidden md:block">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <button className="relative outline-none">
-                                                <div className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-neutral-100">
+                                            <button className="relative rounded-full outline-none">
+                                                <div className="apple-glass-control flex h-10 w-10 items-center justify-center rounded-full text-neutral-900 transition-[color,transform] duration-200 hover:text-black">
                                                     <Menu className="h-6 w-6 text-neutral-900" />
                                                 </div>
                                                 {totalNotifications > 0 && (
@@ -225,7 +226,7 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                     <Link
                                         href={getNotificationLink()}
                                         aria-label="Open notifications"
-                                        className="relative flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 shadow-none transition-colors hover:bg-neutral-200 md:hidden"
+                                        className="apple-glass-control relative flex h-9 w-9 items-center justify-center rounded-full text-neutral-600 shadow-none transition-[color,transform] duration-200 hover:text-neutral-900 md:hidden"
                                     >
                                         <Bell className="h-5 w-5 stroke-[1.75]" />
                                         {totalNotifications > 0 && (
@@ -235,7 +236,7 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
 
                                     <DropdownMenu onOpenChange={setIsProfileMenuOpen}>
                                         <DropdownMenuTrigger asChild>
-                                            <button className="relative rounded-full p-0.5 outline-none transition-colors md:bg-transparent md:p-0">
+                                            <button className="apple-glass-control relative rounded-full p-0.5 outline-none transition-[transform,box-shadow] duration-200 hover:scale-[1.01] md:p-0.5">
                                                 <UserAvatar
                                                     activity={isProfileMenuOpen ? 'active' : totalNotifications > 0 ? 'unread' : 'idle'}
                                                     className="h-8 w-8 border-0 bg-white shadow-none ring-0 md:h-10 md:w-10 md:border-2 md:border-white md:shadow-sm md:ring-1 md:ring-neutral-100"

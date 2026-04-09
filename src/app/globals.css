@@ -115,6 +115,19 @@
   --mobile-nav-tab-active: rgba(38, 38, 38, 0.06);
   --mobile-nav-muted: rgba(64, 64, 64, 0.62);
   --mobile-nav-text: #171717;
+  --apple-glass-fill-top: rgba(255, 255, 255, 0.8);
+  --apple-glass-fill-bottom: rgba(244, 244, 247, 0.58);
+  --apple-glass-control-top: rgba(255, 255, 255, 0.78);
+  --apple-glass-control-bottom: rgba(246, 246, 248, 0.56);
+  --apple-glass-border: rgba(255, 255, 255, 0.72);
+  --apple-glass-line: rgba(15, 23, 42, 0.08);
+  --apple-glass-highlight: rgba(255, 255, 255, 0.86);
+  --apple-glass-shadow: 0 22px 44px rgba(15, 23, 42, 0.08), 0 8px 18px rgba(15, 23, 42, 0.05);
+  --apple-glass-shadow-soft: 0 14px 30px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.04);
+  --apple-glass-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --apple-glass-blur-bar: 14px;
+  --apple-glass-blur-floating: 18px;
+  --apple-glass-saturate: 160%;
 }
 
 .dark {
@@ -157,6 +170,19 @@
   --mobile-nav-tab-active: rgba(255, 255, 255, 0.08);
   --mobile-nav-muted: rgba(212, 212, 216, 0.72);
   --mobile-nav-text: rgba(250, 250, 250, 0.95);
+  --apple-glass-fill-top: rgba(35, 35, 39, 0.78);
+  --apple-glass-fill-bottom: rgba(18, 18, 21, 0.58);
+  --apple-glass-control-top: rgba(48, 48, 54, 0.72);
+  --apple-glass-control-bottom: rgba(24, 24, 28, 0.48);
+  --apple-glass-border: rgba(255, 255, 255, 0.14);
+  --apple-glass-line: rgba(255, 255, 255, 0.08);
+  --apple-glass-highlight: rgba(255, 255, 255, 0.12);
+  --apple-glass-shadow: 0 24px 48px rgba(0, 0, 0, 0.36), 0 10px 20px rgba(0, 0, 0, 0.24);
+  --apple-glass-shadow-soft: 0 16px 32px rgba(0, 0, 0, 0.26), 0 6px 14px rgba(0, 0, 0, 0.18);
+  --apple-glass-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 1px 2px rgba(0, 0, 0, 0.16);
+  --apple-glass-blur-bar: 16px;
+  --apple-glass-blur-floating: 20px;
+  --apple-glass-saturate: 155%;
 
   --surface-0: 220 10% 8%;
   --surface-1: 220 10% 10%;
@@ -420,16 +446,71 @@
   -webkit-backdrop-filter: blur(20px);
 }
 
+.apple-glass-bar,
+.apple-glass-floating,
+.apple-glass-control {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.apple-glass-bar,
+.apple-glass-floating {
+  border: 1px solid var(--apple-glass-border);
+  background: linear-gradient(180deg, var(--apple-glass-fill-top) 0%, var(--apple-glass-fill-bottom) 100%);
+}
+
+.apple-glass-bar {
+  box-shadow: var(--apple-glass-shadow-soft);
+  backdrop-filter: blur(var(--apple-glass-blur-bar)) saturate(var(--apple-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--apple-glass-blur-bar)) saturate(var(--apple-glass-saturate));
+}
+
+.apple-glass-floating {
+  box-shadow: var(--apple-glass-shadow);
+  backdrop-filter: blur(var(--apple-glass-blur-floating)) saturate(var(--apple-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--apple-glass-blur-floating)) saturate(var(--apple-glass-saturate));
+}
+
+.apple-glass-bar::before,
+.apple-glass-floating::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 52%;
+  background: linear-gradient(180deg, var(--apple-glass-highlight), transparent 72%);
+  opacity: 0.82;
+  pointer-events: none;
+}
+
+.apple-glass-bar::after,
+.apple-glass-floating::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 1px;
+  background: var(--apple-glass-line);
+  pointer-events: none;
+}
+
+.apple-glass-control {
+  border: 1px solid color-mix(in srgb, var(--apple-glass-line) 75%, transparent);
+  background: linear-gradient(180deg, var(--apple-glass-control-top) 0%, var(--apple-glass-control-bottom) 100%);
+  box-shadow: var(--apple-glass-control-shadow);
+  backdrop-filter: blur(10px) saturate(135%);
+  -webkit-backdrop-filter: blur(10px) saturate(135%);
+}
+
 .mobile-nav-shell {
   position: relative;
   isolation: isolate;
   overflow: hidden;
   border-radius: 1.65rem;
-  border: 1px solid var(--mobile-nav-border);
-  background: linear-gradient(180deg, var(--mobile-nav-shell-top) 0%, var(--mobile-nav-shell-bottom) 100%);
-  box-shadow: var(--mobile-nav-shadow);
-  backdrop-filter: blur(30px) saturate(180%);
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border: 1px solid var(--apple-glass-border);
+  background: linear-gradient(180deg, var(--apple-glass-fill-top) 0%, var(--apple-glass-fill-bottom) 100%);
+  box-shadow: var(--apple-glass-shadow);
+  backdrop-filter: blur(var(--apple-glass-blur-floating)) saturate(var(--apple-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--apple-glass-blur-floating)) saturate(var(--apple-glass-saturate));
   font-family: var(--font-apple-ui);
 }
 
@@ -437,38 +518,35 @@
   content: "";
   position: absolute;
   inset: 1px 1px auto 1px;
-  height: 42%;
+  height: 48%;
   border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0));
-  opacity: 0.52;
+  background: linear-gradient(180deg, var(--apple-glass-highlight), rgba(255, 255, 255, 0));
+  opacity: 0.78;
   pointer-events: none;
 }
 
 .dark .mobile-nav-shell::before {
-  opacity: 0.18;
+  opacity: 0.52;
 }
 
 .mobile-nav-shell::after {
   content: "";
   position: absolute;
-  left: 16%;
-  right: 16%;
-  bottom: -34%;
-  height: 50%;
+  inset: auto 1.1rem 0.5rem 1.1rem;
+  height: 1px;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0) 72%);
-  filter: blur(14px);
-  opacity: 0.32;
+  background: linear-gradient(90deg, transparent 0%, var(--apple-glass-line) 18%, var(--apple-glass-line) 82%, transparent 100%);
+  opacity: 0.9;
   pointer-events: none;
 }
 
 .dark .mobile-nav-shell::after {
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 72%);
+  opacity: 0.72;
 }
 
 .mobile-nav-item-active {
   background: var(--mobile-nav-tab-active);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), 0 6px 14px rgba(15, 23, 42, 0.06);
 }
 
 .dark .mobile-nav-item-active {
@@ -484,6 +562,18 @@
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .apple-glass-bar,
+  .apple-glass-floating,
+  .apple-glass-control {
+    background: rgba(255, 255, 255, 0.94);
+  }
+
+  .dark .apple-glass-bar,
+  .dark .apple-glass-floating,
+  .dark .apple-glass-control {
+    background: rgba(15, 23, 42, 0.94);
+  }
+
   .mobile-nav-shell {
     background: rgba(255, 255, 255, 0.96);
   }

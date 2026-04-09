@@ -299,6 +299,7 @@ function DiscoverSlide({
         {/* Host avatar */}
         <Link
           href={detailHref}
+          scroll={false}
           className="relative flex flex-col items-center gap-1 drop-shadow-md"
         >
           <UserAvatar
@@ -351,7 +352,11 @@ function DiscoverSlide({
         className="absolute left-3 z-20 pointer-events-none md:left-5 md:max-w-[17rem]"
         style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 2.5rem)", right: "4.5rem" }}
       >
-        <Link href={detailHref} className="block group pointer-events-auto outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-2xl">
+        <Link
+          href={detailHref}
+          scroll={false}
+          className="block group pointer-events-auto outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-2xl"
+        >
           <div className="rounded-2xl bg-transparent md:bg-black/40 backdrop-blur-none md:backdrop-blur-xl border border-transparent md:border-white/20 p-1 md:p-3.5 drop-shadow-md md:drop-shadow-2xl transition-all duration-300 ease-out active:scale-[0.98] lg:hover:scale-[1.02] lg:hover:bg-black/50">
             {/* Header: Badge & Price */}
             <div className="flex items-start justify-between gap-2 mb-2">
