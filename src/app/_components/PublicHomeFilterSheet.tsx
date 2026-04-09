@@ -41,12 +41,11 @@ export function PublicHomeFilterSheet({
         <Sheet>
             <SheetTrigger asChild>
                 <button
-                    type="button"
                     className={cn(
-                        'relative flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[18px] outline-none transition-[background-color,color,box-shadow,transform] duration-200 sm:h-14 sm:w-14',
+                        'relative flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[16px] outline-none transition-all sm:h-14 sm:w-14',
                         activeFilterCount > 0
-                            ? 'border-transparent bg-neutral-900 text-white shadow-[0_12px_24px_-16px_rgba(15,23,42,0.48)]'
-                            : 'apple-glass-control text-neutral-800 hover:text-neutral-950'
+                            ? 'bg-black text-white'
+                            : 'bg-neutral-100 text-black hover:bg-neutral-200'
                     )}
                 >
                     <SlidersHorizontal className="h-[20px] w-[20px]" strokeWidth={2.5} />
@@ -59,9 +58,9 @@ export function PublicHomeFilterSheet({
             </SheetTrigger>
             <SheetContent
                 side="right"
-                className="apple-glass-floating flex flex-col overflow-hidden border-l-0 bg-white/75 p-0 shadow-[0_18px_46px_-16px_rgba(15,23,42,0.22)] sm:!w-[420px] sm:rounded-l-[32px] !w-[90%]"
+                className="flex flex-col overflow-hidden border-l-0 bg-white p-0 shadow-[0_0_40px_rgba(0,0,0,0.15)] sm:!w-[420px] sm:rounded-l-[32px] !w-[90%]"
             >
-                <div className="flex items-center gap-3 border-b border-white/50 px-6 py-5 transition-colors">
+                <div className="flex items-center gap-3 border-b border-neutral-100/60 px-6 py-5 transition-colors">
                     <SheetTitle className="text-[22px] font-bold tracking-tight text-neutral-900">Filters</SheetTitle>
                     <button
                         onClick={onClearFilters}
