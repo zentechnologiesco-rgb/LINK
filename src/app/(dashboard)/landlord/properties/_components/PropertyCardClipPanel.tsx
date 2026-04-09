@@ -4,11 +4,16 @@ import Link from 'next/link'
 import { Clapperboard } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { DISCOVER_EXPERIENCE_ENABLED } from '@/config/features'
 import { cn } from '@/lib/utils'
 
 import { type PropertyCardViewModel } from '../_lib/property-card-helpers'
 
 export function PropertyCardClipPanel({ viewModel }: { viewModel: PropertyCardViewModel }) {
+    if (!DISCOVER_EXPERIENCE_ENABLED) {
+        return null
+    }
+
     return (
         <div className='mt-4 rounded-[22px] border border-neutral-200/80 bg-white p-4'>
             <div className='flex items-start justify-between gap-4'>

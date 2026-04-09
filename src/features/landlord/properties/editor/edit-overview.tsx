@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Clapperboard, Info, XCircle, type LucideIcon } from "lucide-react";
 
+import { DISCOVER_EXPERIENCE_ENABLED } from "@/config/features";
 import { type PropertyWorkflow } from "@/lib/property-workflow";
 import { cn } from "@/lib/utils";
 
@@ -80,36 +81,37 @@ export function PropertyFormEditOverview({
         </p>
       </div>
 
-      <div className="grid gap-3 border-b border-neutral-100/60 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_auto]">
-        <div className="rounded-[22px] border border-neutral-200/80 bg-white p-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-[13px] font-semibold text-neutral-950">
-                Discovery Clip
-              </p>
-              <p className="mt-1 text-[14px] leading-relaxed text-neutral-500">
-                {hasDiscoveryClip
-                  ? workflow.isListed
-                    ? "This clip is already visible in Discover while the listing stays live."
-                    : "This clip is saved to the listing and will appear in Discover when the property is published again."
-                  : "Add one short clip to give this listing a place in Discover. Photos and listing approval stay untouched."}
-              </p>
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-neutral-100/60 px-5 py-4">
+        {DISCOVER_EXPERIENCE_ENABLED ? (
+          <div className="min-w-0 flex-1 rounded-[22px] border border-neutral-200/80 bg-white p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-neutral-950">
+                  Discovery Clip
+                </p>
+                <p className="mt-1 text-[14px] leading-relaxed text-neutral-500">
+                  {hasDiscoveryClip
+                    ? workflow.isListed
+                      ? "This clip is already visible in Discover while the listing stays live."
+                      : "This clip is saved to the listing and will appear in Discover when the property is published again."
+                    : "Add one short clip to give this listing a place in Discover. Photos and listing approval stay untouched."}
+                </p>
+              </div>
+              <Link
+                href={clipHref}
+                className={cn(
+                  "inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full border px-4 text-[13px] font-semibold transition-colors active:scale-[0.98]",
+                  hasDiscoveryClip
+                    ? "border-neutral-200 bg-white text-neutral-950 hover:bg-neutral-50"
+                    : "border-neutral-950 bg-neutral-950 text-white hover:bg-neutral-800",
+                )}
+              >
+                <Clapperboard className="h-4 w-4" strokeWidth={2.1} />
+                {hasDiscoveryClip ? "Edit Clip" : "Add Clip"}
+              </Link>
             </div>
-            <Link
-              href={clipHref}
-              className={cn(
-                "inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full border px-4 text-[13px] font-semibold transition-colors active:scale-[0.98]",
-                hasDiscoveryClip
-                  ? "border-neutral-200 bg-white text-neutral-950 hover:bg-neutral-50"
-                  : "border-neutral-950 bg-neutral-950 text-white hover:bg-neutral-800",
-              )}
-            >
-              <Clapperboard className="h-4 w-4" strokeWidth={2.1} />
-              {hasDiscoveryClip ? "Edit Clip" : "Add Clip"}
-            </Link>
           </div>
-        </div>
-
+        ) : null}
         <div className="grid grid-cols-2 gap-3 sm:w-[220px]">
           <div className="rounded-[22px] border border-neutral-200/80 bg-white p-4">
             <p className="text-[12px] font-semibold text-neutral-400">Photos</p>

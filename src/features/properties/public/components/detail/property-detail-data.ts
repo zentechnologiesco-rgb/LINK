@@ -1,3 +1,4 @@
+import { DISCOVER_EXPERIENCE_ENABLED } from "@/config/features"
 import type { PropertyDetailData } from "./types"
 
 export interface CachedPublicPropertyRecord {
@@ -47,7 +48,7 @@ export function toPropertyDetailData(convexProperty: CachedPublicPropertyRecord)
         availableUnitCount: convexProperty.availableUnitCount ?? 0,
         unitTypeLabels: convexProperty.unitTypeLabels || [],
         images: convexProperty.imageUrls?.length ? convexProperty.imageUrls : ["/window.svg"],
-        videoUrls: convexProperty.videoUrls || [],
+        videoUrls: DISCOVER_EXPERIENCE_ENABLED ? convexProperty.videoUrls || [] : [],
         amenities: convexProperty.amenityNames || [],
         commentCount: convexProperty.commentCount ?? 0,
         topLevelCommentCount: convexProperty.topLevelCommentCount ?? 0,

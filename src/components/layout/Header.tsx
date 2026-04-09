@@ -278,12 +278,16 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                 </div>
                             ) : (
                                 <div className="flex items-center gap-2">
-                                    <div className="hidden sm:flex">
-                                        {renderDiscoverLink()}
-                                    </div>
-                                    <div className="sm:hidden">
-                                        {renderDiscoverLink({ iconOnly: true })}
-                                    </div>
+                                    {canShowDiscover ? (
+                                        <>
+                                            <div className="hidden sm:flex">
+                                                {renderDiscoverLink()}
+                                            </div>
+                                            <div className="sm:hidden">
+                                                {renderDiscoverLink({ iconOnly: true })}
+                                            </div>
+                                        </>
+                                    ) : null}
                                     <Link href="/sign-in">
                                         <Button
                                             variant="outline"
