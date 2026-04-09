@@ -65,7 +65,7 @@ function MobileNavInner({ user, userRole }: MobileNavProps) {
                 className="mobile-nav-root fixed inset-x-0 bottom-0 z-50 px-3 md:hidden"
                 style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.9rem)' }}
             >
-                <div className="mx-auto w-[min(26.75rem,calc(100vw-1.25rem))]">
+                <div className="mx-auto w-[min(27rem,calc(100vw-1.5rem))]">
                     <div className="mobile-nav-shell px-2 py-1.5">
                         <div className="pointer-events-none absolute inset-x-10 top-1 h-8 rounded-full bg-white/70 blur-2xl dark:bg-white/10" />
                         <div
@@ -84,7 +84,7 @@ function MobileNavInner({ user, userRole }: MobileNavProps) {
                                         href={item.href}
                                         aria-current={isActive ? 'page' : undefined}
                                         className={cn(
-                                            'focus-ring group relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-[1.1rem] px-1 py-1 text-center transition-[transform,background-color,color,box-shadow] duration-300 ease-out active:scale-[0.98]',
+                                            'focus-ring group relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-[1.1rem] px-1 py-1 text-center transition-all duration-300 ease-out active:scale-[0.98]',
                                             isActive
                                                 ? 'mobile-nav-item-active text-[var(--mobile-nav-accent)]'
                                                 : 'text-[var(--mobile-nav-muted)]'
@@ -92,7 +92,7 @@ function MobileNavInner({ user, userRole }: MobileNavProps) {
                                     >
                                         <div
                                             className={cn(
-                                                'relative flex h-8 w-8 items-center justify-center transition-[color,transform] duration-300 ease-out',
+                                                'relative flex h-8 w-8 items-center justify-center transition-all duration-300 ease-out',
                                                 isActive
                                                     ? 'text-[var(--mobile-nav-accent)]'
                                                     : 'text-[var(--mobile-nav-muted)] group-hover:text-[var(--mobile-nav-text)]'
@@ -100,7 +100,7 @@ function MobileNavInner({ user, userRole }: MobileNavProps) {
                                         >
                                             <Icon
                                                 className={cn(
-                                                    'h-5 w-5 transition-[color,transform] duration-300',
+                                                    'h-5 w-5 transition-all duration-300',
                                                     isActive
                                                         ? 'scale-105'
                                                         : 'group-hover:text-[var(--mobile-nav-text)]'
@@ -119,7 +119,7 @@ function MobileNavInner({ user, userRole }: MobileNavProps) {
 
                                         <span
                                             className={cn(
-                                                'mobile-nav-label max-w-full truncate px-0.5 transition-colors duration-300',
+                                                'mobile-nav-label max-w-full truncate px-0.5 transition-all duration-300',
                                                 isActive
                                                     ? 'text-[var(--mobile-nav-accent)]'
                                                     : 'text-[var(--mobile-nav-muted)] group-hover:text-[var(--mobile-nav-text)]'
