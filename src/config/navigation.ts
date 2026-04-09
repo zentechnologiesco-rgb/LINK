@@ -14,6 +14,7 @@ import {
     type LucideIcon,
 } from 'lucide-react'
 
+import { DISCOVER_EXPERIENCE_ENABLED } from '@/config/features'
 import type { UserRole } from '@/lib/user-preferences'
 
 export type NavigationBadgeType = 'messages' | 'leases'
@@ -46,7 +47,7 @@ export const settingsNavItem: NavigationItem = {
 }
 
 const tenantNavigationItems: NavigationItem[] = [
-    discoverNavItem,
+    ...(DISCOVER_EXPERIENCE_ENABLED ? [discoverNavItem] : []),
     {
         id: 'saved',
         label: 'Saved',
@@ -84,7 +85,7 @@ const tenantNavigationItems: NavigationItem[] = [
 ]
 
 const landlordNavigationItems: NavigationItem[] = [
-    discoverNavItem,
+    ...(DISCOVER_EXPERIENCE_ENABLED ? [discoverNavItem] : []),
     {
         id: 'properties',
         label: 'Properties',
@@ -178,7 +179,7 @@ const roleNavigationItems = {
 } satisfies Record<UserRole, NavigationItem[]>
 
 export function canAccessDiscover(role?: UserRole | null) {
-    return role !== 'admin'
+    return DISCOVER_EXPERIENCE_ENABLED && role !== 'admin'
 }
 
 export function getNavigationItems(role: UserRole) {

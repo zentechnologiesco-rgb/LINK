@@ -11,7 +11,7 @@ import { api } from '@convex/_generated/api'
 import { Header } from '@/components/layout/Header'
 import { MobileNav } from '@/components/layout/MobileNav'
 import { PullToRefresh } from '@/components/ui/pull-to-refresh'
-import { HomePageSkeleton } from '@/components/ui/skeleton'
+import { HomePageResultsSkeleton } from '@/components/ui/skeleton'
 import { useUser } from '@/components/providers/UserProvider'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useCachedQuery } from '@/hooks/useOptimisticQuery'
@@ -157,10 +157,6 @@ export function PublicHomeWorkspace() {
         'transition-all duration-300 hover:-translate-y-0.5 hover:bg-neutral-800 hover:shadow-lg active:scale-[0.98]'
     )
 
-    if (isPropertiesLoading) {
-        return <HomePageSkeleton />
-    }
-
     return (
         <div className="min-h-screen overflow-x-hidden bg-white pb-32 font-sans text-neutral-900 sm:pb-40">
             <Header
@@ -174,6 +170,7 @@ export function PublicHomeWorkspace() {
                     activeFilterCount={activeFilterCount}
                     availableTypes={availableTypes}
                     filteredCount={filteredProperties.length}
+                    isLoading={isPropertiesLoading}
                     isMapView={isMapView}
                     minBedrooms={minBedrooms}
                     onClearFilters={clearFilters}
@@ -192,14 +189,18 @@ export function PublicHomeWorkspace() {
                     viewMode={viewMode}
                 />
 
-                <PublicHomeResults
-                    filteredProperties={filteredProperties}
-                    hasOpenedMap={hasOpenedMap}
-                    isMapView={isMapView}
-                    isRefetching={isPropertiesRefetching}
-                    mapProperties={mapProperties}
-                    onClearFilters={clearFilters}
-                />
+                {isPropertiesLoading ? (
+                    <HomePageResultsSkeleton isMapView={isMapView} />
+                ) : (
+                    <PublicHomeResults
+                        filteredProperties={filteredProperties}
+                        hasOpenedMap={hasOpenedMap}
+                        isMapView={isMapView}
+                        isRefetching={isPropertiesRefetching}
+                        mapProperties={mapProperties}
+                        onClearFilters={clearFilters}
+                    />
+                )}
             </PullToRefresh>
 
             <div className="pointer-events-none fixed bottom-10 right-4 z-50 hidden md:right-6 md:block lg:right-8">

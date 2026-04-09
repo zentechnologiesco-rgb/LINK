@@ -48,8 +48,7 @@ export const STEPS = [
     id: "photos",
     label: "Media",
     title: "Show it off",
-    subtitle:
-      "Photos are required. Add one optional vertical discovery clip for the Discover feed.",
+    subtitle: "Photos are required. Add clear images that help renters understand the space.",
   },
   {
     id: "details",

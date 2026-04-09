@@ -3,6 +3,7 @@
 import { Camera, X } from "lucide-react";
 
 import type { Id } from "@convex/_generated/dataModel";
+import { DISCOVER_EXPERIENCE_ENABLED } from "@/config/features";
 import { type PropertyWorkflow } from "@/lib/property-workflow";
 import { cn } from "@/lib/utils";
 
@@ -34,11 +35,9 @@ export function MediaStepSection({
   onImagesChange: (images: Id<"_storage">[]) => void;
   onVideosChange: (videos: Id<"_storage">[]) => void;
 }) {
-  const isEdit = mode === "edit";
-
   return (
     <div className="space-y-4">
-      {mode === "edit" ? (
+      {mode === "edit" && DISCOVER_EXPERIENCE_ENABLED ? (
         <div
           className={cn(
             "rounded-[24px] border px-4 py-4 transition-colors",
@@ -91,32 +90,34 @@ export function MediaStepSection({
         </div>
       ) : null}
 
-      <div
-        className={cn(
-          "overflow-hidden rounded-[24px] border p-4",
-          "border-neutral-200/80 bg-neutral-50/50"
-        )}
-      >
-        <PropertyClipUpload
-          initialVideos={initialVideos}
-          onVideosChange={onVideosChange}
-          highlighted={highlighted}
-          mode={mode}
-          title="Discovery Clip"
-          description={
-            mode === "edit"
-              ? "Add or replace one short vertical clip for Discover. Saving here does not change the rest of the listing unless you edit those fields too."
-              : "Optional. Add one short vertical clip to help this listing appear in the Discover feed."
-          }
-          badgeLabel={
-            hasDiscoveryClip
-              ? workflow?.isListed
-                ? "Visible"
-                : "Saved"
-              : "Optional"
-          }
-        />
-      </div>
+      {DISCOVER_EXPERIENCE_ENABLED ? (
+        <div
+          className={cn(
+            "overflow-hidden rounded-[24px] border p-4",
+            "border-neutral-200/80 bg-neutral-50/50"
+          )}
+        >
+          <PropertyClipUpload
+            initialVideos={initialVideos}
+            onVideosChange={onVideosChange}
+            highlighted={highlighted}
+            mode={mode}
+            title="Discovery Clip"
+            description={
+              mode === "edit"
+                ? "Add or replace one short vertical clip for Discover. Saving here does not change the rest of the listing unless you edit those fields too."
+                : "Optional. Add one short vertical clip to help this listing appear in the Discover feed."
+            }
+            badgeLabel={
+              hasDiscoveryClip
+                ? workflow?.isListed
+                  ? "Visible"
+                  : "Saved"
+                : "Optional"
+            }
+          />
+        </div>
+      ) : null}
 
       <div
         className={cn(
@@ -167,7 +168,7 @@ export function MediaStepSection({
               {imagesCount < 5 ? " · Add more for a richer listing" : ""}
             </p>
           </div>
-          {videosCount > 0 ? (
+          {DISCOVER_EXPERIENCE_ENABLED && videosCount > 0 ? (
             <div className="flex items-center gap-2">
               <div
                 className={cn(
@@ -183,7 +184,7 @@ export function MediaStepSection({
                 listing is approved and live.
               </p>
             </div>
-          ) : (
+          ) : DISCOVER_EXPERIENCE_ENABLED ? (
             <div className="flex items-center gap-2">
               <div
                 className={cn(
@@ -199,7 +200,7 @@ export function MediaStepSection({
                 Discover.
               </p>
             </div>
-          )}
+          ) : null}
         </div>
       ) : null}
     </div>

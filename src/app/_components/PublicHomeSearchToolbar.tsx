@@ -17,6 +17,7 @@ export function PublicHomeSearchToolbar({
     activeFilterCount,
     availableTypes,
     filteredCount,
+    isLoading = false,
     isMapView,
     minBedrooms,
     onClearFilters,
@@ -37,6 +38,7 @@ export function PublicHomeSearchToolbar({
     activeFilterCount: number
     availableTypes: string[]
     filteredCount: number
+    isLoading?: boolean
     isMapView: boolean
     minBedrooms: number | null
     onClearFilters: () => void
@@ -100,6 +102,7 @@ export function PublicHomeSearchToolbar({
                     <PublicHomeFilterSheet
                         activeFilterCount={activeFilterCount}
                         filteredCount={filteredCount}
+                        isLoading={isLoading}
                         minBedrooms={minBedrooms}
                         onClearFilters={onClearFilters}
                         onMinBedroomsChange={onMinBedroomsChange}

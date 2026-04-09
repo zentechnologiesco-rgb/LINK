@@ -17,6 +17,7 @@ import type { PublicHomePriceRange } from '../_lib/public-home-types'
 export function PublicHomeFilterSheet({
     activeFilterCount,
     filteredCount,
+    isLoading = false,
     minBedrooms,
     onClearFilters,
     onMinBedroomsChange,
@@ -27,6 +28,7 @@ export function PublicHomeFilterSheet({
 }: {
     activeFilterCount: number
     filteredCount: number
+    isLoading?: boolean
     minBedrooms: number | null
     onClearFilters: () => void
     onMinBedroomsChange: (value: number | null) => void
@@ -144,7 +146,7 @@ export function PublicHomeFilterSheet({
                 <div className="safe-area-bottom border-t border-neutral-100/60 p-6">
                     <SheetClose asChild>
                         <button className="h-14 w-full rounded-[16px] bg-black text-[16px] font-bold tracking-wide text-white transition-all hover:bg-neutral-800 active:scale-[0.98]">
-                            Show {filteredCount} properties
+                            {isLoading ? 'Show homes' : `Show ${filteredCount} properties`}
                         </button>
                     </SheetClose>
                 </div>

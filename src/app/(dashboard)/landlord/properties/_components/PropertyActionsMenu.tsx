@@ -17,6 +17,7 @@ import {
 import { type Id } from '../../../../../../convex/_generated/dataModel'
 
 import { Button } from '@/components/ui/button'
+import { DISCOVER_EXPERIENCE_ENABLED } from '@/config/features'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -86,12 +87,14 @@ export function PropertyActionsMenu({
                         View Listing
                     </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild className='rounded-lg cursor-pointer py-2 focus:bg-black/5'>
-                    <Link href={`/landlord/properties/${propertyId}/edit?step=media&focus=clip`} className='flex items-center font-medium'>
-                        <Clapperboard className='mr-2 h-4 w-4 text-black/60' strokeWidth={1.5} />
-                        {getDiscoveryClipActionLabel(hasDiscoveryClip)}
-                    </Link>
-                </DropdownMenuItem>
+                {DISCOVER_EXPERIENCE_ENABLED ? (
+                    <DropdownMenuItem asChild className='rounded-lg cursor-pointer py-2 focus:bg-black/5'>
+                        <Link href={`/landlord/properties/${propertyId}/edit?step=media&focus=clip`} className='flex items-center font-medium'>
+                            <Clapperboard className='mr-2 h-4 w-4 text-black/60' strokeWidth={1.5} />
+                            {getDiscoveryClipActionLabel(hasDiscoveryClip)}
+                        </Link>
+                    </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuItem asChild className='rounded-lg cursor-pointer py-2 focus:bg-black/5'>
                     <Link href={`/landlord/properties/${propertyId}/edit?step=details`} className='flex items-center font-medium'>
                         <Edit className='mr-2 h-4 w-4 text-black/60' strokeWidth={1.5} />

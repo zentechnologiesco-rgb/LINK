@@ -74,69 +74,30 @@ function PropertyCardSkeleton({ className }: { className?: string }) {
     )
 }
 
-// Full Page Loading Skeleton — Matching the new Apple Native feed design
-function HomePageSkeleton() {
+function HomePageResultsSkeleton({ isMapView = false }: { isMapView?: boolean }) {
     return (
-        <div className="min-h-screen bg-white font-sans text-neutral-900 overflow-x-hidden">
-            <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-transparent">
-                <div className="w-full px-4 sm:px-5 lg:px-6 h-16 md:h-20 flex items-center">
-                    <div className="flex items-center gap-1.5 md:flex-1 md:justify-start md:gap-3">
-                        <div className="flex items-center gap-1.5 md:hidden">
-                            <Skeleton variant="circular" className="h-[42px] w-[42px] bg-neutral-200" />
-                            <Skeleton className="h-7 w-20 rounded-lg bg-neutral-200" />
-                        </div>
-                        <Skeleton variant="circular" className="hidden h-10 w-10 md:block" />
+        <main className="mx-auto w-full max-w-[1440px] px-4 pb-40 pt-6 sm:px-6 lg:px-8">
+            {isMapView ? (
+                <div className="relative isolate h-[75vh] w-full overflow-hidden rounded-[24px] border border-neutral-200/50 bg-neutral-100 shadow-sm">
+                    <Skeleton className="absolute inset-0 rounded-none bg-neutral-200/70" />
+                    <div className="absolute left-4 top-4 flex gap-2">
+                        <Skeleton className="h-8 w-24 rounded-full bg-white/60" />
+                        <Skeleton className="h-8 w-20 rounded-full bg-white/50" />
                     </div>
-                    <div className="hidden items-center justify-center gap-1.5 md:flex">
-                        <Skeleton variant="circular" className="h-[42px] w-[42px] bg-neutral-200 md:h-[52px] md:w-[52px]" />
-                        <Skeleton className="h-7 w-20 rounded-lg bg-neutral-200" />
-                    </div>
-                    <div className="ml-auto flex justify-end md:flex-1">
-                        <Skeleton variant="circular" className="h-9 w-9" />
+                    <div className="absolute bottom-4 left-4 right-4 grid gap-3 sm:max-w-sm">
+                        <Skeleton className="h-5 w-2/3 rounded-full bg-white/70" />
+                        <Skeleton className="h-4 w-full rounded-full bg-white/60" />
+                        <Skeleton className="h-4 w-4/5 rounded-full bg-white/60" />
                     </div>
                 </div>
-            </header>
-
-            <div className="h-16 md:h-20" />
-
-            {/* Fake Sticky Search & Categories Section */}
-            <div className="w-full bg-white/90 pb-2">
-                <div className="w-full max-w-[1440px] mx-auto pt-4 px-4 sm:px-6 lg:px-8">
-                    {/* Search Bar Skeleton */}
-                    <div className="flex items-center gap-3">
-                        <Skeleton className="flex-1 h-[52px] sm:h-14 rounded-[16px] bg-neutral-100" />
-                        <Skeleton className="h-[52px] w-[52px] sm:h-14 sm:w-14 shrink-0 rounded-[16px] bg-neutral-100" />
-                    </div>
-
-                    {/* Scrolling Categories Skeleton */}
-                    <div className="flex items-center gap-[22px] overflow-x-hidden pt-5 pb-3 px-1.5">
-                         {Array.from({ length: 7 }).map((_, i) => (
-                             <div key={i} className="flex flex-col items-center gap-2">
-                                 <Skeleton variant="circular" className="w-[26px] h-[26px] bg-neutral-100" />
-                                 <Skeleton className="h-3 w-12 bg-neutral-100" />
-                             </div>
-                         ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* Main Content Area Grid Skeleton */}
-            <main className="w-full max-w-[1440px] mx-auto pt-6 px-4 sm:px-6 lg:px-8 pb-40">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-10">
+            ) : (
+                <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {Array.from({ length: 8 }).map((_, i) => (
                         <PropertyCardSkeleton key={i} />
                     ))}
                 </div>
-            </main>
-
-            {/* Mobile Nav Skeleton */}
-            <div className="fixed bottom-0 left-0 right-0 h-20 bg-white border-t border-neutral-100 flex items-center justify-around sm:hidden z-50">
-                <Skeleton variant="circular" className="w-10 h-10" />
-                <Skeleton variant="circular" className="w-10 h-10" />
-                <Skeleton variant="circular" className="w-10 h-10" />
-                <Skeleton variant="circular" className="w-10 h-10" />
-            </div>
-        </div>
+            )}
+        </main>
     )
 }
 
@@ -170,7 +131,7 @@ function DashboardCardSkeleton() {
 export {
     Skeleton,
     PropertyCardSkeleton,
-    HomePageSkeleton,
+    HomePageResultsSkeleton,
     TableRowSkeleton,
     DashboardCardSkeleton
 }

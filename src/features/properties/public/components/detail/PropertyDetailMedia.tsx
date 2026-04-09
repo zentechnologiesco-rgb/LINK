@@ -7,6 +7,7 @@ import { toast } from "sonner"
 
 import { SavePropertyButton } from "@/features/properties/public/components/SavePropertyButton"
 import { OptimizedImage } from "@/components/ui/optimized-image"
+import { DISCOVER_EXPERIENCE_ENABLED } from "@/config/features"
 import { cn } from "@/lib/utils"
 import { getPropertyDetailBackState } from "./property-detail-media-helpers"
 import { PropertyDetailPrimaryMedia } from "./PropertyDetailPrimaryMedia"
@@ -22,7 +23,8 @@ export function PropertyDetailMedia({ property }: { property: PropertyDetailData
     const searchParams = useSearchParams()
     const touchStartX = useRef(0)
     const touchEndX = useRef(0)
-    const primaryVideoUrl = property.videoUrls?.[0] || null
+    const primaryVideoUrl =
+        DISCOVER_EXPERIENCE_ENABLED ? property.videoUrls?.[0] || null : null
     const { backHref, backLabel } = getPropertyDetailBackState(searchParams)
 
     useEffect(() => {

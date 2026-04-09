@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import { Search } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { DISCOVER_EXPERIENCE_ENABLED } from '@/config/features'
 import { PropertyBrowseCard } from '@/features/properties/public/components/PropertyBrowseCard'
 import { cn } from '@/lib/utils'
 
@@ -86,9 +87,11 @@ export function PublicHomeResults({
                         </div>
 
                         {/* YouTube Shorts-style Discover Video Shelf */}
-                        <Suspense fallback={null}>
-                            <DiscoverVideoShelf />
-                        </Suspense>
+                        {DISCOVER_EXPERIENCE_ENABLED ? (
+                            <Suspense fallback={null}>
+                                <DiscoverVideoShelf />
+                            </Suspense>
+                        ) : null}
 
                         {/* Remaining property cards */}
                         {remainingBatch.length > 0 && (

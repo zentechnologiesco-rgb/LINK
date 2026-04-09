@@ -4,7 +4,6 @@ import {
 } from "lucide-react"
 
 import { PropertyDetailDesktopSidebar, PropertyDetailMobileActionBar } from "@/features/properties/public/components/detail/PropertyDetailActionPanels"
-import { PropertyCommentsSection } from "@/features/properties/public/components/detail/PropertyCommentsSection"
 import { PropertyDetailMedia } from "@/features/properties/public/components/detail/PropertyDetailMedia"
 import {
     PropertyDetailAboutSection,
@@ -74,11 +73,6 @@ export async function PublicPropertyDetailWorkspace({ id }: { id: string }) {
 
                     <PropertyDetailHostSection property={property} />
 
-                    <PropertyCommentsSection
-                        propertyId={property.id}
-                        initialCommentCount={property.commentCount}
-                    />
-
                     <PropertyDetailLocationSection property={property} />
                 </main>
                 <PropertyDetailMobileActionBar property={property} />
@@ -119,11 +113,6 @@ export async function PublicPropertyDetailWorkspace({ id }: { id: string }) {
                             <PropertyUnitInventorySection property={property} />
 
                             <PropertyDetailAmenitiesSection property={property} variant="desktop" />
-
-                            <PropertyCommentsSection
-                                propertyId={property.id}
-                                initialCommentCount={property.commentCount}
-                            />
                         </div>
 
                         <div className="relative w-[340px] max-w-[380px] shrink-0">

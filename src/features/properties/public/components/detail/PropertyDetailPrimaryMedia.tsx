@@ -3,6 +3,7 @@
 import { type MouseEventHandler } from "react"
 import { PlayCircle } from "lucide-react"
 
+import { DISCOVER_EXPERIENCE_ENABLED } from "@/config/features"
 import { OptimizedImage } from "@/components/ui/optimized-image"
 import { BrowserSafeVideo } from "@/components/ui/BrowserSafeVideo"
 import { cn } from "@/lib/utils"
@@ -36,13 +37,15 @@ export function PropertyDetailPrimaryMedia({
     priority = false,
     imageClassName,
 }: PropertyDetailPrimaryMediaProps) {
+    const effectiveVideoUrl = DISCOVER_EXPERIENCE_ENABLED ? videoUrl : null
+
     return (
         <div className={cn("relative", className)}>
-            {videoUrl ? (
+            {effectiveVideoUrl ? (
                 <>
                     <BrowserSafeVideo
-                        key={videoUrl}
-                        src={videoUrl}
+                        key={effectiveVideoUrl}
+                        src={effectiveVideoUrl}
                         posterSrc={imageSrc}
                         posterAlt={imageAlt}
                         controls
