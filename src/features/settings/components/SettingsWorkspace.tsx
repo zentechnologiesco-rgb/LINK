@@ -21,6 +21,7 @@ import { api } from '@convex/_generated/api'
 import { Header } from '@/components/layout/Header'
 import { MobileNav } from '@/components/layout/MobileNav'
 import { getNavigationItemsForSurface } from '@/config/navigation'
+import { GoogleIcon } from '@/components/auth/GoogleIcon'
 import { useUser } from '@/components/providers/UserProvider'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -68,13 +69,15 @@ export function SettingsWorkspace() {
     const generateUploadUrl = useMutation(api.files.generateUploadUrl)
     const registerUpload = useMutation(api.files.registerUpload)
     const verificationStatus = useQuery(api.verification.getStatus, user ? {} : 'skip')
-    const { signOut } = useAuthActions()
+    const linkedAuthMethods = useQuery(api.users.linkedAuthMethods, user ? {} : 'skip')
+    const { signIn, signOut } = useAuthActions()
     const router = useRouter()
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const [form, setForm] = useState<SettingsFormState | null>(null)
     const [saving, setSaving] = useState(false)
     const [uploading, setUploading] = useState(false)
+    const [connectingGoogle, setConnectingGoogle] = useState(false)
     const [saveFeedback, setSaveFeedback] = useState<'idle' | 'success'>('idle')
 
     const typedUser = user as SettingsUser | null | undefined
@@ -96,6 +99,12 @@ export function SettingsWorkspace() {
         const timeoutId = window.setTimeout(() => setSaveFeedback('idle'), 1800)
         return () => window.clearTimeout(timeoutId)
     }, [saveFeedback])
+
+    useEffect(() => {
+        if (linkedAuthMethods?.hasGoogle) {
+            setConnectingGoogle(false)
+        }
+    }, [linkedAuthMethods?.hasGoogle])
 
     const avatarActivity: UserAvatarActivity = uploading
         ? 'uploading'
@@ -195,6 +204,17 @@ export function SettingsWorkspace() {
             toast.success('Signed out')
         } catch {
             toast.error('Unable to sign out right now')
+        }
+    }
+
+    async function handleConnectGoogle() {
+        setConnectingGoogle(true)
+
+        try {
+            await signIn('google', { redirectTo: '/settings' })
+        } catch (error: unknown) {
+            setConnectingGoogle(false)
+            toast.error(error instanceof Error ? error.message : 'Unable to connect Google right now')
         }
     }
 
@@ -320,6 +340,51 @@ export function SettingsWorkspace() {
                             <span className="max-w-[180px] truncate">{typedUser.email || '—'}</span>
                             <Lock className="h-3 w-3 text-neutral-300" />
                         </span>
+                    </SettingsRow>
+                </SettingsGroup>
+
+                <SettingsGroup
+                    title="Sign-In Methods"
+                    footer="Use the same email address across methods to keep one LINK account."
+                >
+                    <SettingsRow
+                        label="Email and password"
+                        icon={<Lock className="h-3.5 w-3.5" />}
+                        last={false}
+                    >
+                        {linkedAuthMethods?.hasPassword ? (
+                            <Badge className="border-sky-200 bg-sky-50 text-sky-700">
+                                Enabled
+                            </Badge>
+                        ) : (
+                            <span className="text-[13px] text-neutral-400">Not added</span>
+                        )}
+                    </SettingsRow>
+
+                    <SettingsRow
+                        label="Google"
+                        icon={<GoogleIcon className="h-3.5 w-3.5" />}
+                        last
+                    >
+                        {linkedAuthMethods?.hasGoogle ? (
+                            <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700">
+                                Connected
+                            </Badge>
+                        ) : (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => void handleConnectGoogle()}
+                                disabled={connectingGoogle}
+                                className="h-8 rounded-full border-neutral-200 px-3 text-xs font-semibold hover:bg-neutral-50"
+                            >
+                                {connectingGoogle ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                    'Connect'
+                                )}
+                            </Button>
+                        )}
                     </SettingsRow>
                 </SettingsGroup>
 

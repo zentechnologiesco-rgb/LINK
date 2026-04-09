@@ -60,6 +60,7 @@ export const PropertyBrowseCard = memo(function PropertyBrowseCard({
     return (
         <Link
             href={detailHref}
+            scroll={false}
             prefetch
             onMouseEnter={handlePrefetch}
             onFocus={handlePrefetch}

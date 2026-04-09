@@ -7,11 +7,16 @@ export default defineSchema({
 
   // User profiles (extends auth users)
   users: defineTable({
+    name: v.optional(v.string()),
+    image: v.optional(v.string()),
     email: v.string(),
+    emailVerificationTime: v.optional(v.number()),
+    phone: v.optional(v.string()),
+    phoneVerificationTime: v.optional(v.number()),
+    isAnonymous: v.optional(v.boolean()),
     fullName: v.optional(v.string()),
     firstName: v.optional(v.string()),
     surname: v.optional(v.string()),
-    phone: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
     role: v.union(v.literal("tenant"), v.literal("landlord"), v.literal("admin")),
     isVerified: v.boolean(),
@@ -36,7 +41,9 @@ export default defineSchema({
         startPage: v.string(),
       }),
     })),
-  }).index("by_email", ["email"]),
+  })
+    .index("email", ["email"])
+    .index("phone", ["phone"]),
 
   fileUploads: defineTable({
     storageId: v.id("_storage"),

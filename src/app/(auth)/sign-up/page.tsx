@@ -9,6 +9,7 @@ import { Eye, EyeOff, ArrowLeft, Loader2, AlertCircle } from 'lucide-react'
 import { useAuthActions } from "@convex-dev/auth/react"
 import { useUser } from '@/components/providers/UserProvider'
 import { AuthBrandLink } from '@/components/auth/AuthBrandLink'
+import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton'
 import { getFriendlyAuthError, getSignUpFieldErrors, type AuthField, type AuthFieldErrors } from '@/lib/auth-feedback'
 
 function SignUpContent() {
@@ -22,12 +23,13 @@ function SignUpContent() {
     const { isAuthenticated, isLoading: authLoading } = useUser()
 
     const redirectUrl = searchParams.get('redirect')
+    const nextRedirectUrl = redirectUrl ? decodeURIComponent(redirectUrl) : '/'
 
     useEffect(() => {
         if (isAuthenticated && !authLoading) {
-            router.push(redirectUrl ? decodeURIComponent(redirectUrl) : '/')
+            router.push(nextRedirectUrl)
         }
-    }, [isAuthenticated, authLoading, router, redirectUrl])
+    }, [isAuthenticated, authLoading, nextRedirectUrl, router])
 
     function clearFieldError(field: AuthField) {
         setFieldErrors((current) => {
@@ -35,6 +37,21 @@ function SignUpContent() {
             return { ...current, [field]: undefined }
         })
         setFormError(null)
+    }
+
+    async function handleGoogleSignIn() {
+        setFieldErrors({})
+        setFormError(null)
+        setIsLoading(true)
+
+        try {
+            await signIn('google', { redirectTo: nextRedirectUrl })
+        } catch (error) {
+            console.error(error)
+            setFormError('We could not continue with Google right now. Please try again.')
+            toast.error('Google sign-up failed. Please try again.')
+            setIsLoading(false)
+        }
     }
 
     async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -121,6 +138,23 @@ function SignUpContent() {
                             <p className="text-[14px] font-semibold leading-relaxed tracking-tight">{formError}</p>
                         </div>
                     )}
+
+                    <div className="space-y-3 pb-8">
+                        <GoogleAuthButton
+                            label="Continue with Google"
+                            loading={isLoading}
+                            disabled={isLoading}
+                            onClick={() => void handleGoogleSignIn()}
+                        />
+                        <p className="px-1 text-[12px] font-medium tracking-tight text-neutral-500">
+                            Use the same email address on Google and password to keep one LINK account.
+                        </p>
+                        <div className="flex items-center gap-3 px-1 text-[11px] font-bold uppercase tracking-[0.24em] text-neutral-300">
+                            <span className="h-px flex-1 bg-neutral-200" />
+                            <span>or</span>
+                            <span className="h-px flex-1 bg-neutral-200" />
+                        </div>
+                    </div>
 
                     <div className="space-y-4 pb-12">
                         {/* Name Fields Grid */}

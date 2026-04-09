@@ -14,6 +14,63 @@ import { PropertyDetailPrimaryMedia } from "./PropertyDetailPrimaryMedia"
 import type { PropertyDetailData } from "./types"
 
 const MIN_SWIPE_DISTANCE = 50
+const MAX_EAGER_PRELOAD_IMAGES = 10
+const PRELOAD_RADIUS = 3
+
+function getPreloadIndices(total: number, currentIndex: number) {
+    if (total <= 1) {
+        return []
+    }
+
+    if (total <= MAX_EAGER_PRELOAD_IMAGES) {
+        return Array.from({ length: total }, (_, index) => index)
+    }
+
+    const indices = new Set<number>([currentIndex])
+
+    for (let offset = 1; offset <= PRELOAD_RADIUS; offset += 1) {
+        indices.add((currentIndex + offset) % total)
+        indices.add((currentIndex - offset + total) % total)
+    }
+
+    return Array.from(indices)
+}
+
+function PropertyDetailImagePreloads({
+    images,
+    currentPhotoIndex,
+    imageSizes,
+    qualityPreset,
+}: {
+    images: string[]
+    currentPhotoIndex: number
+    imageSizes: string
+    qualityPreset: "hero" | "full"
+}) {
+    const preloadIndices = getPreloadIndices(images.length, currentPhotoIndex)
+
+    if (preloadIndices.length === 0) {
+        return null
+    }
+
+    return (
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden opacity-0">
+            {preloadIndices.map((index) => (
+                <OptimizedImage
+                    key={`${qualityPreset}-${index}`}
+                    src={images[index] || "/window.svg"}
+                    alt=""
+                    width={1}
+                    height={1}
+                    sizes={imageSizes}
+                    qualityPreset={qualityPreset}
+                    loading="eager"
+                    showSkeleton={false}
+                />
+            ))}
+        </div>
+    )
+}
 
 export function PropertyDetailMedia({ property }: { property: PropertyDetailData }) {
     const [showAllPhotos, setShowAllPhotos] = useState(false)
@@ -120,6 +177,12 @@ export function PropertyDetailMedia({ property }: { property: PropertyDetailData
                         onTouchEnd={onTouchEnd}
                     >
                         <div className="relative h-full w-full">
+                            <PropertyDetailImagePreloads
+                                images={property.images}
+                                currentPhotoIndex={currentPhotoIndex}
+                                imageSizes="100vw"
+                                qualityPreset="full"
+                            />
                             <OptimizedImage
                                 src={property.images[currentPhotoIndex] || "/window.svg"}
                                 alt={`${property.title} - Photo ${currentPhotoIndex + 1}`}
@@ -127,6 +190,7 @@ export function PropertyDetailMedia({ property }: { property: PropertyDetailData
                                 sizes="100vw"
                                 className="object-contain"
                                 qualityPreset="full"
+                                loading="eager"
                             />
                         </div>
                     </div>
@@ -221,6 +285,12 @@ export function PropertyDetailMedia({ property }: { property: PropertyDetailData
                     onTouchMove={onTouchMove}
                     onTouchEnd={onTouchEnd}
                 >
+                    <PropertyDetailImagePreloads
+                        images={property.images}
+                        currentPhotoIndex={currentPhotoIndex}
+                        imageSizes="100vw"
+                        qualityPreset="hero"
+                    />
                     <PropertyDetailPrimaryMedia
                         className="h-full w-full"
                         videoUrl={primaryVideoUrl}

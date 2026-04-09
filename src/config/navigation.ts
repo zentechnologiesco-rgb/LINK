@@ -87,6 +87,13 @@ const tenantNavigationItems: NavigationItem[] = [
 const landlordNavigationItems: NavigationItem[] = [
     ...(DISCOVER_EXPERIENCE_ENABLED ? [discoverNavItem] : []),
     {
+        id: 'landlord-feed',
+        label: 'Feed',
+        href: '/',
+        icon: Home,
+        surfaces: ['mobileNav'],
+    },
+    {
         id: 'properties',
         label: 'Properties',
         href: '/landlord/properties',

@@ -288,7 +288,7 @@ export const create = mutation({
         const normalizedTenantEmail = normalizeEmail(args.tenantEmail);
         const tenant = await ctx.db
             .query("users")
-            .withIndex("by_email", (q) => q.eq("email", normalizedTenantEmail))
+            .withIndex("email", (q) => q.eq("email", normalizedTenantEmail))
             .first();
 
         if (!tenant) {
