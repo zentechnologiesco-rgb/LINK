@@ -76,7 +76,6 @@ export function SettingsWorkspace() {
     const updateProfile = useMutation(api.users.updateProfile)
     const upsertPushSubscription = useMutation(api.pushSubscriptions.upsert)
     const removePushSubscription = useMutation(api.pushSubscriptions.remove)
-    const sendTestPushNotification = useMutation(api.pushSubscriptions.sendTestNotification)
     const generateUploadUrl = useMutation(api.files.generateUploadUrl)
     const registerUpload = useMutation(api.files.registerUpload)
     const verificationStatus = useQuery(api.verification.getStatus, user ? {} : 'skip')
@@ -92,7 +91,6 @@ export function SettingsWorkspace() {
     const [uploading, setUploading] = useState(false)
     const [connectingGoogle, setConnectingGoogle] = useState(false)
     const [isUpdatingPushNotifications, setIsUpdatingPushNotifications] = useState(false)
-    const [isSendingTestPush, setIsSendingTestPush] = useState(false)
     const [devicePushSupported, setDevicePushSupported] = useState(false)
     const [devicePushPermission, setDevicePushPermission] = useState<NotificationPermission | 'unsupported'>('unsupported')
     const [deviceHasPushSubscription, setDeviceHasPushSubscription] = useState(false)
@@ -252,19 +250,6 @@ export function SettingsWorkspace() {
             )
         } finally {
             setIsUpdatingPushNotifications(false)
-        }
-    }
-
-    async function handleSendTestPush() {
-        setIsSendingTestPush(true)
-
-        try {
-            const result = await sendTestPushNotification({})
-            toast.success(`Test push queued for ${result.subscriptionCount} device${result.subscriptionCount === 1 ? '' : 's'}.`)
-        } catch (error: unknown) {
-            toast.error(error instanceof Error ? error.message : 'Unable to send test push right now')
-        } finally {
-            setIsSendingTestPush(false)
         }
     }
 
@@ -642,23 +627,6 @@ export function SettingsWorkspace() {
                                             Last delivery issue: {pushStatus.failureReason}
                                         </p>
                                     ) : null}
-                                    <div className="mt-3 flex flex-wrap gap-2">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            className="h-8 rounded-full border-neutral-200 px-3 text-xs font-semibold"
-                                            disabled={
-                                                !form.preferences.notifications.push ||
-                                                !devicePushSupported ||
-                                                devicePushPermission !== 'granted' ||
-                                                (pushStatus?.subscriptionCount ?? 0) === 0 ||
-                                                isSendingTestPush
-                                            }
-                                            onClick={() => void handleSendTestPush()}
-                                        >
-                                            {isSendingTestPush ? 'Sending test...' : 'Send test push'}
-                                        </Button>
-                                    </div>
                                 </div>
                             </div>
                         </div>

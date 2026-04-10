@@ -206,7 +206,7 @@ export const create = mutation({
 
         await ctx.scheduler.runAfter(0, internal.pushNotifications.sendToUsers, {
             userIds: [property.landlordId],
-            kind: "messages",
+            kind: "inquiries",
             title: `New inquiry for ${property.title}`,
             body: trimmedMessage,
             url: `/chat?kind=inquiry&id=${inquiryId}`,
