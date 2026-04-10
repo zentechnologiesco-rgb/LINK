@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type TouchEvent } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { ArrowLeft, Camera, Grid3X3, MapPin, Share2, X } from "lucide-react"
+import { ArrowLeft, Camera, Grid3X3, MapPin, Share2, X } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { SavePropertyButton } from "@/features/properties/public/components/SavePropertyButton"

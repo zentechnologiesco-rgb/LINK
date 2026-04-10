@@ -17,4 +17,10 @@ crons.daily(
     internal.payments.markOverdue
 );
 
+crons.daily(
+    "Send due soon payment reminders",
+    { hourUTC: 7, minuteUTC: 0 },
+    internal.pushNotifications.sendDueSoonPaymentReminders
+);
+
 export default crons;

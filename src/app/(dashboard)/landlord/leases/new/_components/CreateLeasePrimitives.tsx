@@ -1,7 +1,7 @@
 'use client'
 
 import { type ElementType, type ReactNode } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2 } from '@/components/ui/icons'
 
 import { cn } from '@/lib/utils'
 

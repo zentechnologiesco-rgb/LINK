@@ -20,7 +20,7 @@ import {
     Send,
     SquarePen,
     X,
-} from 'lucide-react'
+} from '@/components/ui/icons'
 
 import { ChatThread } from '@/features/chat/components/ChatThread'
 import { PullToRefresh } from '@/components/ui/pull-to-refresh'

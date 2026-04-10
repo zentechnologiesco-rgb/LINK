@@ -4,7 +4,7 @@ import { useRef, useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Check, PenTool, RotateCcw, Type } from 'lucide-react'
+import { Check, PenTool, RotateCcw, Type } from '@/components/ui/icons'
 import { cn } from '@/lib/utils'
 
 interface SignatureCanvasProps {

@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import type { Id } from "@convex/_generated/dataModel"
 import { cn } from "@/lib/utils"
 import { SavePropertyButton } from "@/features/properties/public/components/SavePropertyButton"
-import { X, MapPin, Bed, Bath, Square, Home } from "lucide-react"
+import { X, MapPin, Bed, Bath, Square, Home } from "@/components/ui/icons"
 
 
 export interface PropertyBrowseCardProps {

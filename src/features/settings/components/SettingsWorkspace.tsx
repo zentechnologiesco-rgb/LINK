@@ -14,7 +14,7 @@ import {
     Mail,
     ShieldCheck,
     UserRound,
-} from 'lucide-react'
+} from '@/components/ui/icons'
 import { toast } from 'sonner'
 
 import { api } from '@convex/_generated/api'
@@ -28,6 +28,12 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { UserAvatar, type UserAvatarActivity } from '@/components/ui/user-avatar'
 import { getDisplayName } from '@/lib/user-name'
+import {
+    requestPushPermission,
+    subscribeCurrentDeviceToPush,
+    supportsPushNotifications,
+    unsubscribeCurrentDeviceFromPush,
+} from '@/lib/push-notifications'
 import { cn } from '@/lib/utils'
 
 import {
@@ -66,6 +72,8 @@ const iconColors = [
 export function SettingsWorkspace() {
     const { user, isLoading } = useUser()
     const updateProfile = useMutation(api.users.updateProfile)
+    const upsertPushSubscription = useMutation(api.pushSubscriptions.upsert)
+    const removePushSubscription = useMutation(api.pushSubscriptions.remove)
     const generateUploadUrl = useMutation(api.files.generateUploadUrl)
     const registerUpload = useMutation(api.files.registerUpload)
     const verificationStatus = useQuery(api.verification.getStatus, user ? {} : 'skip')
@@ -78,6 +86,7 @@ export function SettingsWorkspace() {
     const [saving, setSaving] = useState(false)
     const [uploading, setUploading] = useState(false)
     const [connectingGoogle, setConnectingGoogle] = useState(false)
+    const [isUpdatingPushNotifications, setIsUpdatingPushNotifications] = useState(false)
     const [saveFeedback, setSaveFeedback] = useState<'idle' | 'success'>('idle')
 
     const typedUser = user as SettingsUser | null | undefined
@@ -127,6 +136,73 @@ export function SettingsWorkspace() {
 
     function updateForm<K extends keyof SettingsFormState>(key: K, value: SettingsFormState[K]) {
         setForm((current) => (current ? { ...current, [key]: value } : current))
+    }
+
+    async function handlePushNotificationsToggle(checked: boolean) {
+        if (!typedUser || !form) return
+
+        const nextPreferences = {
+            ...form.preferences,
+            notifications: {
+                ...form.preferences.notifications,
+                push: checked,
+            },
+        }
+
+        setIsUpdatingPushNotifications(true)
+
+        try {
+            if (checked) {
+                if (!supportsPushNotifications()) {
+                    toast.error('This device does not support app push notifications')
+                    return
+                }
+
+                const permission = await requestPushPermission()
+                if (permission !== 'granted') {
+                    toast.error(
+                        permission === 'denied'
+                            ? 'Push notifications are blocked in this browser'
+                            : 'Push notifications were not enabled',
+                    )
+                    return
+                }
+
+                const subscription = await subscribeCurrentDeviceToPush()
+                await upsertPushSubscription({
+                    ...subscription,
+                    userAgent: navigator.userAgent,
+                })
+            } else {
+                const result = await unsubscribeCurrentDeviceFromPush()
+                if (result.endpoint) {
+                    await removePushSubscription({ endpoint: result.endpoint })
+                }
+            }
+
+            await updateProfile({ preferences: nextPreferences })
+            setForm((current) => {
+                if (!current) return current
+
+                return {
+                    ...current,
+                    preferences: nextPreferences,
+                }
+            })
+            toast.success(
+                checked
+                    ? 'Push notifications enabled on this device'
+                    : 'Push notifications turned off on this device',
+            )
+        } catch (error: unknown) {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : 'Unable to update push notifications right now',
+            )
+        } finally {
+            setIsUpdatingPushNotifications(false)
+        }
     }
 
     async function handleSaveSettings() {
@@ -422,6 +498,8 @@ export function SettingsWorkspace() {
                     <SettingsGroup title="Notifications">
                         {Object.entries(form.preferences.notifications).map(([key, enabled], index, arr) => {
                             const labels: Record<string, string> = {
+                                email: 'Email updates',
+                                push: 'Push notifications',
                                 messages: 'Messages',
                                 leases: 'Lease updates',
                                 payments: 'Payment reminders',
@@ -441,7 +519,13 @@ export function SettingsWorkspace() {
                                 >
                                     <Switch
                                         checked={Boolean(enabled)}
+                                        disabled={key === 'push' && isUpdatingPushNotifications}
                                         onCheckedChange={(checked) => {
+                                            if (key === 'push') {
+                                                void handlePushNotificationsToggle(checked)
+                                                return
+                                            }
+
                                             setForm((current) => {
                                                 if (!current) return current
                                                 return {

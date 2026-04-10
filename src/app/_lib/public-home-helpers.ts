@@ -6,7 +6,7 @@ import {
     Map as MapIcon,
     Tent,
     type LucideIcon,
-} from 'lucide-react'
+} from '@/components/ui/icons'
 
 import type {
     PublicHomeMapProperty,

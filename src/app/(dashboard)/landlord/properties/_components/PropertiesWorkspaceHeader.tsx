@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { Plus } from '@/components/ui/icons'
 
 import { Button } from '@/components/ui/button'
 

@@ -5,7 +5,7 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { MapPin, Search, Loader2 } from 'lucide-react'
+import { MapPin, Search, Loader2 } from '@/components/ui/icons'
 
 interface LocationPickerProps {
     initialCoordinates?: { lat: number; lng: number } | null

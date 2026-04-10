@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card'
-import { Clock, CheckCircle2, XCircle, FileStack } from 'lucide-react'
+import { Clock, CheckCircle2, XCircle, FileStack } from '@/components/ui/icons'
 
 interface LandlordRequestStatsCardsProps {
     stats: {

@@ -9,7 +9,7 @@ import {
     MapPin,
     Play,
     ChevronLeft,
-} from 'lucide-react'
+} from '@/components/ui/icons'
 
 import { api } from '@convex/_generated/api'
 import { UserAvatar } from '@/components/ui/user-avatar'

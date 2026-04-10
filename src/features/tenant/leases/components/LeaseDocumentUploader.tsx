@@ -7,7 +7,7 @@ import { api } from '@convex/_generated/api'
 import { Id } from '@convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { Eye, Loader2, Upload } from 'lucide-react'
+import { Eye, Loader2, Upload } from '@/components/ui/icons'
 
 interface LeaseDocumentUploaderProps {
     type: string

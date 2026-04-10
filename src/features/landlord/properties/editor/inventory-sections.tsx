@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Home, Info, Plus, Sparkles, Zap } from "lucide-react";
+import { ChevronRight, Home, Info, Plus, Sparkles, Zap } from "@/components/ui/icons";
 
 import { cn } from "@/lib/utils";
 

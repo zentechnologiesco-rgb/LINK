@@ -5,7 +5,7 @@ import {
     Map as MapIcon,
     Search,
     X,
-} from 'lucide-react'
+} from '@/components/ui/icons'
 
 import { cn } from '@/lib/utils'
 

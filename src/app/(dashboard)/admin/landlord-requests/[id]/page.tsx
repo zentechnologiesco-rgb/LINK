@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { LandlordRequestActions } from './_components/LandlordRequestActions'
-import { ArrowLeft, User, Building2, CreditCard, ClipboardList, CheckCircle2, XCircle, Clock, Calendar, MessageSquare } from 'lucide-react'
+import { ArrowLeft, User, Building2, CreditCard, ClipboardList, CheckCircle2, XCircle, Clock, Calendar, MessageSquare } from '@/components/ui/icons'
 import { format } from 'date-fns'
 import { useQuery } from "convex/react"
 import { api } from "../../../../../../convex/_generated/api"

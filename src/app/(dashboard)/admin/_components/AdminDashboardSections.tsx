@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { BadgeCheck, ClipboardCheck, Eye, LifeBuoy, UserRoundCog } from 'lucide-react'
+import { BadgeCheck, ClipboardCheck, Eye, LifeBuoy, UserRoundCog } from '@/components/ui/icons'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'

@@ -6,7 +6,7 @@ import {
     CheckCircle,
     Clock,
     XCircle,
-} from 'lucide-react'
+} from '@/components/ui/icons'
 
 import { Button } from '@/components/ui/button'
 import { ResubmissionForm } from '@/components/verification/ResubmissionForm'

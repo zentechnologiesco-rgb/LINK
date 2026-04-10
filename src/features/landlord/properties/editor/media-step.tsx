@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera, X } from "lucide-react";
+import { Camera, X } from "@/components/ui/icons";
 
 import type { Id } from "@convex/_generated/dataModel";
 import { DISCOVER_EXPERIENCE_ENABLED } from "@/config/features";

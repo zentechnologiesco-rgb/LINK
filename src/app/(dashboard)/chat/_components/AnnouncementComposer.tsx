@@ -1,7 +1,7 @@
 'use client'
 
 import type { FormEvent } from 'react'
-import { Loader2, Send } from 'lucide-react'
+import { Loader2, Send } from '@/components/ui/icons'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

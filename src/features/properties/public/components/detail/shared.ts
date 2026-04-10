@@ -18,7 +18,7 @@ import {
     Wifi,
     Wind,
     type LucideIcon,
-} from "lucide-react"
+} from "@/components/ui/icons"
 
 import type { PropertyDetailData } from "./types"
 

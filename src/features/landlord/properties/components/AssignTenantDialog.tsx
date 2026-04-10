@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Building2, FileCheck, Wallet, ChevronRight } from "lucide-react"
+import { Building2, FileCheck, Wallet, ChevronRight } from "@/components/ui/icons"
 
 interface AssignTenantDialogProps {
     open: boolean

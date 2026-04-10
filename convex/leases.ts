@@ -412,6 +412,18 @@ export const create = mutation({
             });
         }
 
+        if (args.sendImmediately) {
+            await ctx.scheduler.runAfter(0, internal.pushNotifications.sendToUsers, {
+                userIds: [tenant._id],
+                kind: "leases",
+                title: "New lease ready to review",
+                body: `A lease for ${property.title} is ready for your review.`,
+                url: `/tenant/leases/${leaseId}`,
+                tag: `lease-sent-${leaseId}`,
+                requireInteraction: true,
+            });
+        }
+
         return { leaseId, tenantName: tenant.fullName || "Tenant" };
     },
 });
@@ -452,6 +464,16 @@ export const sendToTenant = mutation({
                 html: emailData.html,
             });
         }
+
+        await ctx.scheduler.runAfter(0, internal.pushNotifications.sendToUsers, {
+            userIds: [lease.tenantId],
+            kind: "leases",
+            title: "Lease sent to you",
+            body: `Your lease for ${property?.title || "a property"} is ready to review.`,
+            url: `/tenant/leases/${args.leaseId}`,
+            tag: `lease-sent-${args.leaseId}`,
+            requireInteraction: true,
+        });
 
         return { success: true };
     },
@@ -512,6 +534,16 @@ export const tenantSign = mutation({
                 html: emailData.html,
             });
         }
+
+        await ctx.scheduler.runAfter(0, internal.pushNotifications.sendToUsers, {
+            userIds: [lease.landlordId],
+            kind: "leases",
+            title: "Tenant signed the lease",
+            body: `${tenant?.fullName || "Your tenant"} signed the lease for ${property?.title || "your property"}.`,
+            url: `/landlord/leases/${args.leaseId}`,
+            tag: `lease-signed-${args.leaseId}`,
+            requireInteraction: true,
+        });
 
         return { success: true };
     },
@@ -610,6 +642,18 @@ export const landlordDecision = mutation({
             });
         }
 
+        await ctx.scheduler.runAfter(0, internal.pushNotifications.sendToUsers, {
+            userIds: [lease.tenantId],
+            kind: "leases",
+            title: args.approved ? "Lease approved" : "Lease update available",
+            body: args.approved
+                ? `Your lease for ${property?.title || "the property"} has been approved.`
+                : `Your lease for ${property?.title || "the property"} was not approved.`,
+            url: `/tenant/leases/${args.leaseId}`,
+            tag: `lease-decision-${args.leaseId}`,
+            requireInteraction: true,
+        });
+
         return { success: true };
     },
 });
@@ -659,6 +703,16 @@ export const requestRevision = mutation({
             });
         }
 
+        await ctx.scheduler.runAfter(0, internal.pushNotifications.sendToUsers, {
+            userIds: [lease.tenantId],
+            kind: "leases",
+            title: "Lease changes requested",
+            body: `Please review the landlord notes for ${property?.title || "your lease"} and resubmit.`,
+            url: `/tenant/leases/${args.leaseId}`,
+            tag: `lease-revision-${args.leaseId}`,
+            requireInteraction: true,
+        });
+
         return { success: true };
     },
 });
@@ -692,6 +746,17 @@ export const terminate = mutation({
         await syncLeaseTargetState(ctx, {
             propertyId: lease.propertyId,
             unitId: lease.unitId,
+        });
+
+        const property = await ctx.db.get(lease.propertyId);
+        await ctx.scheduler.runAfter(0, internal.pushNotifications.sendToUsers, {
+            userIds: [lease.tenantId],
+            kind: "leases",
+            title: "Lease terminated",
+            body: `Your lease for ${property?.title || "the property"} has been terminated.`,
+            url: `/tenant/leases/${args.leaseId}`,
+            tag: `lease-terminated-${args.leaseId}`,
+            requireInteraction: true,
         });
 
         return { success: true };

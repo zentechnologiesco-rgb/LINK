@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { Facehash, type FacehashProps } from 'facehash'
-import { BellDot, Check, Loader2, X } from 'lucide-react'
+import { BellDot, Check, Loader2, X } from '@/components/ui/icons'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { type AvatarIdentity, getAvatarAlt, getAvatarImageSrc, getAvatarSeed } from '@/lib/avatar'

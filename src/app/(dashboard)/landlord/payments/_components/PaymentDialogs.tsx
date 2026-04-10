@@ -1,6 +1,6 @@
 'use client'
 
-import { Clock, FileText, ShieldCheck } from 'lucide-react'
+import { Clock, FileText, ShieldCheck } from '@/components/ui/icons'
 
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'

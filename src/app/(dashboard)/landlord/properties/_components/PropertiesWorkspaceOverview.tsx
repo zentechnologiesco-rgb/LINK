@@ -7,7 +7,7 @@ import {
     Clock3,
     TrendingUp,
     type LucideIcon,
-} from 'lucide-react'
+} from '@/components/ui/icons'
 
 import { cn } from '@/lib/utils'
 

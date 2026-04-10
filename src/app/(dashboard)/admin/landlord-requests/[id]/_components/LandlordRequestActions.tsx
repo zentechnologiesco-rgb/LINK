@@ -15,7 +15,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { Check, X, Loader2 } from 'lucide-react'
+import { Check, X, Loader2 } from '@/components/ui/icons'
 import { useMutation } from "convex/react"
 import { api } from "@convex/_generated/api"
 import { Id } from "@convex/_generated/dataModel"

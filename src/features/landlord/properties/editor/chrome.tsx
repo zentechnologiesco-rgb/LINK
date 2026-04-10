@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Loader2, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, X } from "@/components/ui/icons";
 
 import { cn } from "@/lib/utils";
 

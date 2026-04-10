@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { toast } from 'sonner'
-import { X, Loader2, ImagePlus, Sparkles, Zap } from 'lucide-react'
+import { X, Loader2, ImagePlus, Sparkles, Zap } from '@/components/ui/icons'
 import { cn } from '@/lib/utils'
 import { useMutation, useQuery } from "convex/react"
 import { api } from "@convex/_generated/api"

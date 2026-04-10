@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { Search, X } from 'lucide-react'
+import { Search, X } from '@/components/ui/icons'
 import { useState, useTransition, useCallback } from 'react'
 
 interface PropertyRequestFiltersProps {

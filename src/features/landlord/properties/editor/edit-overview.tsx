@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Clapperboard, Info, XCircle, type LucideIcon } from "lucide-react";
+import { Clapperboard, Info, XCircle, type LucideIcon } from "@/components/ui/icons";
 
 import { DISCOVER_EXPERIENCE_ENABLED } from "@/config/features";
 import { type PropertyWorkflow } from "@/lib/property-workflow";

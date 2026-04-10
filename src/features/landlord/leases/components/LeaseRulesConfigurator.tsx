@@ -19,7 +19,7 @@ import {
     Trash2,
     Wifi,
     Zap,
-} from 'lucide-react'
+} from '@/components/ui/icons'
 
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'

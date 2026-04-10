@@ -1,6 +1,6 @@
 'use client'
 
-import { Bath, BedDouble, Blocks, Maximize } from 'lucide-react'
+import { Bath, BedDouble, Blocks, Maximize } from '@/components/ui/icons'
 
 import { type PropertyCardViewModel } from '../_lib/property-card-helpers'
 

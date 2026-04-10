@@ -1,5 +1,5 @@
 'use client'
-import { Lock, Plus, Trash2 } from 'lucide-react'
+import { Lock, Plus, Trash2 } from '@/components/ui/icons'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

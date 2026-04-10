@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 
-import { Search } from 'lucide-react'
+import { Search } from '@/components/ui/icons'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

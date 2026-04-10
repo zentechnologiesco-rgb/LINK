@@ -1,7 +1,7 @@
 'use client'
 
 import type { FormEvent } from 'react'
-import { LifeBuoy, Loader2 } from 'lucide-react'
+import { LifeBuoy, Loader2 } from '@/components/ui/icons'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

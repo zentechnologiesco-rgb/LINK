@@ -1,7 +1,7 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
-import { ClipboardList } from 'lucide-react'
+import { ClipboardList } from '@/components/ui/icons'
 
 import { useUser } from '@/components/providers/UserProvider'
 import { useCachedQuery } from '@/hooks/useOptimisticQuery'

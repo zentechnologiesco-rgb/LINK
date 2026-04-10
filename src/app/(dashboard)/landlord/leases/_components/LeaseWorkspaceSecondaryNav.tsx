@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Building2, Wallet2 } from 'lucide-react'
+import { Building2, Wallet2 } from '@/components/ui/icons'
 
 export function LeaseWorkspaceSecondaryNav() {
     return (

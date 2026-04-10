@@ -203,6 +203,24 @@ export default defineSchema({
     .index("by_inquiryId", ["inquiryId"])
     .index("by_senderId", ["senderId"]),
 
+  pushSubscriptions: defineTable({
+    userId: v.id("users"),
+    endpoint: v.string(),
+    expirationTime: v.optional(v.number()),
+    keys: v.object({
+      p256dh: v.string(),
+      auth: v.string(),
+    }),
+    userAgent: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    lastSuccessAt: v.optional(v.number()),
+    lastFailureAt: v.optional(v.number()),
+    failureReason: v.optional(v.string()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_endpoint", ["endpoint"]),
+
   // Support Threads (user to admin conversations)
   supportThreads: defineTable({
     requesterId: v.id("users"),
@@ -368,6 +386,7 @@ export default defineSchema({
     type: v.union(v.literal("rent"), v.literal("deposit"), v.literal("late_fee")),
     status: v.union(v.literal("pending"), v.literal("paid"), v.literal("overdue")),
     dueDate: v.string(),
+    dueSoonReminderSentAt: v.optional(v.number()),
     paidAt: v.optional(v.number()),
     paymentMethod: v.optional(v.string()),
     paymentReference: v.optional(v.string()),

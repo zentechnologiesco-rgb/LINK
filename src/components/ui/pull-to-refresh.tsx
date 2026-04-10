@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { cn } from '@/lib/utils'
-import { Loader2, ArrowDown } from 'lucide-react'
+import { Loader2, ArrowDown } from '@/components/ui/icons'
 
 interface PullToRefreshProps {
     onRefresh: () => Promise<void> | void

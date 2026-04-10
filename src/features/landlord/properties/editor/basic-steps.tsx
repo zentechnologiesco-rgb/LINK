@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Info, MapPin, PawPrint } from "lucide-react";
+import { Check, Info, MapPin, PawPrint } from "@/components/ui/icons";
 
 import { LocationPicker } from "@/components/maps/LocationPicker";
 import { cn } from "@/lib/utils";

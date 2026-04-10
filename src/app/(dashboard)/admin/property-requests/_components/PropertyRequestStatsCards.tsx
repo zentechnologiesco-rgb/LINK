@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card'
-import { Building2, Clock, CheckCircle2, XCircle } from 'lucide-react'
+import { Building2, Clock, CheckCircle2, XCircle } from '@/components/ui/icons'
 
 interface PropertyRequestStatsCardsProps {
     stats: {

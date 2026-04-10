@@ -1,5 +1,5 @@
-import { CheckCircle2, Clock, XCircle } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { CheckCircle2, Clock, XCircle } from '@/components/ui/icons'
+import type { LucideIcon } from '@/components/ui/icons'
 
 export type LandlordRequestStatus = 'pending' | 'approved' | 'rejected'
 

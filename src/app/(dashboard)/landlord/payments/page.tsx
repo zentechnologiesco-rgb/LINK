@@ -10,7 +10,7 @@ import {
     Clock,
     CreditCard,
     Wallet,
-} from 'lucide-react'
+} from '@/components/ui/icons'
 
 import { api } from '../../../../../convex/_generated/api'
 import { Id } from '../../../../../convex/_generated/dataModel'

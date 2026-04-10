@@ -7,7 +7,7 @@ import {
     Eye,
     Home,
     MapPin,
-} from 'lucide-react'
+} from '@/components/ui/icons'
 
 import { OptimizedImage } from '@/components/ui/optimized-image'
 import { Badge } from '@/components/ui/badge'

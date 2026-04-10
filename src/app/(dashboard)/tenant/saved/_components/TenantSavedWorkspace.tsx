@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowUpDown, Heart } from 'lucide-react'
+import { ArrowUpDown, Heart } from '@/components/ui/icons'
 
 import { PropertyBrowseCard } from '@/features/properties/public/components/PropertyBrowseCard'
 import { api } from '@convex/_generated/api'

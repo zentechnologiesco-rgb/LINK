@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { Eye, EyeOff, ArrowLeft, Loader2, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, ArrowLeft, Loader2, AlertCircle } from '@/components/ui/icons'
 import { useAuthActions } from "@convex-dev/auth/react"
 import { useUser } from '@/components/providers/UserProvider'
 import { AuthBrandLink } from '@/components/auth/AuthBrandLink'

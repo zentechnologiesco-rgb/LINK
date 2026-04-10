@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { UserAvatar } from '@/components/ui/user-avatar'
 import { PropertyRequestApprovalActions } from './_components/PropertyRequestApprovalActions'
-import { ArrowLeft, User, Building2, MapPin, Bed, Bath, Square, Clock, CheckCircle2, XCircle } from 'lucide-react'
+import { ArrowLeft, User, Building2, MapPin, Bed, Bath, Square, Clock, CheckCircle2, XCircle } from '@/components/ui/icons'
 import { format } from 'date-fns'
 import { useQuery } from "convex/react"
 import { api } from "../../../../../../convex/_generated/api"
