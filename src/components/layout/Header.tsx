@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuthActions } from "@convex-dev/auth/react"
-import { Bell, LogOut, Menu } from '@/components/ui/icons'
+import { Bell, Building2, LogOut, Menu } from '@/components/ui/icons'
 import { toast } from 'sonner'
 
 import {
@@ -212,6 +212,21 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
         </Link>
     )
 
+    const renderBecomeLandlordLink = (options?: { iconOnly?: boolean }) => (
+        <Link
+            href="/become-landlord"
+            className={cn(
+                'inline-flex items-center justify-center gap-1.5 rounded-[8px] transition-all active:scale-[0.98]',
+                options?.iconOnly
+                    ? 'h-9 w-9 rounded-full bg-amber-100 text-amber-800 hover:bg-amber-200'
+                    : 'h-[38px] border border-amber-200 bg-amber-50 px-4 text-[15px] font-semibold text-amber-900 hover:bg-amber-100'
+            )}
+        >
+            <Building2 className={cn(options?.iconOnly ? 'h-4 w-4' : 'h-[18px] w-[18px]')} strokeWidth={2.2} />
+            {!options?.iconOnly && <span>Become Landlord</span>}
+        </Link>
+    )
+
     return (
         <>
             <header
@@ -350,6 +365,16 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                             </div>
                                             <div className="md:hidden">
                                                 {renderDiscoverLink({ iconOnly: true })}
+                                            </div>
+                                        </>
+                                    )}
+                                    {currentRole === 'tenant' && (
+                                        <>
+                                            <div className="hidden sm:flex">
+                                                {renderBecomeLandlordLink()}
+                                            </div>
+                                            <div className="sm:hidden">
+                                                {renderBecomeLandlordLink({ iconOnly: true })}
                                             </div>
                                         </>
                                     )}

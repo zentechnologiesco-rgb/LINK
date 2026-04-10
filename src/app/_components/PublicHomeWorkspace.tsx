@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
     List,
@@ -202,6 +203,35 @@ export function PublicHomeWorkspace() {
                     />
                 )}
             </PullToRefresh>
+
+            {/* ── Footer ── */}
+            <footer className="mx-auto w-full max-w-6xl px-4 pb-4 pt-10 sm:px-6">
+                <div className="border-t border-neutral-100 pt-5">
+                    <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+                        <div className="flex items-center gap-4 text-[13px] text-neutral-400">
+                            <Link href="/privacy" className="transition-colors hover:text-neutral-600">
+                                Privacy
+                            </Link>
+                            <span className="text-neutral-200">·</span>
+                            <Link href="/terms" className="transition-colors hover:text-neutral-600">
+                                Terms
+                            </Link>
+                            <span className="text-neutral-200">·</span>
+                            <a
+                                href="https://www.instagram.com/the.linkapp/?hl=en"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="transition-colors hover:text-neutral-600"
+                            >
+                                Instagram
+                            </a>
+                        </div>
+                        <p className="text-[12px] text-neutral-300">
+                            &copy; {new Date().getFullYear()} LINK
+                        </p>
+                    </div>
+                </div>
+            </footer>
 
             <div className="pointer-events-none fixed bottom-10 right-4 z-50 hidden md:right-6 md:block lg:right-8">
                 <div className="pointer-events-auto">

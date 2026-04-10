@@ -453,7 +453,7 @@ function DiscoverSkeleton({
   currentUser: ReturnType<typeof useUser>["user"];
 }) {
   return (
-    <div className="discover-feed-container min-h-screen bg-black">
+    <div className="discover-feed-container relative min-h-screen bg-black">
       <Header
         user={currentUser}
         userRole={currentUser?.role}
@@ -491,6 +491,7 @@ function DiscoverSkeleton({
         </div>
       </div>
 
+      <DiscoverDesktopFooter />
       <MobileNav user={currentUser} userRole={currentUser?.role} />
     </div>
   );
@@ -510,6 +511,35 @@ function SwipeHint({ visible }: { visible: boolean }) {
         </span>
       </div>
     </div>
+  );
+}
+
+function DiscoverDesktopFooter() {
+  return (
+    <footer className="pointer-events-none absolute inset-x-0 bottom-5 z-30 hidden justify-center px-4 md:flex">
+      <div className="pointer-events-auto inline-flex items-center gap-3 rounded-full border border-white/10 bg-black/45 px-4 py-2 text-xs text-white/70 backdrop-blur-md">
+        <Link href="/privacy" className="transition-colors hover:text-white">
+          Privacy
+        </Link>
+        <span aria-hidden="true" className="text-white/30">
+          /
+        </span>
+        <Link href="/terms" className="transition-colors hover:text-white">
+          Terms
+        </Link>
+        <span aria-hidden="true" className="text-white/30">
+          /
+        </span>
+        <a
+          href="https://www.instagram.com/the.linkapp/?hl=en"
+          target="_blank"
+          rel="noreferrer"
+          className="transition-colors hover:text-white"
+        >
+          Instagram
+        </a>
+      </div>
+    </footer>
   );
 }
 
@@ -662,7 +692,7 @@ export function DiscoverFeed() {
 
   if (properties.length === 0) {
     return (
-      <div className="discover-feed-container min-h-screen bg-black">
+      <div className="discover-feed-container relative min-h-screen bg-black">
         <Header
           user={currentUser}
           userRole={currentUser?.role}
@@ -671,13 +701,14 @@ export function DiscoverFeed() {
         <div className={DISCOVER_FEED_CLASS}>
           <DiscoverEmptyState currentUser={currentUser} />
         </div>
+        <DiscoverDesktopFooter />
         <MobileNav user={currentUser} userRole={currentUser?.role} />
       </div>
     );
   }
 
   return (
-    <div className="discover-feed-container min-h-screen bg-black">
+    <div className="discover-feed-container relative min-h-screen bg-black">
       <Header
         user={currentUser}
         userRole={currentUser?.role}
@@ -707,6 +738,7 @@ export function DiscoverFeed() {
         )}
       </div>
 
+      <DiscoverDesktopFooter />
       <MobileNav user={currentUser} userRole={currentUser?.role} />
     </div>
   );
