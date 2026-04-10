@@ -5,7 +5,7 @@ import {
     ShieldCheck,
     Sparkles,
     User,
-} from 'lucide-react'
+} from '@/components/ui/icons'
 
 import { type RentalRulesData } from '@/features/landlord/leases/components/LeaseRulesConfigurator'
 

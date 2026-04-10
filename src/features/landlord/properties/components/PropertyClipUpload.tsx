@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { Clapperboard, Loader2, Upload, X } from "lucide-react";
+import { Clapperboard, Loader2, Upload, X } from "@/components/ui/icons";
 import { toast } from "sonner";
 
 import { api } from "@convex/_generated/api";

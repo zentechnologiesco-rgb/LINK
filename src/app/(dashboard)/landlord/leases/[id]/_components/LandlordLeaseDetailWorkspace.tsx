@@ -31,7 +31,7 @@ import {
     Wrench,
     X,
     Zap,
-} from 'lucide-react'
+} from '@/components/ui/icons'
 
 import { api } from '@convex/_generated/api'
 import { type Id } from '@convex/_generated/dataModel'

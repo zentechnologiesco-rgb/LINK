@@ -1,7 +1,7 @@
 'use client'
 
 import type { ElementType, ReactNode } from 'react'
-import { Eye, FileText, Loader2 } from 'lucide-react'
+import { Eye, FileText, Loader2 } from '@/components/ui/icons'
 
 import {
     Dialog,

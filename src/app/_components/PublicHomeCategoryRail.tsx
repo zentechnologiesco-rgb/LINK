@@ -1,6 +1,6 @@
 'use client'
 
-import { Compass } from 'lucide-react'
+import { Compass } from '@/components/ui/icons'
 
 import { cn } from '@/lib/utils'
 

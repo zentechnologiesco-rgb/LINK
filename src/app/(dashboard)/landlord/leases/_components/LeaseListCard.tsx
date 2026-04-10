@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Building2, ChevronRight } from 'lucide-react'
+import { Building2, ChevronRight } from '@/components/ui/icons'
 
 import { LEASE_STATUS_LABELS } from '@/constants/lease'
 import { OptimizedImage } from '@/components/ui/optimized-image'

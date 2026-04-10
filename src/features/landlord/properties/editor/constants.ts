@@ -7,7 +7,7 @@ import {
   Sparkles,
   Users,
   type LucideIcon,
-} from "lucide-react";
+} from "@/components/ui/icons";
 
 import type { InventoryGenerator, ListingType } from "./types";
 

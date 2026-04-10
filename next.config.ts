@@ -81,7 +81,7 @@ const nextConfig: NextConfig = {
   // Optimize package imports
   experimental: {
     optimizePackageImports: [
-      'lucide-react',
+      '@phosphor-icons/react',
       'date-fns',
       '@radix-ui/react-dialog',
       '@radix-ui/react-dropdown-menu',

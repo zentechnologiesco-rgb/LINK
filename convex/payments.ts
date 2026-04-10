@@ -1,11 +1,13 @@
 import { v } from "convex/values";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { auth } from "./auth";
 import type { Doc, Id } from "./_generated/dataModel";
 
 const DEFAULT_MONTHS_AHEAD = 12;
 const RENT_SCHEDULE_STATUSES = new Set(["approved"]);
+const PAYMENT_NOTIFICATION_LOOKAHEAD_DAYS = 7;
 
 function parseDateOnly(value: string) {
     const [year, month, day] = value.split("-").map(Number);
@@ -14,6 +16,20 @@ function parseDateOnly(value: string) {
 
 function formatDateOnly(date: Date) {
     return date.toISOString().split("T")[0];
+}
+
+function formatCurrency(amount: number) {
+    return new Intl.NumberFormat("en-NA", {
+        style: "currency",
+        currency: "NAD",
+        maximumFractionDigits: 0,
+    }).format(amount);
+}
+
+function getPaymentLabel(type: Doc<"payments">["type"]) {
+    if (type === "deposit") return "Deposit";
+    if (type === "late_fee") return "Late fee";
+    return "Rent payment";
 }
 
 function addDays(date: Date, days: number) {
@@ -212,6 +228,16 @@ export const record = mutation({
             paymentReference: args.paymentReference,
         });
 
+        const property = await ctx.db.get(lease.propertyId);
+        await ctx.scheduler.runAfter(0, internal.pushNotifications.sendToUsers, {
+            userIds: [lease.tenantId],
+            kind: "payments",
+            title: "Payment recorded",
+            body: `${getPaymentLabel(payment.type)} of ${formatCurrency(payment.amount)} was recorded for ${property?.title || "your lease"}.`,
+            url: "/tenant/payments",
+            tag: `payment-paid-${args.paymentId}`,
+        });
+
         return { success: true };
     },
 });
@@ -286,6 +312,29 @@ export const markOverdue = internalMutation({
 
             await ctx.db.patch(payment._id, { status: "overdue" });
             updated += 1;
+
+            const property = await ctx.db.get(lease.propertyId);
+            const propertyTitle = property?.title || "this lease";
+
+            await ctx.scheduler.runAfter(0, internal.pushNotifications.sendToUsers, {
+                userIds: [lease.tenantId],
+                kind: "payments",
+                title: "Payment overdue",
+                body: `${getPaymentLabel(payment.type)} of ${formatCurrency(payment.amount)} for ${propertyTitle} is now overdue.`,
+                url: "/tenant/payments",
+                tag: `payment-overdue-tenant-${payment._id}`,
+                requireInteraction: true,
+            });
+
+            await ctx.scheduler.runAfter(0, internal.pushNotifications.sendToUsers, {
+                userIds: [lease.landlordId],
+                kind: "payments",
+                title: "Tenant payment overdue",
+                body: `${getPaymentLabel(payment.type)} of ${formatCurrency(payment.amount)} for ${propertyTitle} now needs follow-up.`,
+                url: "/landlord/payments",
+                tag: `payment-overdue-landlord-${payment._id}`,
+                requireInteraction: true,
+            });
 
             if (payment.type !== "rent" || !lease.lateFeeAmount) {
                 continue;
@@ -512,5 +561,123 @@ export const getTenantStats = query({
         }
 
         return stats;
+    },
+});
+
+export const getDueSoonReminderCandidates = internalQuery({
+    args: {
+        daysAhead: v.number(),
+    },
+    handler: async (ctx, args) => {
+        const daysAhead = Math.max(0, Math.floor(args.daysAhead));
+        const today = formatDateOnly(new Date());
+        const dueSoonCutoff = formatDateOnly(addDays(new Date(), daysAhead));
+
+        const pendingPayments = await ctx.db
+            .query("payments")
+            .withIndex("by_status", (q) => q.eq("status", "pending"))
+            .collect();
+
+        const candidates: Array<{
+            paymentId: Id<"payments">;
+            tenantId: Id<"users">;
+            dueDate: string;
+            amount: number;
+            label: string;
+            propertyTitle: string;
+            url: string;
+        }> = [];
+
+        for (const payment of pendingPayments) {
+            if (payment.dueSoonReminderSentAt) {
+                continue;
+            }
+
+            if (payment.dueDate < today || payment.dueDate > dueSoonCutoff) {
+                continue;
+            }
+
+            const lease = await ctx.db.get(payment.leaseId);
+            if (!lease) {
+                continue;
+            }
+
+            const property = await ctx.db.get(lease.propertyId);
+
+            candidates.push({
+                paymentId: payment._id,
+                tenantId: lease.tenantId,
+                dueDate: payment.dueDate,
+                amount: payment.amount,
+                label: getPaymentLabel(payment.type),
+                propertyTitle: property?.title || "your lease",
+                url: "/tenant/payments",
+            });
+        }
+
+        return candidates;
+    },
+});
+
+export const markDueSoonReminderSent = internalMutation({
+    args: {
+        paymentId: v.id("payments"),
+    },
+    handler: async (ctx, args) => {
+        await ctx.db.patch(args.paymentId, {
+            dueSoonReminderSentAt: Date.now(),
+        });
+
+        return { success: true };
+    },
+});
+
+export const getActionRequiredCount = query({
+    args: {},
+    handler: async (ctx) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) return 0;
+
+        const user = await ctx.db.get(userId);
+        if (!user || user.role === "admin") return 0;
+
+        const leases = user.role === "landlord"
+            ? await ctx.db
+                .query("leases")
+                .withIndex("by_landlordId", (q) => q.eq("landlordId", userId))
+                .collect()
+            : await ctx.db
+                .query("leases")
+                .withIndex("by_tenantId", (q) => q.eq("tenantId", userId))
+                .collect();
+
+        if (leases.length === 0) {
+            return 0;
+        }
+
+        const relevantLeaseIds = new Set(leases.map((lease) => lease._id));
+        const dueSoonCutoff = formatDateOnly(addDays(new Date(), PAYMENT_NOTIFICATION_LOOKAHEAD_DAYS));
+
+        const [pendingPayments, overduePayments] = await Promise.all([
+            ctx.db
+                .query("payments")
+                .withIndex("by_status", (q) => q.eq("status", "pending"))
+                .collect(),
+            ctx.db
+                .query("payments")
+                .withIndex("by_status", (q) => q.eq("status", "overdue"))
+                .collect(),
+        ]);
+
+        const dueSoonCount = pendingPayments.filter((payment) =>
+            relevantLeaseIds.has(payment.leaseId) &&
+            payment.dueDate <= dueSoonCutoff,
+        ).length;
+
+        const overdueCount = overduePayments.filter((payment) =>
+            relevantLeaseIds.has(payment.leaseId),
+        ).length;
+
+        return dueSoonCount + overdueCount;
     },
 });

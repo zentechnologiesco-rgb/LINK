@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Heart } from 'lucide-react'
+import { Heart } from '@/components/ui/icons'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import {

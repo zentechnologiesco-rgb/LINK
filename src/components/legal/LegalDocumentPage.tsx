@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ChevronLeft, Clock3, FileText, ShieldCheck } from 'lucide-react'
+import { ChevronLeft, Clock3, FileText, ShieldCheck } from '@/components/ui/icons'
 
 import { Header } from '@/components/layout/Header'
 import { MobileNav } from '@/components/layout/MobileNav'

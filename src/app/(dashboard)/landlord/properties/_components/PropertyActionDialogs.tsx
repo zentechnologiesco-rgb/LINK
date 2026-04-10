@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { AlertCircle, Loader2 } from '@/components/ui/icons'
 import { type Id } from '../../../../../../convex/_generated/dataModel'
 
 import { AssignTenantDialog } from '@/features/landlord/properties/components/AssignTenantDialog'

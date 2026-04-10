@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Edit, Eye, MapPin } from 'lucide-react'
+import { Edit, Eye, MapPin } from '@/components/ui/icons'
 
 import { Button } from '@/components/ui/button'
 

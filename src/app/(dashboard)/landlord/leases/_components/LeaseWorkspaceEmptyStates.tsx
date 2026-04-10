@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { FileText, FolderArchive, Plus } from 'lucide-react'
+import { FileText, FolderArchive, Plus } from '@/components/ui/icons'
 
 import { getFilterEmptyMessage } from '../_lib/leases-page-helpers'
 import type { FilterTab } from '../_lib/leases-page-types'

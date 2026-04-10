@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { type Id } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { auth } from "./auth";
 import { resolveAvatarUrl } from "./lib/avatar";
@@ -201,6 +202,16 @@ export const create = mutation({
             inquiryId,
             senderId: userId,
             content: trimmedMessage,
+        });
+
+        await ctx.scheduler.runAfter(0, internal.pushNotifications.sendToUsers, {
+            userIds: [property.landlordId],
+            kind: "messages",
+            title: `New inquiry for ${property.title}`,
+            body: trimmedMessage,
+            url: `/chat?kind=inquiry&id=${inquiryId}`,
+            tag: `inquiry-${inquiryId}`,
+            requireInteraction: true,
         });
 
         return inquiryId;

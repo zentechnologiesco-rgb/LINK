@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft } from '@/components/ui/icons'
 import { useQuery } from 'convex/react'
 
 import { Header } from '@/components/layout/Header'

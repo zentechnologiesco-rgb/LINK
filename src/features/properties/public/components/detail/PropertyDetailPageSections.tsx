@@ -9,7 +9,7 @@ import {
     Shield,
     Sparkles,
     type LucideIcon,
-} from "lucide-react"
+} from "@/components/ui/icons"
 
 import { PropertyDetailLazyMap } from "./PropertyDetailLazyMap"
 import { getAmenityIcon, getLandlordDisplayName, getPropertyTypeLabel } from "./shared"

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 import {
     MapPin,
-} from "lucide-react"
+} from "@/components/ui/icons"
 
 import { PropertyDetailDesktopSidebar, PropertyDetailMobileActionBar } from "@/features/properties/public/components/detail/PropertyDetailActionPanels"
 import { PropertyDetailMedia } from "@/features/properties/public/components/detail/PropertyDetailMedia"

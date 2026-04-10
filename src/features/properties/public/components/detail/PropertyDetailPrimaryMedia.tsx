@@ -1,7 +1,7 @@
 "use client"
 
 import { type MouseEventHandler } from "react"
-import { PlayCircle } from "lucide-react"
+import { PlayCircle } from "@/components/ui/icons"
 
 import { DISCOVER_EXPERIENCE_ENABLED } from "@/config/features"
 import { OptimizedImage } from "@/components/ui/optimized-image"

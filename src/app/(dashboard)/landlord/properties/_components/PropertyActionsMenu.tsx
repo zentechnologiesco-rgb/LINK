@@ -13,7 +13,7 @@ import {
     ToggleRight,
     Trash2,
     UserPlus,
-} from 'lucide-react'
+} from '@/components/ui/icons'
 import { type Id } from '../../../../../../convex/_generated/dataModel'
 
 import { Button } from '@/components/ui/button'

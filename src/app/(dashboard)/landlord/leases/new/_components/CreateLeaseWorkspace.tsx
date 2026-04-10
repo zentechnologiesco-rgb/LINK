@@ -30,7 +30,7 @@ import {
     Wallet2,
     Wrench,
     Zap,
-} from 'lucide-react'
+} from '@/components/ui/icons'
 import { useMutation, useQuery, useConvex } from 'convex/react'
 
 import { api } from '@convex/_generated/api'

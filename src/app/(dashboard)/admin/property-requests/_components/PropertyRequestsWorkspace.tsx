@@ -1,7 +1,7 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
-import { Building2 } from 'lucide-react'
+import { Building2 } from '@/components/ui/icons'
 
 import { useUser } from '@/components/providers/UserProvider'
 import { useCachedQuery } from '@/hooks/useOptimisticQuery'

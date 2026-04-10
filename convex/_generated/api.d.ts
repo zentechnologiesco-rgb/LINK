@@ -31,6 +31,8 @@ import type * as messages from "../messages.js";
 import type * as payments from "../payments.js";
 import type * as properties from "../properties.js";
 import type * as propertyComments from "../propertyComments.js";
+import type * as pushNotifications from "../pushNotifications.js";
+import type * as pushSubscriptions from "../pushSubscriptions.js";
 import type * as recentlyViewed from "../recentlyViewed.js";
 import type * as savedProperties from "../savedProperties.js";
 import type * as support from "../support.js";
@@ -67,6 +69,8 @@ declare const fullApi: ApiFromModules<{
   payments: typeof payments;
   properties: typeof properties;
   propertyComments: typeof propertyComments;
+  pushNotifications: typeof pushNotifications;
+  pushSubscriptions: typeof pushSubscriptions;
   recentlyViewed: typeof recentlyViewed;
   savedProperties: typeof savedProperties;
   support: typeof support;

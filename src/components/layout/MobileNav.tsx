@@ -22,7 +22,7 @@ function MobileNavInner({ user, userRole }: MobileNavProps) {
     const pathname = usePathname()
     const searchParams = useSearchParams()
     const currentRole = (userRole || user?.role || null) as UserRole | null
-    const { unreadCount, leaseActionCount } = useNotificationCounts()
+    const { unreadCount, leaseActionCount, paymentActionCount } = useNotificationCounts()
 
     const isChatThread = pathname === '/chat' && (
         searchParams.get('id') !== null ||
@@ -44,7 +44,14 @@ function MobileNavInner({ user, userRole }: MobileNavProps) {
     const getBadgeCount = (badgeType?: NavigationBadgeType) => {
         if (badgeType === 'messages') return unreadCount
         if (badgeType === 'leases') return leaseActionCount
+        if (badgeType === 'payments') return paymentActionCount
         return 0
+    }
+
+    const getBadgeClassName = (badgeType?: NavigationBadgeType) => {
+        if (badgeType === 'leases') return 'bg-amber-500'
+        if (badgeType === 'payments') return 'bg-emerald-500'
+        return 'bg-neutral-900'
     }
 
     const isActiveRoute = (href: string) => (
@@ -110,7 +117,7 @@ function MobileNavInner({ user, userRole }: MobileNavProps) {
                                             {hasBadge && (
                                                 <span className={cn(
                                                     'absolute -right-1 -top-1 z-20 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold text-white ring-2 ring-white/90 transition-transform duration-300 dark:ring-slate-950/80',
-                                                    item.badgeType === 'leases' ? 'bg-amber-500' : 'bg-neutral-900'
+                                                    getBadgeClassName(item.badgeType)
                                                 )}>
                                                     {badgeCount > 9 ? '9+' : badgeCount}
                                                 </span>

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Plus, TrendingUp } from 'lucide-react'
+import { Plus, TrendingUp } from '@/components/ui/icons'
 
 import { Button } from '@/components/ui/button'
 

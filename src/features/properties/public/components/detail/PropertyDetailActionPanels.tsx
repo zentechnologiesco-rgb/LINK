@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Edit } from "lucide-react"
+import { Edit } from "@/components/ui/icons"
 
 import { ContactLandlordButton } from "@/features/properties/public/components/ContactLandlordButton"
 import { SavePropertyButton } from "@/features/properties/public/components/SavePropertyButton"

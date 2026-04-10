@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Clapperboard } from 'lucide-react'
+import { Clapperboard } from '@/components/ui/icons'
 
 import { Button } from '@/components/ui/button'
 import { DISCOVER_EXPERIENCE_ENABLED } from '@/config/features'

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { Share2, Smartphone, PlusSquare } from 'lucide-react'
+import { Share2, Smartphone, PlusSquare } from '@/components/ui/icons'
 
 import {
   Dialog,

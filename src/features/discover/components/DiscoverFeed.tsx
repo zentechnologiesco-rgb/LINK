@@ -20,7 +20,7 @@ import {
   Share2,
   Volume2,
   VolumeOff,
-} from "lucide-react";
+} from "@/components/ui/icons";
 import { toast } from "sonner";
 
 import { api } from "@convex/_generated/api";

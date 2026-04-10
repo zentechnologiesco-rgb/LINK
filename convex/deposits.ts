@@ -1,7 +1,16 @@
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
 import { normalizeOptionalText, normalizeRequiredText } from "./lib/security";
+
+function formatCurrency(amount: number) {
+    return new Intl.NumberFormat("en-NA", {
+        style: "currency",
+        currency: "NAD",
+        maximumFractionDigits: 0,
+    }).format(amount);
+}
 
 // Create deposit for a lease
 export const create = mutation({
@@ -90,6 +99,18 @@ export const confirm = mutation({
                 paymentReference: args.paymentReference,
             });
         }
+
+        const lease = await ctx.db.get(deposit.leaseId);
+        const property = lease ? await ctx.db.get(lease.propertyId) : null;
+
+        await ctx.scheduler.runAfter(0, internal.pushNotifications.sendToUsers, {
+            userIds: [deposit.tenantId],
+            kind: "payments",
+            title: "Deposit confirmed",
+            body: `Security deposit of ${formatCurrency(deposit.amount)} was confirmed for ${property?.title || "your lease"}.`,
+            url: "/tenant/payments",
+            tag: `deposit-confirmed-${args.depositId}`,
+        });
 
         return { success: true };
     },

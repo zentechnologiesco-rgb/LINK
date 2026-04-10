@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import type { ElementType, ReactNode } from 'react'
-import { ArrowRight, Trash2, TrendingDown, TrendingUp } from 'lucide-react'
+import { ArrowRight, Trash2, TrendingDown, TrendingUp } from '@/components/ui/icons'
 
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'

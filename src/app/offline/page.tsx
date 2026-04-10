@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ChevronLeft, RefreshCw, WifiOff } from 'lucide-react'
+import { ChevronLeft, RefreshCw, WifiOff } from '@/components/ui/icons'
 
 const highlights = [
   'Fresh listings need an internet connection to load.',

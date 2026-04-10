@@ -11,7 +11,7 @@ import {
     useCallback,
 } from 'react'
 import { format, isSameDay, isToday, isYesterday } from 'date-fns'
-import { ArrowUp, Loader2 } from 'lucide-react'
+import { ArrowUp, Loader2 } from '@/components/ui/icons'
 
 import { UserAvatar } from '@/components/ui/user-avatar'
 import { cn } from '@/lib/utils'

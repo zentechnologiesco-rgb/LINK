@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuthActions } from "@convex-dev/auth/react"
-import { Bell, LogOut, Menu } from 'lucide-react'
+import { Bell, LogOut, Menu } from '@/components/ui/icons'
 import { toast } from 'sonner'
 
 import {
@@ -29,6 +29,7 @@ import { useNotificationCounts } from '@/components/providers/NotificationCounts
 import { type AvatarIdentity } from '@/lib/avatar'
 import { getDisplayName } from '@/lib/user-name'
 import { cn } from '@/lib/utils'
+import { NotificationCenterSheet } from '@/components/layout/NotificationCenterSheet'
 
 interface HeaderProps {
     user?: (AvatarIdentity & {
@@ -45,7 +46,7 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
     const { signOut } = useAuthActions()
     const [isScrolled, setIsScrolled] = useState(false)
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
-    const { unreadCount, leaseActionCount, totalNotifications } = useNotificationCounts()
+    const { unreadCount, leaseActionCount, paymentActionCount, totalNotifications } = useNotificationCounts()
 
     useEffect(() => {
         const handleScroll = () => {
@@ -73,21 +74,17 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
         ? getNavigationItemsForSurface(currentRole, 'headerMenu')
         : []
 
-    const getNotificationLink = () => {
-        if (leaseActionCount > 0) {
-            if (currentRole === 'landlord') return '/landlord/leases'
-            if (currentRole === 'tenant') return '/tenant/leases'
-        }
-
-        if (unreadCount > 0) return '/chat'
-        if (currentRole === 'admin') return '/admin'
-        return '/chat'
-    }
-
     const getBadgeCount = (badgeType?: NavigationBadgeType) => {
         if (badgeType === 'messages') return unreadCount
         if (badgeType === 'leases') return leaseActionCount
+        if (badgeType === 'payments') return paymentActionCount
         return 0
+    }
+
+    const getBadgeClassName = (badgeType?: NavigationBadgeType) => {
+        if (badgeType === 'leases') return 'bg-amber-500'
+        if (badgeType === 'payments') return 'bg-emerald-500'
+        return 'bg-red-500'
     }
 
     const renderNavigationMenuItems = () => (
@@ -110,7 +107,7 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                         {hasBadge && (
                             <span className={cn(
                                 'ml-2 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-white',
-                                item.badgeType === 'leases' ? 'bg-amber-500' : 'bg-red-500'
+                                getBadgeClassName(item.badgeType)
                             )}>
                                 {badgeCount > 99 ? '99+' : badgeCount}
                             </span>
@@ -222,16 +219,20 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                             </div>
                                         </>
                                     )}
-                                    <Link
-                                        href={getNotificationLink()}
-                                        aria-label="Open notifications"
-                                        className="relative flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 shadow-none transition-colors hover:bg-neutral-200 md:hidden"
-                                    >
-                                        <Bell className="h-5 w-5 stroke-[1.75]" />
-                                        {totalNotifications > 0 && (
-                                            <span className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full border border-white bg-sky-500" />
-                                        )}
-                                    </Link>
+                                    <NotificationCenterSheet userRole={currentRole}>
+                                        <button
+                                            type="button"
+                                            aria-label="Open notifications"
+                                            className="relative flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 shadow-none transition-colors hover:bg-neutral-200 md:hidden"
+                                        >
+                                            <Bell className="h-5 w-5 stroke-[1.75]" />
+                                            {totalNotifications > 0 && (
+                                                <span className="absolute -right-1 -top-1 z-10 flex h-4.5 min-w-[18px] items-center justify-center rounded-full border border-white bg-neutral-950 px-1 text-[10px] font-bold text-white">
+                                                    {totalNotifications > 9 ? '9+' : totalNotifications}
+                                                </span>
+                                            )}
+                                        </button>
+                                    </NotificationCenterSheet>
 
                                     <DropdownMenu onOpenChange={setIsProfileMenuOpen}>
                                         <DropdownMenuTrigger asChild>

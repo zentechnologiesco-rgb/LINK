@@ -10,7 +10,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { Search, Loader2 } from 'lucide-react'
+import { Search, Loader2 } from '@/components/ui/icons'
 
 interface LandlordRequestFiltersProps {
     currentStatus: string

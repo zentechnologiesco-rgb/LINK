@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { format } from 'date-fns'
-import { AlertCircle, Eye } from 'lucide-react'
+import { AlertCircle, Eye } from '@/components/ui/icons'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'

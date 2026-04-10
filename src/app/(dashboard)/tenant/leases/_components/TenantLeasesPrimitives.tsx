@@ -4,7 +4,7 @@ import { format } from 'date-fns'
 import {
     Building2,
     ChevronRight,
-} from 'lucide-react'
+} from '@/components/ui/icons'
 
 import { LEASE_STATUS_LABELS } from '@/constants/lease'
 import { OptimizedImage } from '@/components/ui/optimized-image'

@@ -12,12 +12,12 @@ import {
     Users,
     Wallet,
     type LucideIcon,
-} from 'lucide-react'
+} from '@/components/ui/icons'
 
 import { DISCOVER_EXPERIENCE_ENABLED } from '@/config/features'
 import type { UserRole } from '@/lib/user-preferences'
 
-export type NavigationBadgeType = 'messages' | 'leases'
+export type NavigationBadgeType = 'messages' | 'leases' | 'payments'
 export type NavigationSurface = 'headerMenu' | 'mobileNav' | 'settingsQuickLinks'
 
 export interface NavigationItem {
@@ -70,6 +70,7 @@ const tenantNavigationItems: NavigationItem[] = [
         label: 'Payments',
         href: '/tenant/payments',
         icon: Wallet,
+        badgeType: 'payments',
         surfaces: ['headerMenu', 'mobileNav', 'settingsQuickLinks'],
         settingsMeta: 'Payment tracking',
     },
@@ -115,6 +116,7 @@ const landlordNavigationItems: NavigationItem[] = [
         label: 'Payments',
         href: '/landlord/payments',
         icon: Wallet,
+        badgeType: 'payments',
         surfaces: ['headerMenu', 'mobileNav', 'settingsQuickLinks'],
         settingsMeta: 'Collections',
     },

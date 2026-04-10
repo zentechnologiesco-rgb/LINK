@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown } from "@/components/ui/icons"
 
 import { ContactLandlordButton } from "@/features/properties/public/components/ContactLandlordButton"
 import { useUser } from "@/components/providers/UserProvider"

@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
 import { normalizeRequiredText } from "./lib/security";
@@ -55,6 +56,18 @@ export const send = mutation({
             inquiryId: args.inquiryId,
             senderId: userId,
             content: trimmedContent,
+        });
+
+        const recipientId = inquiry.tenantId === userId ? inquiry.landlordId : inquiry.tenantId;
+        const property = await ctx.db.get(inquiry.propertyId);
+
+        await ctx.scheduler.runAfter(0, internal.pushNotifications.sendToUsers, {
+            userIds: [recipientId],
+            kind: "messages",
+            title: property?.title ? `New message about ${property.title}` : "New message",
+            body: trimmedContent,
+            url: `/chat?kind=inquiry&id=${args.inquiryId}`,
+            tag: `message-${messageId}`,
         });
 
         return messageId;

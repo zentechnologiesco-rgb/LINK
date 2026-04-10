@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { Map as MapIcon } from 'lucide-react'
+import { Map as MapIcon } from '@/components/ui/icons'
 
 const loadPropertyMap = () => import('@/components/maps/PropertyMap').then((module) => module.PropertyMap)
 

@@ -16,7 +16,7 @@ import {
     CreditCard,
     Search,
     Wallet,
-} from 'lucide-react'
+} from '@/components/ui/icons'
 import {
     formatCurrency,
     formatDate,

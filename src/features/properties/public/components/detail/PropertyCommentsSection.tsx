@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { useState, useTransition } from "react"
 import { useMutation, useQuery } from "convex/react"
 import { formatDistanceToNow } from "date-fns"
-import { Heart, Loader2, MessageCircle, Send, Trash2 } from "lucide-react"
+import { Heart, Loader2, MessageCircle, Send, Trash2 } from "@/components/ui/icons"
 import { toast } from "sonner"
 
 import { api } from "@convex/_generated/api"

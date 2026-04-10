@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMutation, useQuery } from 'convex/react'
-import { ArrowLeft, Clapperboard, Loader2, Trash2, Upload } from 'lucide-react'
+import { ArrowLeft, Clapperboard, Loader2, Trash2, Upload } from '@/components/ui/icons'
 import { toast } from 'sonner'
 
 import { api } from '@convex/_generated/api'
