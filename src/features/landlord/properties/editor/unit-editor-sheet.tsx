@@ -1,6 +1,6 @@
 "use client";
 
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 
 import {
   CardRow,
@@ -38,6 +38,9 @@ export function PropertyUnitEditorSheet({
             <SheetTitle className="sr-only">
               {unit.title || `Unit ${unitIndex + 1}`} editor
             </SheetTitle>
+            <SheetDescription className="sr-only">
+              Update the unit details, rent, occupancy settings, and notes.
+            </SheetDescription>
 
             <div className="flex-shrink-0 justify-center pb-1 pt-3">
               <div className="mx-auto h-1 w-9 rounded-full bg-neutral-300" />

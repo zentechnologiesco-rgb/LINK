@@ -14,6 +14,7 @@ import {
     getNavigationItemsForSurface,
     settingsNavItem,
     type NavigationBadgeType,
+    type NavigationItem,
 } from '@/config/navigation'
 import type { UserRole } from '@/lib/user-preferences'
 import { UserAvatar } from '@/components/ui/user-avatar'
@@ -25,6 +26,14 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetTrigger,
+    SheetClose,
+    SheetTitle,
+} from '@/components/ui/sheet'
 import { useNotificationCounts } from '@/components/providers/NotificationCountsProvider'
 import { type AvatarIdentity } from '@/lib/avatar'
 import { getDisplayName } from '@/lib/user-name'
@@ -87,36 +96,79 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
         return 'bg-red-500'
     }
 
-    const renderNavigationMenuItems = () => (
-        <>
-            {headerMenuItems.map((item) => {
-                const Icon = item.icon
-                const badgeCount = getBadgeCount(item.badgeType)
-                const hasBadge = badgeCount > 0
+    const isNavItemActive = (href: string) => {
+        if (href === '/') {
+            return pathname === href
+        }
 
-                return (
-                    <DropdownMenuItem
-                        key={item.id}
-                        className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium focus:bg-neutral-50"
-                        onClick={() => router.push(item.href)}
-                    >
-                        <div className="flex items-center flex-1">
-                            <Icon className="mr-3 h-4 w-4 opacity-70" />
-                            {item.label}
-                        </div>
-                        {hasBadge && (
-                            <span className={cn(
-                                'ml-2 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-white',
-                                getBadgeClassName(item.badgeType)
-                            )}>
-                                {badgeCount > 99 ? '99+' : badgeCount}
-                            </span>
-                        )}
-                    </DropdownMenuItem>
-                )
-            })}
-        </>
+        return pathname === href || pathname.startsWith(`${href}/`)
+    }
+
+    const discoverMenuItem = headerMenuItems.find((item) => item.id === discoverNavItem.id)
+    const messagesMenuItem = headerMenuItems.find((item) => item.id === 'messages')
+    const workspaceMenuItems = headerMenuItems.filter(
+        (item) => item.id !== discoverNavItem.id && item.id !== 'messages'
     )
+    const navigationSections = [
+        {
+            id: 'browse',
+            label: currentRole === 'admin' ? 'Overview' : 'Explore',
+            items: discoverMenuItem ? [discoverMenuItem] : [],
+        },
+        {
+            id: 'workspace',
+            label: currentRole === 'admin' ? 'Manage' : 'Workspace',
+            items: workspaceMenuItems,
+        },
+        {
+            id: 'connect',
+            label: 'Connect',
+            items: messagesMenuItem ? [messagesMenuItem] : [],
+        },
+    ].filter((section) => section.items.length > 0)
+
+    const renderDrawerMenuItem = (item: NavigationItem) => {
+        const Icon = item.icon
+        const badgeCount = getBadgeCount(item.badgeType)
+        const hasBadge = badgeCount > 0
+        const isActive = isNavItemActive(item.href)
+
+        return (
+            <SheetClose asChild key={item.id}>
+                <Link
+                    href={item.href}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={cn(
+                        'group flex items-center justify-between rounded-lg px-3 py-2.5 text-[15px] text-neutral-700 outline-none transition-colors hover:bg-neutral-100 focus-visible:bg-neutral-100',
+                        isActive && 'bg-neutral-100 text-neutral-950'
+                    )}
+                >
+                    <span className="flex min-w-0 items-center gap-3">
+                        <span className={cn(
+                            'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-500 transition-colors group-hover:text-neutral-900',
+                            isActive && 'text-neutral-950'
+                        )}>
+                            <Icon className="h-[18px] w-[18px]" />
+                        </span>
+                        <span className={cn(
+                            'truncate font-medium tracking-tight',
+                            isActive && 'font-semibold'
+                        )}>
+                            {item.label}
+                        </span>
+                    </span>
+                    {hasBadge && (
+                        <span className={cn(
+                            'ml-3 flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-bold text-white',
+                            getBadgeClassName(item.badgeType)
+                        )}>
+                            {badgeCount > 99 ? '99+' : badgeCount}
+                        </span>
+                    )}
+                </Link>
+            </SheetClose>
+        )
+    }
 
     const DiscoverIcon = discoverNavItem.icon
     const SettingsIcon = settingsNavItem.icon
@@ -124,7 +176,7 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
     const renderBrandLink = (className?: string) => (
         <Link
             href="/"
-            className={cn("flex items-center gap-1.5", className)}
+            className={cn('flex items-center gap-1.5', className)}
         >
             <Image
                 src="/logo-trans-cropped.png"
@@ -175,26 +227,108 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                         <div className="flex items-center gap-2 md:flex-1 md:justify-start md:gap-3">
                             {user && (
                                 <div className="hidden md:block">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <button className="relative outline-none">
-                                                <div className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-neutral-100">
-                                                    <Menu className="h-6 w-6 text-neutral-900" />
-                                                </div>
+                                    <Sheet>
+                                        <SheetTrigger asChild>
+                                            <button
+                                                type="button"
+                                                aria-label="Open navigation menu"
+                                                className="relative flex h-10 w-10 items-center justify-center rounded-full text-neutral-900 outline-none transition-colors hover:bg-neutral-100"
+                                            >
+                                                <Menu className="h-6 w-6" />
                                                 {totalNotifications > 0 && (
-                                                    <span className="absolute top-0 right-0 z-10 flex h-4.5 w-4.5 items-center justify-center rounded-full border-2 border-white bg-red-500 text-[10px] font-bold text-white">
+                                                    <span className="absolute -right-0.5 top-0 z-10 flex h-4.5 min-w-[18px] items-center justify-center rounded-full border border-white bg-red-500 px-1 text-[10px] font-bold text-white">
                                                         {totalNotifications > 9 ? '9+' : totalNotifications}
                                                     </span>
                                                 )}
                                             </button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent
-                                            className="mt-2 w-64 rounded-[20px] border border-neutral-100 bg-white p-2 shadow-xl"
-                                            align="start"
+                                        </SheetTrigger>
+                                        <SheetContent
+                                            side="left"
+                                            className="w-[16.5rem] border-r border-neutral-200 bg-white p-0 shadow-none sm:max-w-[16.5rem] [&>button]:hidden"
                                         >
-                                            {renderNavigationMenuItems()}
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
+                                            <SheetTitle className="sr-only">
+                                                Navigation menu
+                                            </SheetTitle>
+                                            <SheetDescription className="sr-only">
+                                                Browse app sections, open your profile, and sign out.
+                                            </SheetDescription>
+                                            <div className="flex h-full flex-col overflow-hidden">
+                                                <div className="flex items-center gap-3 border-b border-neutral-200 px-3 py-2.5">
+                                                    <SheetClose asChild>
+                                                        <button
+                                                            type="button"
+                                                            aria-label="Close navigation menu"
+                                                            className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-700 transition-colors hover:bg-neutral-100"
+                                                        >
+                                                            <Menu className="h-5 w-5" />
+                                                        </button>
+                                                    </SheetClose>
+                                                    <span className="text-[15px] font-semibold tracking-tight text-neutral-900">
+                                                        Menu
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex-1 overflow-y-auto overscroll-contain px-3 pb-5 pt-3.5">
+                                                    <SheetClose asChild>
+                                                        <Link
+                                                            href={settingsNavItem.href}
+                                                            className="flex items-center gap-3 rounded-lg px-3 py-3 outline-none transition-colors hover:bg-neutral-100 focus-visible:bg-neutral-100"
+                                                        >
+                                                            <UserAvatar
+                                                                user={user}
+                                                                className="h-11 w-11 shrink-0 border border-neutral-200"
+                                                            />
+                                                            <span className="min-w-0 flex-1">
+                                                                <span className="block truncate text-[15px] font-semibold tracking-tight text-neutral-950">
+                                                                    {getDisplayName(user)}
+                                                                </span>
+                                                                <span className="mt-0.5 block truncate text-[13px] text-neutral-500">
+                                                                    {user?.email || '@user'}
+                                                                </span>
+                                                                <span className="mt-1 block text-[12px] font-medium text-neutral-500">
+                                                                    Profile & preferences
+                                                                </span>
+                                                            </span>
+                                                        </Link>
+                                                    </SheetClose>
+
+                                                    <div className="mt-2 h-px bg-neutral-200" />
+
+                                                    <div className="mt-4 space-y-4">
+                                                        {navigationSections.map((section) => (
+                                                            <section key={section.id} className="space-y-1.5">
+                                                                <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-400">
+                                                                    {section.label}
+                                                                </p>
+                                                                <div className="space-y-0.5">
+                                                                    {section.items.map(renderDrawerMenuItem)}
+                                                                </div>
+                                                            </section>
+                                                        ))}
+                                                    </div>
+
+                                                    <section className="mt-4 space-y-1.5">
+                                                        <div className="h-px bg-neutral-200" />
+                                                        <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-neutral-400">
+                                                            Account
+                                                        </p>
+                                                        <SheetClose asChild>
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleSignOut}
+                                                                className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[15px] text-red-600 outline-none transition-colors hover:bg-red-50 focus-visible:bg-red-50"
+                                                            >
+                                                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-red-500">
+                                                                    <LogOut className="h-[18px] w-[18px]" />
+                                                                </span>
+                                                                <span className="font-medium tracking-tight">Sign out</span>
+                                                            </button>
+                                                        </SheetClose>
+                                                    </section>
+                                                </div>
+                                            </div>
+                                        </SheetContent>
+                                    </Sheet>
                                 </div>
                             )}
                             {renderBrandLink('md:hidden')}
@@ -245,33 +379,33 @@ export function Header({ user, userRole, isLoading }: HeaderProps) {
                                             </button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent
-                                            className="mt-2 w-64 rounded-[20px] border border-neutral-100 bg-white p-2 shadow-xl"
+                                            className="mt-2 w-[16.5rem] rounded-[24px] border border-neutral-100/50 bg-white/90 p-1.5 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.12)] backdrop-blur-2xl"
                                             align="end"
                                         >
-                                            <div className="mb-1 px-3 py-2">
-                                                <p className="text-sm font-semibold text-black">
+                                            <div className="px-3.5 py-3.5">
+                                                <p className="text-[15px] font-semibold tracking-tight text-neutral-900">
                                                     {getDisplayName(user)}
                                                 </p>
-                                                <p className="truncate text-xs text-black/50">
+                                                <p className="mt-0.5 truncate text-[13px] font-medium text-neutral-500">
                                                     {user.email}
                                                 </p>
                                             </div>
 
-                                            <DropdownMenuSeparator className="bg-neutral-100" />
+                                            <DropdownMenuSeparator className="mx-2 my-1 bg-neutral-100" />
 
                                             <DropdownMenuItem
-                                                className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium focus:bg-neutral-50"
+                                                className="cursor-pointer flex items-center rounded-[14px] px-3.5 py-3 text-[15px] font-medium tracking-tight text-neutral-900 outline-none transition-colors focus:bg-neutral-100/80"
                                                 onClick={() => router.push(settingsNavItem.href)}
                                             >
-                                                <SettingsIcon className="mr-3 h-4 w-4 opacity-70" />
+                                                <SettingsIcon className="mr-3.5 h-[18px] w-[18px] text-neutral-500" />
                                                 {settingsNavItem.label}
                                             </DropdownMenuItem>
 
                                             <DropdownMenuItem
                                                 onClick={handleSignOut}
-                                                className="cursor-pointer rounded-xl px-3 py-2.5 text-sm font-medium text-red-600 focus:bg-red-50"
+                                                className="cursor-pointer flex items-center rounded-[14px] px-3.5 py-3 text-[15px] font-medium tracking-tight text-red-600 outline-none transition-colors focus:bg-red-50"
                                             >
-                                                <LogOut className="mr-3 h-4 w-4 opacity-70" />
+                                                <LogOut className="mr-3.5 h-[18px] w-[18px] text-red-500" />
                                                 Sign Out
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>

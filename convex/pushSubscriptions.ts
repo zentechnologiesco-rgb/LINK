@@ -1,8 +1,9 @@
 import { v } from "convex/values";
 
 import { auth } from "./auth";
+import { internal } from "./_generated/api";
 import { type Doc, type Id } from "./_generated/dataModel";
-import { internalMutation, internalQuery, mutation } from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
 
 const pushNotificationKind = v.union(
     v.literal("messages"),
@@ -16,6 +17,10 @@ function canReceivePushNotification(
 ) {
     return user?.preferences?.notifications?.push === true
         && user.preferences.notifications[kind] !== false;
+}
+
+function getPushPublicKey() {
+    return process.env.VAPID_PUBLIC_KEY || process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || null;
 }
 
 export const upsert = mutation({
@@ -90,6 +95,98 @@ export const remove = mutation({
         }
 
         return { success: true };
+    },
+});
+
+export const getCurrentUserStatus = query({
+    args: {},
+    handler: async (ctx) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) {
+            return null;
+        }
+
+        const user = await ctx.db.get(userId);
+        const subscriptions = await ctx.db
+            .query("pushSubscriptions")
+            .withIndex("by_userId", (q) => q.eq("userId", userId))
+            .collect();
+
+        const latestSubscription = [...subscriptions]
+            .sort((left, right) => right.updatedAt - left.updatedAt)[0];
+
+        return {
+            pushEnabled: user?.preferences?.notifications?.push === true,
+            subscriptionCount: subscriptions.length,
+            lastSuccessAt: latestSubscription?.lastSuccessAt,
+            lastFailureAt: latestSubscription?.lastFailureAt,
+            failureReason: latestSubscription?.failureReason,
+            lastUpdatedAt: latestSubscription?.updatedAt,
+        };
+    },
+});
+
+export const getClientConfiguration = query({
+    args: {},
+    handler: async () => {
+        const publicKey = getPushPublicKey();
+
+        return {
+            configured: Boolean(publicKey),
+            publicKey,
+        };
+    },
+});
+
+export const sendTestNotification = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const userId = await auth.getUserId(ctx);
+        if (!userId) {
+            throw new Error("Not authenticated");
+        }
+
+        const user = await ctx.db.get(userId);
+        if (!user?.preferences?.notifications?.push) {
+            throw new Error("Turn on Push notifications in Settings before sending a test.");
+        }
+
+        const subscriptions = await ctx.db
+            .query("pushSubscriptions")
+            .withIndex("by_userId", (q) => q.eq("userId", userId))
+            .collect();
+
+        if (subscriptions.length === 0) {
+            throw new Error("This account has no registered mobile device yet. Open LINK on the phone and enable Push notifications there first.");
+        }
+
+        const kind =
+            user.preferences.notifications.messages !== false
+                ? "messages"
+                : user.preferences.notifications.leases !== false
+                    ? "leases"
+                    : user.preferences.notifications.payments !== false
+                        ? "payments"
+                        : null;
+
+        if (!kind) {
+            throw new Error("Enable message, lease, or payment notifications before sending a test push.");
+        }
+
+        await ctx.scheduler.runAfter(0, internal.pushNotifications.sendToUsers, {
+            userIds: [userId],
+            kind,
+            title: "Test notification",
+            body: "LINK push is connected on this device.",
+            url: "/settings",
+            tag: `push-test-${Date.now()}`,
+        });
+
+        return {
+            success: true,
+            kind,
+            subscriptionCount: subscriptions.length,
+        };
     },
 });
 

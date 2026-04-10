@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { useMutation } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 
 import { api } from '@convex/_generated/api'
 import {
+    getPushSupportState,
     subscribeCurrentDeviceToPush,
-    supportsPushNotifications,
     unsubscribeCurrentDeviceFromPush,
 } from '@/lib/push-notifications'
 
@@ -14,6 +14,7 @@ import { useUser } from './UserProvider'
 
 export function PushNotificationsManager() {
     const { user } = useUser()
+    const pushConfiguration = useQuery(api.pushSubscriptions.getClientConfiguration, {})
     const upsertPushSubscription = useMutation(api.pushSubscriptions.upsert)
     const removePushSubscription = useMutation(api.pushSubscriptions.remove)
     const previousUserIdRef = useRef<string | null>(null)
@@ -22,7 +23,8 @@ export function PushNotificationsManager() {
         let cancelled = false
 
         async function syncPushSubscription() {
-            if (!supportsPushNotifications()) {
+            const supportState = getPushSupportState(pushConfiguration?.publicKey)
+            if (!supportState.supported) {
                 return
             }
 
@@ -53,7 +55,7 @@ export function PushNotificationsManager() {
                 return
             }
 
-            const subscription = await subscribeCurrentDeviceToPush().catch(() => null)
+            const subscription = await subscribeCurrentDeviceToPush(pushConfiguration?.publicKey).catch(() => null)
             if (!subscription || cancelled) {
                 previousUserIdRef.current = user._id
                 return
@@ -75,6 +77,7 @@ export function PushNotificationsManager() {
     }, [
         removePushSubscription,
         upsertPushSubscription,
+        pushConfiguration?.publicKey,
         user?._id,
         user?.preferences?.notifications?.push,
     ])
