@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { type Doc, type Id } from "./_generated/dataModel";
 import { auth } from "./auth";
@@ -16,6 +17,21 @@ function sanitizeOptionalString(value?: string) {
 
 function createPreview(content: string) {
     return normalizeRequiredText(content, { maxLength: 160, multiline: true }, "Message preview");
+}
+
+function getSenderLabel(user: Doc<"users">) {
+    return user.fullName?.trim() || user.email || "Someone";
+}
+
+async function getAdminRecipientIds(
+    ctx: QueryCtx | MutationCtx,
+    excludeUserId?: Id<"users">,
+) {
+    const users = await ctx.db.query("users").collect();
+
+    return users
+        .filter((user) => user.role === "admin" && user._id !== excludeUserId)
+        .map((user) => user._id);
 }
 
 async function getViewer(ctx: QueryCtx | MutationCtx): Promise<Viewer | null> {
@@ -153,6 +169,19 @@ export const createThread = mutation({
             content,
         });
 
+        const adminRecipientIds = await getAdminRecipientIds(ctx, viewer.userId);
+        if (adminRecipientIds.length > 0) {
+            await ctx.scheduler.runAfter(0, internal.pushNotifications.sendToUsers, {
+                userIds: adminRecipientIds,
+                kind: "messages",
+                title: "New support request",
+                body: `${getSenderLabel(viewer.user)}: ${content}`,
+                url: `/chat?kind=support&id=${threadId}`,
+                tag: `support-thread-${threadId}`,
+                requireInteraction: true,
+            });
+        }
+
         return threadId;
     },
 });
@@ -190,6 +219,25 @@ export const sendMessage = mutation({
         }
 
         await ctx.db.patch(args.threadId, patch);
+
+        const recipientIds = viewer.user.role === "admin"
+            ? [thread.requesterId]
+            : thread.assignedAdminId
+                ? [thread.assignedAdminId]
+                : await getAdminRecipientIds(ctx, viewer.userId);
+
+        if (recipientIds.length > 0) {
+            await ctx.scheduler.runAfter(0, internal.pushNotifications.sendToUsers, {
+                userIds: recipientIds,
+                kind: "messages",
+                title: viewer.user.role === "admin" ? "Support replied" : "New support message",
+                body: `${getSenderLabel(viewer.user)}: ${content}`,
+                url: `/chat?kind=support&id=${args.threadId}`,
+                tag: `support-message-${args.threadId}-${now}`,
+                requireInteraction: true,
+            });
+        }
+
         return { success: true };
     },
 });

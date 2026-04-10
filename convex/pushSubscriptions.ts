@@ -7,13 +7,14 @@ import { internalMutation, internalQuery, mutation, query } from "./_generated/s
 
 const pushNotificationKind = v.union(
     v.literal("messages"),
+    v.literal("inquiries"),
     v.literal("leases"),
     v.literal("payments"),
 );
 
 function canReceivePushNotification(
     user: Doc<"users"> | null,
-    kind: "messages" | "leases" | "payments",
+    kind: "messages" | "inquiries" | "leases" | "payments",
 ) {
     return user?.preferences?.notifications?.push === true
         && user.preferences.notifications[kind] !== false;

@@ -9,9 +9,19 @@ import { type ActionCtx, internalAction } from "./_generated/server";
 
 const pushNotificationKind = v.union(
     v.literal("messages"),
+    v.literal("inquiries"),
     v.literal("leases"),
     v.literal("payments"),
 );
+
+function normalizePushText(value: string, maxLength: number) {
+    const collapsed = value.replace(/\s+/g, " ").trim();
+    if (collapsed.length <= maxLength) {
+        return collapsed;
+    }
+
+    return `${collapsed.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+}
 
 function formatCurrency(amount: number) {
     return new Intl.NumberFormat("en-NA", {
@@ -66,7 +76,7 @@ async function sendPushNotificationBatch(
     ctx: ActionCtx,
     args: {
         userIds: Id<"users">[];
-        kind: "messages" | "leases" | "payments";
+        kind: "messages" | "inquiries" | "leases" | "payments";
         title: string;
         body: string;
         url: string;
@@ -95,8 +105,8 @@ async function sendPushNotificationBatch(
     }
 
     const payload = JSON.stringify({
-        title: args.title,
-        body: args.body,
+        title: normalizePushText(args.title, 80),
+        body: normalizePushText(args.body, 160),
         icon: "/pwa-icon-192",
         badge: "/pwa-icon-192",
         tag: args.tag || `link-${args.kind}-${Date.now()}`,
