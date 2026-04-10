@@ -9,7 +9,40 @@ export type PushSubscriptionPayload = {
     }
 }
 
+export type PushSupportState = {
+    supported: boolean
+    permission: NotificationPermission | 'unsupported'
+    requiresInstall: boolean
+    publicKeyReady: boolean
+    reason: string | null
+}
+
 const SERVICE_WORKER_PATH = '/sw.js'
+
+function hasPushApis() {
+    return typeof window !== 'undefined'
+        && 'Notification' in window
+        && 'serviceWorker' in navigator
+        && 'PushManager' in window
+}
+
+function isIosDevice() {
+    if (typeof window === 'undefined') {
+        return false
+    }
+
+    const { userAgent, platform, maxTouchPoints } = window.navigator
+    return /iPad|iPhone|iPod/.test(userAgent) || (platform === 'MacIntel' && maxTouchPoints > 1)
+}
+
+function isStandalonePwa() {
+    if (typeof window === 'undefined') {
+        return false
+    }
+
+    const iosNavigator = window.navigator as Navigator & { standalone?: boolean }
+    return window.matchMedia('(display-mode: standalone)').matches || iosNavigator.standalone === true
+}
 
 function urlBase64ToUint8Array(base64String: string) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4)
@@ -24,19 +57,69 @@ function urlBase64ToUint8Array(base64String: string) {
     return outputArray
 }
 
-export function supportsPushNotifications() {
-    return typeof window !== 'undefined'
-        && 'Notification' in window
-        && 'serviceWorker' in navigator
-        && 'PushManager' in window
+export function getPushPublicKey(publicKeyOverride?: string | null) {
+    return publicKeyOverride || process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || null
 }
 
-export function getPushPublicKey() {
-    return process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || null
+export function getPushSupportState(publicKeyOverride?: string | null): PushSupportState {
+    if (typeof window === 'undefined') {
+        return {
+            supported: false,
+            permission: 'unsupported',
+            requiresInstall: false,
+            publicKeyReady: Boolean(getPushPublicKey(publicKeyOverride)),
+            reason: 'Push notifications require a browser environment.',
+        }
+    }
+
+    const permission = 'Notification' in window ? Notification.permission : 'unsupported'
+    const publicKey = getPushPublicKey(publicKeyOverride)
+
+    if (!hasPushApis()) {
+        return {
+            supported: false,
+            permission,
+            requiresInstall: false,
+            publicKeyReady: Boolean(publicKey),
+            reason: 'This browser does not support web push notifications.',
+        }
+    }
+
+    if (isIosDevice() && !isStandalonePwa()) {
+        return {
+            supported: false,
+            permission,
+            requiresInstall: true,
+            publicKeyReady: Boolean(publicKey),
+            reason: 'Install LINK to your home screen and open it from there to enable push notifications on iPhone or iPad.',
+        }
+    }
+
+    if (!publicKey) {
+        return {
+            supported: false,
+            permission,
+            requiresInstall: false,
+            publicKeyReady: false,
+            reason: 'Push notifications are not configured for this deployment yet.',
+        }
+    }
+
+    return {
+        supported: true,
+        permission,
+        requiresInstall: false,
+        publicKeyReady: true,
+        reason: null,
+    }
+}
+
+export function supportsPushNotifications(publicKeyOverride?: string | null) {
+    return getPushSupportState(publicKeyOverride).supported
 }
 
 export async function ensurePushServiceWorkerRegistration() {
-    if (!supportsPushNotifications()) {
+    if (!hasPushApis()) {
         return null
     }
 
@@ -87,8 +170,13 @@ export function serializePushSubscription(subscription: PushSubscription): PushS
     }
 }
 
-export async function subscribeCurrentDeviceToPush() {
-    const publicKey = getPushPublicKey()
+export async function subscribeCurrentDeviceToPush(publicKeyOverride?: string | null) {
+    const supportState = getPushSupportState(publicKeyOverride)
+    if (!supportState.supported) {
+        throw new Error(supportState.reason || 'Push notifications are not supported on this device')
+    }
+
+    const publicKey = getPushPublicKey(publicKeyOverride)
     if (!publicKey) {
         throw new Error('Push notifications are not configured yet')
     }
@@ -130,8 +218,10 @@ export async function unsubscribeCurrentDeviceFromPush() {
     }
 }
 
-export async function requestPushPermission() {
-    if (!supportsPushNotifications()) {
+export async function requestPushPermission(publicKeyOverride?: string | null) {
+    const supportState = getPushSupportState(publicKeyOverride)
+
+    if (!hasPushApis() || supportState.requiresInstall) {
         return 'denied' as NotificationPermission
     }
 

@@ -13,6 +13,7 @@ import {
     Lock,
     Mail,
     ShieldCheck,
+    Smartphone,
     UserRound,
 } from '@/components/ui/icons'
 import { toast } from 'sonner'
@@ -29,9 +30,10 @@ import { Switch } from '@/components/ui/switch'
 import { UserAvatar, type UserAvatarActivity } from '@/components/ui/user-avatar'
 import { getDisplayName } from '@/lib/user-name'
 import {
+    getExistingPushSubscription,
+    getPushSupportState,
     requestPushPermission,
     subscribeCurrentDeviceToPush,
-    supportsPushNotifications,
     unsubscribeCurrentDeviceFromPush,
 } from '@/lib/push-notifications'
 import { cn } from '@/lib/utils'
@@ -74,10 +76,13 @@ export function SettingsWorkspace() {
     const updateProfile = useMutation(api.users.updateProfile)
     const upsertPushSubscription = useMutation(api.pushSubscriptions.upsert)
     const removePushSubscription = useMutation(api.pushSubscriptions.remove)
+    const sendTestPushNotification = useMutation(api.pushSubscriptions.sendTestNotification)
     const generateUploadUrl = useMutation(api.files.generateUploadUrl)
     const registerUpload = useMutation(api.files.registerUpload)
     const verificationStatus = useQuery(api.verification.getStatus, user ? {} : 'skip')
     const linkedAuthMethods = useQuery(api.users.linkedAuthMethods, user ? {} : 'skip')
+    const pushConfiguration = useQuery(api.pushSubscriptions.getClientConfiguration, {})
+    const pushStatus = useQuery(api.pushSubscriptions.getCurrentUserStatus, user ? {} : 'skip')
     const { signIn, signOut } = useAuthActions()
     const router = useRouter()
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -87,6 +92,11 @@ export function SettingsWorkspace() {
     const [uploading, setUploading] = useState(false)
     const [connectingGoogle, setConnectingGoogle] = useState(false)
     const [isUpdatingPushNotifications, setIsUpdatingPushNotifications] = useState(false)
+    const [isSendingTestPush, setIsSendingTestPush] = useState(false)
+    const [devicePushSupported, setDevicePushSupported] = useState(false)
+    const [devicePushPermission, setDevicePushPermission] = useState<NotificationPermission | 'unsupported'>('unsupported')
+    const [deviceHasPushSubscription, setDeviceHasPushSubscription] = useState(false)
+    const [devicePushReason, setDevicePushReason] = useState<string | null>(null)
     const [saveFeedback, setSaveFeedback] = useState<'idle' | 'success'>('idle')
 
     const typedUser = user as SettingsUser | null | undefined
@@ -114,6 +124,40 @@ export function SettingsWorkspace() {
             setConnectingGoogle(false)
         }
     }, [linkedAuthMethods?.hasGoogle])
+
+    useEffect(() => {
+        let cancelled = false
+
+        async function syncDevicePushState() {
+            const supportState = getPushSupportState(pushConfiguration?.publicKey)
+            if (!supportState.supported) {
+                if (!cancelled) {
+                    setDevicePushSupported(false)
+                    setDevicePushPermission(supportState.permission)
+                    setDeviceHasPushSubscription(false)
+                    setDevicePushReason(supportState.reason)
+                }
+                return
+            }
+
+            const subscription = await getExistingPushSubscription().catch(() => null)
+
+            if (cancelled) return
+
+            setDevicePushSupported(true)
+            setDevicePushPermission(Notification.permission)
+            setDeviceHasPushSubscription(Boolean(subscription))
+            setDevicePushReason(null)
+        }
+
+        void syncDevicePushState()
+        window.addEventListener('focus', syncDevicePushState)
+
+        return () => {
+            cancelled = true
+            window.removeEventListener('focus', syncDevicePushState)
+        }
+    }, [pushConfiguration?.publicKey, typedUser?._id, form?.preferences.notifications.push])
 
     const avatarActivity: UserAvatarActivity = uploading
         ? 'uploading'
@@ -153,12 +197,13 @@ export function SettingsWorkspace() {
 
         try {
             if (checked) {
-                if (!supportsPushNotifications()) {
-                    toast.error('This device does not support app push notifications')
+                const supportState = getPushSupportState(pushConfiguration?.publicKey)
+                if (!supportState.supported) {
+                    toast.error(supportState.reason || 'This device does not support app push notifications')
                     return
                 }
 
-                const permission = await requestPushPermission()
+                const permission = await requestPushPermission(pushConfiguration?.publicKey)
                 if (permission !== 'granted') {
                     toast.error(
                         permission === 'denied'
@@ -168,16 +213,21 @@ export function SettingsWorkspace() {
                     return
                 }
 
-                const subscription = await subscribeCurrentDeviceToPush()
+                const subscription = await subscribeCurrentDeviceToPush(pushConfiguration?.publicKey)
                 await upsertPushSubscription({
                     ...subscription,
                     userAgent: navigator.userAgent,
                 })
+                setDevicePushSupported(true)
+                setDevicePushPermission('granted')
+                setDeviceHasPushSubscription(true)
+                setDevicePushReason(null)
             } else {
                 const result = await unsubscribeCurrentDeviceFromPush()
                 if (result.endpoint) {
                     await removePushSubscription({ endpoint: result.endpoint })
                 }
+                setDeviceHasPushSubscription(false)
             }
 
             await updateProfile({ preferences: nextPreferences })
@@ -202,6 +252,19 @@ export function SettingsWorkspace() {
             )
         } finally {
             setIsUpdatingPushNotifications(false)
+        }
+    }
+
+    async function handleSendTestPush() {
+        setIsSendingTestPush(true)
+
+        try {
+            const result = await sendTestPushNotification({})
+            toast.success(`Test push queued for ${result.subscriptionCount} device${result.subscriptionCount === 1 ? '' : 's'}.`)
+        } catch (error: unknown) {
+            toast.error(error instanceof Error ? error.message : 'Unable to send test push right now')
+        } finally {
+            setIsSendingTestPush(false)
         }
     }
 
@@ -495,7 +558,14 @@ export function SettingsWorkspace() {
 
                 {/* ━━━━━━━━ NOTIFICATIONS ━━━━━━━━ */}
                 {form.preferences?.notifications && (
-                    <SettingsGroup title="Notifications">
+                    <SettingsGroup
+                        title="Notifications"
+                        footer={
+                            pushStatus
+                                ? `Push is ${pushStatus.pushEnabled ? 'enabled' : 'disabled'} on the account, with ${pushStatus.subscriptionCount} registered device${pushStatus.subscriptionCount === 1 ? '' : 's'}.`
+                                : undefined
+                        }
+                    >
                         {Object.entries(form.preferences.notifications).map(([key, enabled], index, arr) => {
                             const labels: Record<string, string> = {
                                 email: 'Email updates',
@@ -544,6 +614,54 @@ export function SettingsWorkspace() {
                                 </SettingsRow>
                             )
                         })}
+
+                        <div className="border-t border-neutral-100 bg-neutral-50/70 px-4 py-4">
+                            <div className="flex items-start gap-3">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-neutral-900 text-white">
+                                    <Smartphone className="h-4 w-4" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-[14px] font-semibold text-neutral-900">Push device status</p>
+                                    <p className="mt-1 text-[13px] leading-5 text-neutral-500">
+                                        {devicePushSupported
+                                            ? `Permission: ${devicePushPermission}. This device is ${deviceHasPushSubscription ? 'registered' : 'not registered'} for push.`
+                                            : devicePushReason || 'This browser or device is not exposing web push support to the app right now.'}
+                                    </p>
+                                    {pushConfiguration && !pushConfiguration.configured ? (
+                                        <p className="mt-2 text-[12px] leading-5 text-amber-600">
+                                            Push is not configured on this deployment yet. Add the VAPID public key to the frontend deployment and the VAPID key pair to Convex.
+                                        </p>
+                                    ) : null}
+                                    {pushStatus?.pushEnabled && pushStatus.subscriptionCount === 0 ? (
+                                        <p className="mt-2 text-[12px] leading-5 text-amber-600">
+                                            Your account still has no registered push device. Open LINK on the phone and enable Push notifications there.
+                                        </p>
+                                    ) : null}
+                                    {pushStatus?.failureReason ? (
+                                        <p className="mt-2 text-[12px] leading-5 text-red-600">
+                                            Last delivery issue: {pushStatus.failureReason}
+                                        </p>
+                                    ) : null}
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="h-8 rounded-full border-neutral-200 px-3 text-xs font-semibold"
+                                            disabled={
+                                                !form.preferences.notifications.push ||
+                                                !devicePushSupported ||
+                                                devicePushPermission !== 'granted' ||
+                                                (pushStatus?.subscriptionCount ?? 0) === 0 ||
+                                                isSendingTestPush
+                                            }
+                                            onClick={() => void handleSendTestPush()}
+                                        >
+                                            {isSendingTestPush ? 'Sending test...' : 'Send test push'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </SettingsGroup>
                 )}
 
