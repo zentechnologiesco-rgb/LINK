@@ -8,6 +8,7 @@ import { getNavigationItemsForSurface, type NavigationBadgeType } from '@/config
 import { useNotificationCounts } from '@/components/providers/NotificationCountsProvider'
 import type { UserRole } from '@/lib/user-preferences'
 import { cn } from '@/lib/utils'
+import { persistMobileNavTransition } from '@/components/layout/mobile-nav-transition'
 
 type MobileNavUser = {
     role?: UserRole | null
@@ -89,6 +90,9 @@ function MobileNavInner({ user, userRole }: MobileNavProps) {
                                     <Link
                                         key={item.id}
                                         href={item.href}
+                                        onNavigate={() => {
+                                            persistMobileNavTransition(items, pathname, item.href)
+                                        }}
                                         aria-current={isActive ? 'page' : undefined}
                                         className={cn(
                                             'focus-ring group relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-[1.1rem] px-1 py-1 text-center transition-all duration-300 ease-out active:scale-[0.98]',
