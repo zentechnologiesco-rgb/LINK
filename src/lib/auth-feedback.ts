@@ -1,4 +1,10 @@
-export type AuthField = 'email' | 'password' | 'firstName' | 'surname'
+export type AuthField =
+  | 'email'
+  | 'password'
+  | 'firstName'
+  | 'surname'
+  | 'newPassword'
+  | 'confirmPassword'
 
 export type AuthFieldErrors = Partial<Record<AuthField, string>>
 
@@ -59,6 +65,50 @@ export function getSignUpFieldErrors(values: {
   else if (password.length < 6) errors.password = 'Use at least 6 characters for your password.'
 
   return errors
+}
+
+export function getPasswordResetRequestFieldErrors(values: { email: string }): AuthFieldErrors {
+  const errors: AuthFieldErrors = {}
+  const email = values.email.trim()
+
+  if (!email) errors.email = 'Enter the email address tied to your account.'
+  else if (!validateEmail(email)) errors.email = 'Enter a valid email address, like name@example.com.'
+
+  return errors
+}
+
+export function getPasswordResetFieldErrors(values: {
+  email: string
+  newPassword: string
+  confirmPassword: string
+}): AuthFieldErrors {
+  const errors: AuthFieldErrors = {}
+  const email = values.email.trim()
+  const newPassword = values.newPassword
+  const confirmPassword = values.confirmPassword
+
+  if (!email) errors.email = 'Enter the email address from your reset link.'
+  else if (!validateEmail(email)) errors.email = 'Enter a valid email address, like name@example.com.'
+
+  if (!newPassword) errors.newPassword = 'Create a new password to finish resetting your account.'
+  else if (newPassword.length < 6) errors.newPassword = 'Use at least 6 characters for your new password.'
+
+  if (!confirmPassword) errors.confirmPassword = 'Confirm your new password to continue.'
+  else if (confirmPassword !== newPassword) errors.confirmPassword = 'Your passwords need to match exactly.'
+
+  return errors
+}
+
+export function shouldMaskPasswordResetAccountError(error: unknown) {
+  const message = normalizeMessage(error).toLowerCase()
+
+  return includesAny(message, [
+    'invalidaccountid',
+    'user not found',
+    'account not found',
+    'no user',
+    'invalid account',
+  ])
 }
 
 export function getFriendlyAuthError(error: unknown, mode: 'signIn' | 'signUp'): AuthFeedbackResult {
@@ -135,5 +185,67 @@ export function getFriendlyAuthError(error: unknown, mode: 'signIn' | 'signUp'):
       mode === 'signIn'
         ? 'Sign-in failed. Please try again.'
         : 'Sign-up failed. Please try again.',
+  }
+}
+
+export function getFriendlyPasswordResetError(
+  error: unknown,
+  mode: 'request' | 'confirm',
+): AuthFeedbackResult {
+  const rawMessage = normalizeMessage(error)
+  const message = rawMessage.toLowerCase()
+
+  if (includesAny(message, ['network', 'fetch', 'failed to fetch', 'connection'])) {
+    return {
+      formError: 'We could not reach the server. Check your connection and try again.',
+      toastMessage: 'Connection problem. Please try again.',
+    }
+  }
+
+  if (includesAny(message, ['resend', 'configuration missing', 'api key', 'missing resend'])) {
+    return {
+      formError: 'Password reset email is not configured correctly yet. Please try again in a moment.',
+      toastMessage: 'Password reset email is unavailable.',
+    }
+  }
+
+  if (mode === 'confirm') {
+    if (includesAny(message, ['invalid code', 'could not verify code', 'expired verification code', 'invalid verifier'])) {
+      return {
+        formError: 'This reset link is no longer valid. Request a fresh password reset email and try again.',
+        toastMessage: 'Reset link expired or invalid.',
+      }
+    }
+
+    if (includesAny(message, ['matching `email`', 'same email address', 'requires an email'])) {
+      return {
+        formError: 'Use the same email address that received this reset link.',
+        fieldErrors: {
+          email: 'This email does not match the reset link you opened.',
+        },
+        toastMessage: 'Email address does not match the reset link.',
+      }
+    }
+
+    if (includesAny(message, ['password']) && includesAny(message, ['invalid', 'too short', 'at least 6'])) {
+      return {
+        formError: 'Your new password needs a little more strength before we can save it.',
+        fieldErrors: {
+          newPassword: 'Use at least 6 characters for your new password.',
+        },
+        toastMessage: 'Password is too short.',
+      }
+    }
+  }
+
+  return {
+    formError:
+      mode === 'request'
+        ? 'We could not start your password reset right now. Please try again.'
+        : 'We could not reset your password right now. Please try again.',
+    toastMessage:
+      mode === 'request'
+        ? 'Password reset request failed.'
+        : 'Password reset failed.',
   }
 }

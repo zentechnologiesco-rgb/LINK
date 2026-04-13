@@ -17,8 +17,16 @@ if (!convexUrl) {
 const convex = new ConvexReactClient(convexUrl);
 
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
+    const shouldHandleCode = () => {
+        if (typeof window === "undefined") {
+            return true;
+        }
+
+        return !window.location.pathname.startsWith("/reset-password");
+    };
+
     return (
-        <ConvexAuthProvider client={convex}>
+        <ConvexAuthProvider client={convex} shouldHandleCode={shouldHandleCode}>
             <UserProvider>
                 <PushNotificationsManager />
                 <NotificationCountsProvider>
