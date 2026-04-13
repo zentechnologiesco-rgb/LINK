@@ -495,7 +495,7 @@ export function ChatWorkspace() {
         <>
             <div
                 className={cn(
-                    'flex flex-col overflow-hidden bg-white lg:flex-row',
+                    'flex min-w-0 flex-col overflow-hidden bg-white lg:flex-row',
                     hasSelection
                         ? 'fixed inset-x-0 top-16 z-40 lg:static lg:h-[calc(100dvh-5rem)]'
                         : 'h-[calc(100dvh-4rem)] md:h-[calc(100dvh-5rem)]'
@@ -735,7 +735,7 @@ export function ChatWorkspace() {
                 {/* ━━━━━━━━━━━━━━━━ THREAD VIEW ━━━━━━━━━━━━━━━━ */}
                 <section
                     className={cn(
-                        'flex min-h-0 flex-1 flex-col',
+                        'flex min-h-0 min-w-0 flex-1 flex-col',
                         hasSelection ? 'flex' : 'hidden lg:flex'
                     )}
                 >

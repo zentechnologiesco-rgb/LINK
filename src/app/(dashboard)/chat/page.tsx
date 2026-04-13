@@ -16,7 +16,7 @@ function ChatLoading() {
 
 export default function ChatPage() {
     return (
-        <div className="-mx-4 -mt-4 sm:-mx-6 md:-mx-12">
+        <div className="-mx-4 -mt-4 sm:-mx-6 md:mx-0">
             <Suspense fallback={<ChatLoading />}>
                 <ChatWorkspace />
             </Suspense>
