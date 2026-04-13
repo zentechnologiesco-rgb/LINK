@@ -3,6 +3,7 @@
 import { v } from "convex/values";
 import { action } from "./_generated/server";
 import { Resend } from "resend";
+import { getResendFromEmail, getResendTestingGuidance, isResendTestingDomain } from "./lib/resend";
 
 // Send an email
 export const send = action({
@@ -20,8 +21,9 @@ export const send = action({
         const resend = new Resend(process.env.RESEND_API_KEY);
 
         try {
+            const from = getResendFromEmail();
             const data = await resend.emails.send({
-                from: "LINK Property <noreply@link-property.com>", // Update with verified domain
+                from,
                 to: args.to,
                 subject: args.subject,
                 html: args.html,
@@ -29,7 +31,10 @@ export const send = action({
 
             return { success: true, data };
         } catch (error) {
-            console.error("Failed to send email:", error);
+            const guidance = isResendTestingDomain(getResendFromEmail())
+                ? ` ${getResendTestingGuidance()}`
+                : "";
+            console.error(`Failed to send email:${guidance}`, error);
             // Don't throw to avoid failing the calling mutation if checking result
             return { success: false, error: error };
         }

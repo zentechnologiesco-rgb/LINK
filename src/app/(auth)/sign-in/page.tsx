@@ -185,7 +185,7 @@ function SignInContent() {
                                     Password
                                 </label>
                                 <Link
-                                    href="/forgot-password"
+                                    href={redirectUrl ? `/forgot-password?redirect=${encodeURIComponent(redirectUrl)}` : '/forgot-password'}
                                     className="text-[13px] font-bold text-black hover:text-neutral-600 transition-colors"
                                     tabIndex={-1}
                                 >
