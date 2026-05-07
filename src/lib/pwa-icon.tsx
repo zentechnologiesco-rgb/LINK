@@ -22,8 +22,8 @@ export function createPwaIcon(size: number) {
       >
         <div
           style={{
-            width: '390%',
-            height: '390%',
+            width: '280%',
+            height: '280%',
             backgroundImage: `url(${logoDataUrl})`,
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
