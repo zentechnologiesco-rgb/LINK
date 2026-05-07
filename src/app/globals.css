@@ -551,6 +551,13 @@
 html {
   scroll-behavior: smooth;
   background-color: var(--background);
+  view-transition-name: root;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.3s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 html.chat-mobile-open,

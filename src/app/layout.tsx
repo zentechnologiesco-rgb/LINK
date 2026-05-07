@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ConvexClientProvider } from '@/components/providers/ConvexClientProvider'
 import { PwaInstallPrompt } from '@/components/pwa/PwaInstallPrompt'
+import { LoadingProgressBar } from '@/components/ui/LoadingProgressBar'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 
@@ -92,6 +93,7 @@ export default function RootLayout({
           <AppLayout>
             {children}
           </AppLayout>
+          <LoadingProgressBar />
           <PwaInstallPrompt />
           <Toaster />
         </ConvexClientProvider>
